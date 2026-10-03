@@ -1,0 +1,4 @@
+node_modules/
+.next/
+frontend-bootstrap/
+pnpm-lock.yaml
