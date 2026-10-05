@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { RankingReview } from "@/components/ranking-review";
 
 export default function RankingsPage() {
   return (
@@ -6,20 +7,13 @@ export default function RankingsPage() {
       <div className="page-heading">
         <div>
           <p className="eyebrow">HUMAN REVIEW</p>
-          <h1>Candidate review</h1>
+          <h1>Candidate rankings</h1>
           <p className="page-subtitle">
-            Review evidence and record decisions with your team.
+            Compare match evidence and review candidates with your team.
           </p>
         </div>
       </div>
-      <section className="empty-panel">
-        <span className="empty-icon">⌁</span>
-        <h2>Ranking results will appear here</h2>
-        <p>
-          The review experience will use Person C&apos;s agreed scoring response
-          and keep human decisions visible.
-        </p>
-      </section>
+      <RankingReview />
     </AppShell>
   );
 }
