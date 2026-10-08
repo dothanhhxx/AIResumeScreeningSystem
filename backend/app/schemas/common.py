@@ -12,6 +12,7 @@ Contains:
 from datetime import datetime
 from typing import Any, Generic, TypeVar
 
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel, ConfigDict, Field
 
 T = TypeVar("T")
