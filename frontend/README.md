@@ -21,7 +21,7 @@ Open `http://localhost:3000`. Routes available in this first increment:
 - `/dashboard` — responsive recruiter dashboard with clearly labeled synthetic sample data.
 - `/jobs` — list, create, edit, filter, and archive jobs through the Person D JD API.
 - `/cvs` — PDF/DOCX selection and upload preparation UI. Files stay in the browser until Person B's API contract is integrated.
-- `/rankings` — review integration placeholder pending Person C's scoring contract.
+- `/rankings` — review scaffold pending Person C's scoring contract and the shared decision API; decision controls stay disabled until real match results can be saved.
 
 ## Checks
 
@@ -29,6 +29,7 @@ Open `http://localhost:3000`. Routes available in this first increment:
 pnpm run format:check
 pnpm run lint
 pnpm run typecheck
+pnpm run test
 pnpm run build
 ```
 

@@ -80,6 +80,51 @@ export function RankingReview() {
                 <span>Waiting for explanation, model, and source details.</span>
               </div>
             </div>
+            <section
+              className="decision-panel"
+              aria-labelledby="decision-title"
+            >
+              <div className="decision-panel-heading">
+                <div>
+                  <p className="eyebrow">RECRUITER DECISION</p>
+                  <h3 id="decision-title">Review outcome</h3>
+                </div>
+                <span className="decision-pending-label">Not connected</span>
+              </div>
+              <p className="decision-integration-note">
+                Decision controls will be enabled after a real match result and
+                the decision API are available.
+              </p>
+              <label className="decision-form-field">
+                <span>Decision status</span>
+                <select disabled defaultValue="pending">
+                  <option value="pending">Pending review</option>
+                  <option value="shortlisted">Shortlisted</option>
+                  <option value="interview">Interview</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="hired">Hired</option>
+                </select>
+              </label>
+              <label className="decision-form-field">
+                <span>Reason</span>
+                <input
+                  disabled
+                  maxLength={500}
+                  placeholder="Awaiting API integration"
+                />
+              </label>
+              <label className="decision-form-field">
+                <span>Reviewer note</span>
+                <textarea
+                  disabled
+                  rows={3}
+                  placeholder="Awaiting API integration"
+                />
+              </label>
+              <button className="button button-primary" type="button" disabled>
+                Save recruiter decision
+              </button>
+            </section>
             <div className="human-review-note ranking-human-note">
               <span className="human-review-icon">♡</span>
               <div>

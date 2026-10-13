@@ -1903,6 +1903,68 @@ tbody tr:last-child td {
   flex-basis: 22px;
   font-size: 13px;
 }
+.decision-panel {
+  display: grid;
+  gap: 11px;
+  margin: 4px 18px 16px;
+  padding: 13px;
+  border: 1px solid #e7ece9;
+  border-radius: 7px;
+  background: #fcfdfc;
+}
+.decision-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.decision-panel-heading .eyebrow {
+  margin: 0 0 5px;
+}
+.decision-panel-heading h3 {
+  margin: 0;
+  color: #435149;
+  font-size: 11px;
+}
+.decision-pending-label {
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #f2f4f3;
+  color: #78857d;
+  font-size: 8px;
+  white-space: nowrap;
+}
+.decision-integration-note {
+  margin: 0;
+  color: #89958e;
+  font-size: 8px;
+  line-height: 1.5;
+}
+.decision-form-field {
+  display: grid;
+  gap: 5px;
+  color: #68766e;
+  font-size: 8px;
+}
+.decision-form-field input,
+.decision-form-field select,
+.decision-form-field textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid #e3e9e6;
+  border-radius: 5px;
+  background: #f7f9f8;
+  color: #89958f;
+  font: inherit;
+}
+.decision-form-field textarea {
+  resize: vertical;
+}
+.decision-panel .button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 @media (max-width: 900px) {
   .ranking-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1935,6 +1997,10 @@ tbody tr:last-child td {
     padding-left: 14px;
   }
   .ranking-human-note {
+    margin-right: 14px;
+    margin-left: 14px;
+  }
+  .decision-panel {
     margin-right: 14px;
     margin-left: 14px;
   }
