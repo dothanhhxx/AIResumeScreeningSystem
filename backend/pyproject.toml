@@ -39,6 +39,9 @@ dependencies = [
     # ── Celery (async tasks) ────────────────────
     "celery[redis]>=5.3.0,<6.0",
 
+    # ── AI / LLM (Person C) ─────────────────────
+    "google-genai>=2.0.0,<3.0",
+
     # ── Utilities ───────────────────────────────
     "httpx>=0.26.0,<1.0",
     "python-dotenv>=1.0.0,<2.0",

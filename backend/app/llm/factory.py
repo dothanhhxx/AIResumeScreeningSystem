@@ -24,4 +24,8 @@ def get_llm() -> BaseLLM:
             embedding_dim=settings.EMBEDDING_DIM,
         )
 
+    # TODO(Person C): add more providers here when needed, e.g.
+    #   if provider == "openai":
+    #       from app.llm.openai import OpenAILLM
+    #       return OpenAILLM(...)
     raise ValueError(f"Unsupported LLM_PROVIDER: {settings.LLM_PROVIDER}")

@@ -27,6 +27,8 @@ Resume:
 """
 
 
+# TODO(Person B + C): agree on the raw_text format from the parser (page breaks, tables, OCR noise)
+#                     and adjust the prompt if parsed text needs extra explanation.
 def build_extraction_prompt(cv_text: str, today: str) -> str:
     """`cv_text` must already be passed through `strip_pii`. `today` is YYYY-MM."""
     return EXTRACTION_PROMPT.format(cv_text=cv_text.strip(), today=today)

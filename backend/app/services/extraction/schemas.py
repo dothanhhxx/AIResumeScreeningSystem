@@ -22,6 +22,7 @@ class Education(BaseModel):
     gpa: str | None = Field(default=None, description="GPA as written, e.g. '3.4/4'")
 
 
+# TODO(Person C + D): confirm these fields with Person D's CV detail / ranking UI before day 3.
 class CVExtraction(BaseModel):
     """Everything the matching engine needs from a CV — no contact details."""
 

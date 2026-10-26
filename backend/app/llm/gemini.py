@@ -59,6 +59,8 @@ class GeminiLLM(BaseLLM):
         except PydanticValidationError as exc:
             raise AIServiceError(f"Gemini response does not match {schema.__name__}") from exc
 
+    # TODO(Person A): the vectors returned here need a pgvector column, Vector(settings.EMBEDDING_DIM),
+    #                 on the CV and Job models (+ Alembic migration) before semantic_scorer.py can store them.
     async def embed(self, text: str) -> list[float]:
         config = types.EmbedContentConfig(output_dimensionality=self.embedding_dim)
         response = await self._call_with_retry(

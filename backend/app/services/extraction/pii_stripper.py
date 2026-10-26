@@ -45,6 +45,8 @@ def _mask_phone(match: re.Match[str]) -> str:
     return raw
 
 
+# TODO(Person C): street addresses are not masked yet — they have no reliable pattern.
+# TODO(Person B): known_names relies on CV.candidate_name being filled at upload time.
 def strip_pii(text: str, known_names: list[str] | None = None) -> str:
     """Replace emails, URLs, phone numbers, dates of birth and known names with placeholder tokens."""
     if not text:
