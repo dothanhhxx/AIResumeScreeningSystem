@@ -3,11 +3,13 @@
 import math
 from types import SimpleNamespace
 
+import httpx
 import pytest
 from google.genai import errors
 from pydantic import BaseModel
 
 from app.core.exceptions import AIServiceError
+from app.llm import gemini as gemini_module
 from app.llm.gemini import GeminiLLM
 
 
@@ -123,3 +125,31 @@ async def test_embed_rejects_empty_response():
 def test_requires_api_key_without_client():
     with pytest.raises(AIServiceError):
         GeminiLLM(api_key="", model="m", embedding_model="e", embedding_dim=3)
+
+
+async def test_timeout_is_not_retried_and_wrapped():
+    llm, models = make_llm(httpx.ReadTimeout("timed out"))
+
+    with pytest.raises(AIServiceError):
+        await llm.generate("prompt", Person)
+    assert len(models.calls) == 1
+
+
+def test_real_client_has_timeout_and_sdk_retry_disabled(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(gemini_module.genai, "Client", lambda **kwargs: captured.update(kwargs))
+
+    GeminiLLM(api_key="key", model="m", embedding_model="e", embedding_dim=3, timeout_seconds=30)
+
+    http_options = captured["http_options"]
+    assert captured["api_key"] == "key"
+    assert http_options.timeout == 30_000
+    assert http_options.retry_options.attempts == 1
+
+
+async def test_deadline_exceeded_is_not_retried():
+    llm, models = make_llm(api_error(504))
+
+    with pytest.raises(AIServiceError):
+        await llm.generate("prompt", Person)
+    assert len(models.calls) == 1

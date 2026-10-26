@@ -8,6 +8,7 @@ import math
 from collections.abc import Awaitable, Callable
 from typing import TypeVar
 
+import httpx
 from google import genai
 from google.genai import errors, types
 from pydantic import ValidationError as PydanticValidationError
@@ -17,8 +18,10 @@ from app.llm.base import BaseLLM, T
 
 R = TypeVar("R")
 
-# 429 = free-tier rate limit, 5xx = Gemini overloaded / temporary failure
-RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+# 429 = free-tier rate limit, 500/502/503 = Gemini overloaded / temporary failure.
+# 504 is not retried: Gemini returns it when our own timeout_seconds deadline expires,
+# so retrying would just wait the full timeout again on every attempt.
+RETRYABLE_STATUS_CODES = {429, 500, 502, 503}
 
 
 class GeminiLLM(BaseLLM):
@@ -32,13 +35,22 @@ class GeminiLLM(BaseLLM):
         embedding_dim: int,
         max_retries: int = 3,
         retry_base_delay: float = 2.0,
+        timeout_seconds: float = 60.0,
         client: genai.Client | None = None,
     ) -> None:
         super().__init__(model=model, embedding_model=embedding_model, embedding_dim=embedding_dim)
         if client is None:
             if not api_key:
                 raise AIServiceError("GEMINI_API_KEY is not set")
-            client = genai.Client(api_key=api_key)
+            client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(
+                    timeout=int(timeout_seconds * 1000),  # milliseconds
+                    # Disable the SDK's own retry (5 attempts, waits up to 60s): stacked under
+                    # _call_with_retry it made a single 503 block for several minutes.
+                    retry_options=types.HttpRetryOptions(attempts=1),
+                ),
+            )
         self._client = client
         self._max_retries = max_retries
         self._retry_base_delay = retry_base_delay
@@ -81,4 +93,7 @@ class GeminiLLM(BaseLLM):
                 if exc.code not in RETRYABLE_STATUS_CODES or attempt == self._max_retries:
                     raise AIServiceError(f"Gemini API error {exc.code}: {exc.message}") from exc
                 await asyncio.sleep(self._retry_base_delay * 2**attempt)
+            except httpx.TransportError as exc:
+                # Timeouts / network failures: not retried, a timeout already cost timeout_seconds
+                raise AIServiceError(f"Gemini request failed: {type(exc).__name__}") from exc
         raise AssertionError("unreachable")
