@@ -22,13 +22,12 @@ import hashlib
 import logging
 import mimetypes
 import uuid
-from typing import IO
 
 from fastapi import UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError, UnsupportedFileTypeError
+from app.core.exceptions import DuplicateError, NotFoundError, UnsupportedFileTypeError
 from app.models.cv import CV, CVStatus
 from app.schemas.cv import CVBatchItemResult, CVStatusUpdate
 from app.services.storage_service import ALLOWED_CONTENT_TYPES, storage_service
@@ -60,24 +59,42 @@ def _detect_content_type(file: UploadFile) -> str:
     raise UnsupportedFileTypeError(content_type or (file.filename or "unknown"))
 
 
-def _build_object_key(file_type: str, candidate_name: str) -> str:
+def _build_object_key(file_type: str, candidate_name: str, file_hash: str | None = None) -> str:
     """
-    Build a unique MinIO object key.
+    Build a deterministic MinIO object key incorporating candidate name and content hash.
 
-    Pattern: ``resumes/<uuid4>_<safe_name>.<ext>``
+    Pattern: ``resumes/<hash_or_uuid>_<safe_name>.<ext>``
     """
     safe_name = "".join(
         c if c.isalnum() or c in "-_" else "_"
         for c in candidate_name.lower().replace(" ", "_")
     )
-    unique_id = uuid.uuid4().hex[:12]
+    unique_id = (file_hash or uuid.uuid4().hex)[:16]
     extension = ALLOWED_CONTENT_TYPES[file_type]
     return f"resumes/{unique_id}_{safe_name}.{extension}"
 
 
 def _compute_sha256(data: bytes) -> str:
-    """Return the hex SHA-256 digest of *data* (used for deduplication later)."""
+    """Return the hex SHA-256 digest of *data* (used for deduplication)."""
     return hashlib.sha256(data).hexdigest()
+
+
+async def find_cv_by_hash(
+    db: AsyncSession,
+    file_hash: str,
+    file_size: int | None = None,
+) -> CV | None:
+    """
+    Find an existing CV record matching the given SHA-256 content hash.
+
+    Uses the deterministic hash prefix embedded in the MinIO storage path (file_url).
+    """
+    prefix = file_hash[:16]
+    query = select(CV).where(CV.file_url.like(f"resumes/{prefix}%"))
+    if file_size is not None:
+        query = query.where(CV.file_size == file_size)
+    result = await db.execute(query.limit(1))
+    return result.scalar_one_or_none()
 
 
 # ── Service functions ─────────────────────────────────────────────────────────
@@ -89,14 +106,16 @@ async def create_cv(
     candidate_name: str,
     candidate_email: str | None = None,
     uploader_id: int | None = None,
+    check_duplicate: bool = True,
 ) -> CV:
     """
     Process a single CV upload:
 
     1. Validate file type and size.
-    2. Upload raw bytes to MinIO.
-    3. Persist a CV record with status=UPLOADED.
-    4. (Celery parse task is enqueued by the API layer, not here, to keep
+    2. Compute SHA-256 digest and check for duplicate files (if check_duplicate=True).
+    3. Upload raw bytes to MinIO with deterministic hash key.
+    4. Persist a CV record with status=UPLOADED.
+    5. (Celery parse task is enqueued by the API layer, not here, to keep
        this function unit-testable without a running broker.)
 
     Args:
@@ -105,6 +124,7 @@ async def create_cv(
         candidate_name:  Candidate's full name.
         candidate_email: Optional email address.
         uploader_id:     ID of the authenticated user performing the upload.
+        check_duplicate: If True, reject identical uploads with DuplicateError.
 
     Returns:
         The newly created CV ORM instance.
@@ -112,6 +132,7 @@ async def create_cv(
     Raises:
         UnsupportedFileTypeError: For non-PDF/DOCX uploads.
         BadRequestError:          If the file exceeds MAX_FILE_SIZE_BYTES.
+        DuplicateError:           If an identical CV was already uploaded.
         StorageServiceError:      If MinIO upload fails.
     """
     from app.core.exceptions import BadRequestError  # local import to avoid circular
@@ -126,7 +147,15 @@ async def create_cv(
             f"File size {len(file_bytes)} bytes exceeds limit of {MAX_FILE_SIZE_BYTES} bytes."
         )
 
-    object_key = _build_object_key(content_type, candidate_name)
+    # SHA-256 Deduplication check
+    file_hash = _compute_sha256(file_bytes)
+    if check_duplicate:
+        existing = await find_cv_by_hash(db, file_hash, file_size=len(file_bytes))
+        if existing is not None:
+            logger.info("Duplicate CV detected: id=%d matching hash=%s", existing.id, file_hash[:16])
+            raise DuplicateError("CV file with identical content", existing.id)
+
+    object_key = _build_object_key(content_type, candidate_name, file_hash=file_hash)
 
     # Upload to MinIO (sync call — small files, acceptable in async context)
     storage_service.upload_file(
