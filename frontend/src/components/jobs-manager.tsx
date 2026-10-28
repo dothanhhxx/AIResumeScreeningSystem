@@ -11,33 +11,59 @@ import {
   type JobInput,
   type JobStatus,
 } from "@/lib/jobs-api";
+import { useI18n } from "@/i18n/provider";
+import type { TranslationKey } from "@/i18n/messages";
 
 const PAGE_SIZE = 10;
-const filters: { label: string; value: JobStatus | "all" }[] = [
+const filters = [
   { label: "All roles", value: "all" },
   { label: "Draft", value: "draft" },
   { label: "Active", value: "active" },
   { label: "Closed", value: "closed" },
   { label: "Archived", value: "archived" },
-];
+] as const satisfies readonly {
+  label: TranslationKey;
+  value: JobStatus | "all";
+}[];
 
-function formatDate(value: string): string {
+function formatDate(value: string, language: "en" | "vi"): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : "en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   }).format(date);
 }
 
-function messageForError(error: unknown): string {
+const statusLabels: Record<JobStatus, TranslationKey> = {
+  draft: "Draft",
+  active: "Active",
+  closed: "Closed",
+  archived: "Archived",
+};
+
+function messageForError(
+  error: unknown,
+  t: (key: TranslationKey) => string,
+): string {
+  if (
+    error instanceof JobsApiError &&
+    error.message === "Set NEXT_PUBLIC_API_BASE_URL to connect the backend."
+  ) {
+    return t("Set NEXT_PUBLIC_API_BASE_URL to connect the backend.");
+  }
   if (error instanceof JobsApiError && error.status === 401) {
-    return "Your session is not authenticated. Sign in after Person A's auth API is connected.";
+    return t(
+      "Your session is not authenticated. Sign in after Person A's auth API is connected.",
+    );
+  }
+  if (error instanceof JobsApiError && error.status === 0) {
+    return t("Could not reach the backend. Check that it is running.");
   }
   return error instanceof Error
     ? error.message
-    : "Something went wrong. Please try again.";
+    : t("Something went wrong. Please try again.");
 }
 
 function JobForm({
@@ -51,6 +77,8 @@ function JobForm({
   onCancel: () => void;
   onSubmit: (input: JobInput, status?: JobStatus) => void;
 }) {
+  const { t } = useI18n();
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -81,94 +109,94 @@ function JobForm({
       <div className="job-form-grid">
         <label className="form-field form-field-wide">
           <span>
-            Job title <b>*</b>
+            {t("Job title")} <b>*</b>
           </span>
           <input
             name="title"
             required
             maxLength={255}
             defaultValue={job?.title ?? ""}
-            placeholder="e.g. Product Designer"
+            placeholder={t("e.g. Product Designer")}
           />
         </label>
         <label className="form-field">
-          <span>Department</span>
+          <span>{t("Department")}</span>
           <input
             name="department"
             maxLength={255}
             defaultValue={job?.department ?? ""}
-            placeholder="e.g. Product"
+            placeholder={t("e.g. Product")}
           />
         </label>
         <label className="form-field">
-          <span>Location</span>
+          <span>{t("Location")}</span>
           <input
             name="location"
             maxLength={255}
             defaultValue={job?.location ?? ""}
-            placeholder="e.g. Hanoi / Remote"
+            placeholder={t("e.g. Hanoi / Remote")}
           />
         </label>
         <label className="form-field form-field-wide">
           <span>
-            Description <b>*</b>
+            {t("Description")} <b>*</b>
           </span>
           <textarea
             name="description"
             required
             defaultValue={job?.description ?? ""}
             rows={5}
-            placeholder="Describe the role and its responsibilities."
+            placeholder={t("Describe the role and its responsibilities.")}
           />
         </label>
         <label className="form-field form-field-wide">
-          <span>Requirements</span>
+          <span>{t("Requirements")}</span>
           <textarea
             name="requirements"
             defaultValue={job?.requirements ?? ""}
             rows={3}
-            placeholder="Add qualifications or additional requirements."
+            placeholder={t("Add qualifications or additional requirements.")}
           />
         </label>
         <label className="form-field form-field-wide">
-          <span>Required skills</span>
+          <span>{t("Required skills")}</span>
           <textarea
             name="required_skills"
             defaultValue={job?.required_skills?.join(", ") ?? ""}
             rows={2}
-            placeholder="Python, SQL, Product design"
+            placeholder={t("Python, SQL, Product design")}
           />
-          <small>Separate skills with commas or new lines.</small>
+          <small>{t("Separate skills with commas or new lines.")}</small>
         </label>
         <label className="form-field">
-          <span>Experience (years)</span>
+          <span>{t("Experience (years)")}</span>
           <input
             name="experience_years"
             type="number"
             min={0}
             step={1}
             defaultValue={job?.experience_years ?? ""}
-            placeholder="e.g. 3"
+            placeholder={t("e.g. 3")}
           />
         </label>
         <label className="form-field">
-          <span>Education level</span>
+          <span>{t("Education level")}</span>
           <input
             name="education_level"
             maxLength={100}
             defaultValue={job?.education_level ?? ""}
-            placeholder="e.g. Bachelor's degree"
+            placeholder={t("e.g. Bachelor's degree")}
           />
         </label>
         {job && (
           <label className="form-field">
-            <span>Status</span>
+            <span>{t("Status")}</span>
             <select name="status" defaultValue={job.status}>
               {filters
                 .filter((filter) => filter.value !== "all")
                 .map((filter) => (
                   <option key={filter.value} value={filter.value}>
-                    {filter.label}
+                    {t(filter.label)}
                   </option>
                 ))}
             </select>
@@ -177,7 +205,7 @@ function JobForm({
       </div>
       <div className="job-form-footer">
         <span>
-          <b>*</b> Required fields. New jobs start as drafts.
+          <b>*</b> {t("Required fields. New jobs start as drafts.")}
         </span>
         <div>
           <button
@@ -186,14 +214,18 @@ function JobForm({
             onClick={onCancel}
             disabled={saving}
           >
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             className="button button-primary"
             type="submit"
             disabled={saving}
           >
-            {saving ? "Saving…" : job ? "Save changes" : "Create draft"}
+            {saving
+              ? t("Saving…")
+              : job
+                ? t("Save changes")
+                : t("Create draft")}
           </button>
         </div>
       </div>
@@ -202,6 +234,7 @@ function JobForm({
 }
 
 export function JobsManager() {
+  const { t, language } = useI18n();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -210,8 +243,8 @@ export function JobsManager() {
   const [reloadVersion, setReloadVersion] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [error, setError] = useState<unknown>(null);
+  const [notice, setNotice] = useState<TranslationKey | "">("");
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [creating, setCreating] = useState(false);
   const [archivingJob, setArchivingJob] = useState<Job | null>(null);
@@ -221,7 +254,7 @@ export function JobsManager() {
 
     async function loadJobs() {
       setLoading(true);
-      setError("");
+      setError(null);
       try {
         const result = await listJobs({
           page,
@@ -234,7 +267,7 @@ export function JobsManager() {
         setTotalPages(Math.max(result.total_pages, 1));
       } catch (loadError) {
         if (controller.signal.aborted) return;
-        setError(messageForError(loadError));
+        setError(loadError);
         setJobs([]);
         setTotal(0);
       } finally {
@@ -248,7 +281,7 @@ export function JobsManager() {
 
   async function handleSave(input: JobInput, nextStatus?: JobStatus) {
     setSaving(true);
-    setError("");
+    setError(null);
     try {
       if (editingJob) {
         await updateJob(editingJob.id, {
@@ -265,7 +298,7 @@ export function JobsManager() {
       setEditingJob(null);
       setReloadVersion((version) => version + 1);
     } catch (saveError) {
-      setError(messageForError(saveError));
+      setError(saveError);
     } finally {
       setSaving(false);
     }
@@ -274,14 +307,14 @@ export function JobsManager() {
   async function handleArchive() {
     if (!archivingJob) return;
     setSaving(true);
-    setError("");
+    setError(null);
     try {
       await archiveJob(archivingJob.id);
       setNotice("Job description archived. Its match history is retained.");
       setArchivingJob(null);
       setReloadVersion((version) => version + 1);
     } catch (archiveError) {
-      setError(messageForError(archiveError));
+      setError(archiveError);
     } finally {
       setSaving(false);
     }
@@ -300,7 +333,7 @@ export function JobsManager() {
         <div
           className="filter-tabs"
           role="group"
-          aria-label="Filter job descriptions"
+          aria-label={t("Filter job descriptions")}
         >
           {filters.map((filter) => (
             <button
@@ -310,44 +343,46 @@ export function JobsManager() {
               aria-pressed={statusFilter === filter.value}
               onClick={() => chooseFilter(filter.value)}
             >
-              {filter.label}
+              {t(filter.label)}
             </button>
           ))}
         </div>
         <div className="jobs-toolbar-actions">
           <p className="jobs-total">
-            {total} {total === 1 ? "role" : "roles"}
+            {total === 1
+              ? t("{{count}} role", { count: total })
+              : t("{{count}} roles", { count: total })}
           </p>
           <button
             className="button button-primary"
             type="button"
             onClick={() => setCreating(true)}
           >
-            <span className="button-plus">+</span> New job
+            <span className="button-plus">+</span> {t("New job")}
           </button>
         </div>
       </div>
 
-      {error && (
+      {error !== null && (
         <div className="jobs-alert jobs-alert-error" role="alert">
-          <strong>Could not load job descriptions.</strong>
-          <span>{error}</span>
+          <strong>{t("Could not load job descriptions.")}</strong>
+          <span>{messageForError(error, t)}</span>
           {!loading && (
             <button
               type="button"
               onClick={() => setReloadVersion((version) => version + 1)}
             >
-              Retry
+              {t("Retry")}
             </button>
           )}
         </div>
       )}
       {notice && (
         <div className="jobs-alert jobs-alert-success" role="status">
-          <span>{notice}</span>
+          <span>{t(notice)}</span>
           <button
             type="button"
-            aria-label="Dismiss notification"
+            aria-label={t("Dismiss notification")}
             onClick={() => setNotice("")}
           >
             ×
@@ -355,19 +390,20 @@ export function JobsManager() {
         </div>
       )}
 
-      <section className="panel jobs-panel" aria-label="Job descriptions">
+      <section className="panel jobs-panel" aria-label={t("Job descriptions")}>
         {loading ? (
           <div className="jobs-state">
             <span className="loading-mark" />
-            <p>Loading job descriptions…</p>
+            <p>{t("Loading job descriptions…")}</p>
           </div>
         ) : error ? (
           <div className="jobs-state">
             <span className="empty-icon">!</span>
-            <h2>Backend connection needed</h2>
+            <h2>{t("Backend connection needed")}</h2>
             <p>
-              Configure the API base URL and sign in once Person A&apos;s auth
-              endpoint is integrated.
+              {t(
+                "Configure the API base URL and sign in once Person A's auth endpoint is integrated.",
+              )}
             </p>
           </div>
         ) : jobs.length === 0 ? (
@@ -375,19 +411,20 @@ export function JobsManager() {
             <span className="empty-icon">▤</span>
             <h2>
               {total === 0
-                ? "No job descriptions yet"
-                : "No roles on this page"}
+                ? t("No job descriptions yet")
+                : t("No roles on this page")}
             </h2>
             <p>
-              Create a draft JD to start organizing the role requirements for
-              your team.
+              {t(
+                "Create a draft JD to start organizing the role requirements for your team.",
+              )}
             </p>
             <button
               className="button button-primary"
               type="button"
               onClick={() => setCreating(true)}
             >
-              Create your first draft
+              {t("Create your first draft")}
             </button>
           </div>
         ) : (
@@ -396,12 +433,12 @@ export function JobsManager() {
               <table className="jobs-table">
                 <thead>
                   <tr>
-                    <th>JOB TITLE</th>
-                    <th>REQUIRED SKILLS</th>
-                    <th>STATUS</th>
-                    <th>LAST UPDATED</th>
+                    <th>{t("JOB TITLE")}</th>
+                    <th>{t("REQUIRED SKILLS")}</th>
+                    <th>{t("STATUS")}</th>
+                    <th>{t("LAST UPDATED")}</th>
                     <th>
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">{t("Actions")}</span>
                     </th>
                   </tr>
                 </thead>
@@ -413,7 +450,8 @@ export function JobsManager() {
                         <div className="role-department">
                           {[job.department, job.location]
                             .filter(Boolean)
-                            .join(" · ") || "Department and location not set"}
+                            .join(" · ") ||
+                            t("Department and location not set")}
                         </div>
                       </td>
                       <td>
@@ -425,7 +463,9 @@ export function JobsManager() {
                               </span>
                             ))
                           ) : (
-                            <span className="muted-cell">Not specified</span>
+                            <span className="muted-cell">
+                              {t("Not specified")}
+                            </span>
                           )}
                           {(job.required_skills?.length ?? 0) > 3 && (
                             <span className="skill-overflow">
@@ -437,11 +477,11 @@ export function JobsManager() {
                       <td>
                         <span className={`status-pill status-${job.status}`}>
                           <span />
-                          {job.status}
+                          {t(statusLabels[job.status])}
                         </span>
                       </td>
                       <td className="muted-cell">
-                        {formatDate(job.updated_at)}
+                        {formatDate(job.updated_at, language)}
                       </td>
                       <td>
                         <div className="job-row-actions">
@@ -449,18 +489,18 @@ export function JobsManager() {
                             className="icon-button"
                             type="button"
                             onClick={() => setEditingJob(job)}
-                            aria-label={`Edit ${job.title}`}
+                            aria-label={`${t("Edit")} ${job.title}`}
                           >
-                            Edit
+                            {t("Edit")}
                           </button>
                           {job.status !== "archived" && (
                             <button
                               className="icon-button icon-button-danger"
                               type="button"
                               onClick={() => setArchivingJob(job)}
-                              aria-label={`Archive ${job.title}`}
+                              aria-label={`${t("Archive")} ${job.title}`}
                             >
-                              Archive
+                              {t("Archive")}
                             </button>
                           )}
                         </div>
@@ -472,8 +512,11 @@ export function JobsManager() {
             </div>
             <div className="jobs-pagination">
               <span>
-                Showing {total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–
-                {Math.min(page * PAGE_SIZE, total)} of {total}
+                {t("Showing {{start}}–{{end}} of {{total}}", {
+                  start: total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1,
+                  end: Math.min(page * PAGE_SIZE, total),
+                  total,
+                })}
               </span>
               <div>
                 <button
@@ -482,10 +525,10 @@ export function JobsManager() {
                   disabled={page <= 1}
                   onClick={() => setPage((current) => current - 1)}
                 >
-                  Previous
+                  {t("Previous")}
                 </button>
                 <span>
-                  Page {page} of {totalPages}
+                  {t("Page {{page}} of {{total}}", { page, total: totalPages })}
                 </span>
                 <button
                   className="button button-secondary"
@@ -493,7 +536,7 @@ export function JobsManager() {
                   disabled={page >= totalPages}
                   onClick={() => setPage((current) => current + 1)}
                 >
-                  Next
+                  {t("Next")}
                 </button>
               </div>
             </div>
@@ -511,21 +554,21 @@ export function JobsManager() {
           >
             <header className="modal-header">
               <div>
-                <p className="eyebrow">JOB DESCRIPTION</p>
-                <h2 id="job-modal-title">Create a draft</h2>
+                <p className="eyebrow">{t("JOB_DESCRIPTION")}</p>
+                <h2 id="job-modal-title">{t("Create a draft")}</h2>
               </div>
               <button
                 className="modal-close"
                 type="button"
                 onClick={() => setCreating(false)}
-                aria-label="Close"
+                aria-label={t("Close dialog")}
               >
                 ×
               </button>
             </header>
-            {error && (
+            {error !== null && (
               <div className="jobs-alert jobs-alert-error" role="alert">
-                {error}
+                {messageForError(error, t)}
               </div>
             )}
             <JobForm
@@ -547,21 +590,21 @@ export function JobsManager() {
           >
             <header className="modal-header">
               <div>
-                <p className="eyebrow">JOB DESCRIPTION</p>
-                <h2 id="job-modal-title">Edit role</h2>
+                <p className="eyebrow">{t("JOB_DESCRIPTION")}</p>
+                <h2 id="job-modal-title">{t("Edit role")}</h2>
               </div>
               <button
                 className="modal-close"
                 type="button"
                 onClick={() => setEditingJob(null)}
-                aria-label="Close"
+                aria-label={t("Close dialog")}
               >
                 ×
               </button>
             </header>
-            {error && (
+            {error !== null && (
               <div className="jobs-alert jobs-alert-error" role="alert">
-                {error}
+                {messageForError(error, t)}
               </div>
             )}
             <JobForm
@@ -584,28 +627,29 @@ export function JobsManager() {
           >
             <header className="modal-header">
               <div>
-                <p className="eyebrow">ARCHIVE ROLE</p>
+                <p className="eyebrow">{t("ARCHIVE_ROLE")}</p>
                 <h2 id="archive-modal-title">
-                  Archive “{archivingJob.title}”?
+                  {t("Archive “{{title}}”?", { title: archivingJob.title })}
                 </h2>
               </div>
               <button
                 className="modal-close"
                 type="button"
                 onClick={() => setArchivingJob(null)}
-                aria-label="Close"
+                aria-label={t("Close dialog")}
               >
                 ×
               </button>
             </header>
-            {error && (
+            {error !== null && (
               <div className="jobs-alert jobs-alert-error" role="alert">
-                {error}
+                {messageForError(error, t)}
               </div>
             )}
             <p className="confirm-copy">
-              The role will leave active hiring filters. Existing match history
-              remains available.
+              {t(
+                "The role will leave active hiring filters. Existing match history remains available.",
+              )}
             </p>
             <div className="confirm-actions">
               <button
@@ -614,7 +658,7 @@ export function JobsManager() {
                 disabled={saving}
                 onClick={() => setArchivingJob(null)}
               >
-                Cancel
+                {t("Cancel")}
               </button>
               <button
                 className="button button-danger"
@@ -622,7 +666,7 @@ export function JobsManager() {
                 disabled={saving}
                 onClick={() => void handleArchive()}
               >
-                {saving ? "Archiving…" : "Archive role"}
+                {saving ? t("Archiving…") : t("Archive role")}
               </button>
             </div>
           </section>

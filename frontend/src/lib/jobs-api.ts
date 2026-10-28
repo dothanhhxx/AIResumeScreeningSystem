@@ -35,14 +35,6 @@ export type JobPage = {
   total_pages: number;
 };
 
-type ApiEnvelope<T> = {
-  success: boolean;
-  message: string;
-  data: T | null;
-};
-
-type ApiErrorBody = { detail?: unknown; message?: unknown } | null;
-
 export class JobsApiError extends Error {
   constructor(
     message: string,
@@ -51,6 +43,10 @@ export class JobsApiError extends Error {
     super(message);
     this.name = "JobsApiError";
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function apiUrl(path: string): string {
@@ -69,17 +65,20 @@ async function request<T>(
   init?: RequestInit,
   signal?: AbortSignal,
 ): Promise<T> {
+  const url = apiUrl(path);
   let response: Response;
   try {
-    response = await fetch(apiUrl(path), {
+    const headers = new Headers(init?.headers);
+    if (!headers.has("Accept")) headers.set("Accept", "application/json");
+    if (init?.body && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+
+    response = await fetch(url, {
       ...init,
       signal,
       credentials: "include",
-      headers: {
-        Accept: "application/json",
-        ...(init?.body ? { "Content-Type": "application/json" } : {}),
-        ...init?.headers,
-      },
+      headers,
     });
   } catch {
     throw new JobsApiError(
@@ -88,10 +87,9 @@ async function request<T>(
     );
   }
 
-  const body = (await response.json().catch(() => null)) as
-    ApiEnvelope<T> | ApiErrorBody;
+  const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const detail = body && "detail" in body ? body.detail : undefined;
+    const detail = isRecord(body) ? body.detail : undefined;
     const validationMessages = Array.isArray(detail)
       ? detail
           .map((item) => {
@@ -111,20 +109,25 @@ async function request<T>(
       typeof detail === "string"
         ? detail
         : validationMessages ||
-          (body && "message" in body && typeof body.message === "string"
+          (isRecord(body) && typeof body.message === "string"
             ? body.message
             : `Request failed (${response.status}).`);
     throw new JobsApiError(message, response.status);
   }
-  if (!body || !("success" in body) || !body.success || body.data === null) {
+  if (
+    !isRecord(body) ||
+    body.success !== true ||
+    body.data === null ||
+    body.data === undefined
+  ) {
     throw new JobsApiError(
-      body && "message" in body && typeof body.message === "string"
+      isRecord(body) && typeof body.message === "string"
         ? body.message
         : "The backend returned an invalid response.",
       response.status,
     );
   }
-  return body.data;
+  return body.data as T;
 }
 
 export function listJobs({

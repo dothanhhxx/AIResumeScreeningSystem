@@ -1,3 +1,5 @@
+import { useI18n } from "@/i18n/provider";
+
 export function MetricCard({
   label,
   value,
@@ -11,6 +13,8 @@ export function MetricCard({
   tone: "mint" | "blue" | "amber" | "violet";
   icon: string;
 }) {
+  const { t } = useI18n();
+
   return (
     <article className="metric-card">
       <div className="metric-topline">
@@ -22,7 +26,7 @@ export function MetricCard({
       <div className="metric-value">{value}</div>
       <div className="metric-change">
         <span className="change-positive">{change}</span>
-        <span>vs. last month</span>
+        <span>{t("vs. last month")}</span>
       </div>
     </article>
   );

@@ -1,0 +1,37 @@
+/* Shared visual tokens for the recruiter interface and Tailwind utilities. */
+:root {
+  --ink: #1d2b24;
+  --muted: #63746b;
+  --line: #dce7e0;
+  --surface: #ffffff;
+  --canvas: #f4f7f5;
+  --navy: #17352d;
+  --mint: #cdebd8;
+  --green: #27664a;
+  --green-hover: #1f513b;
+  --green-soft: #eaf4ed;
+  --green-border: #d5e6da;
+  --focus: #62ac80;
+  --font-family-sans: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --control-radius: 8px;
+  --panel-radius: 14px;
+  --panel-shadow: 0 8px 24px rgb(23 53 45 / 5%);
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-canvas: var(--canvas);
+  --color-brand: var(--green);
+  --color-brand-hover: var(--green-hover);
+  --color-brand-soft: var(--green-soft);
+  --color-brand-border: var(--green-border);
+  --color-navy: var(--navy);
+  --color-mint: var(--mint);
+  --color-focus: var(--focus);
+  --font-sans: var(--font-family-sans);
+  --radius-control: var(--control-radius);
+  --radius-panel: var(--panel-radius);
+}

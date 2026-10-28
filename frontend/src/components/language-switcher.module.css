@@ -1,0 +1,43 @@
+.switcher {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+
+.switcher:hover {
+  border-color: var(--green-border);
+  color: var(--green);
+}
+
+.switcher:focus-visible {
+  outline: 3px solid rgb(98 172 128 / 30%);
+  outline-offset: 2px;
+}
+
+.active {
+  color: var(--green);
+}
+
+.auth {
+  position: fixed;
+  z-index: 5;
+  top: 22px;
+  right: 25px;
+}
+
+@media (max-width: 520px) {
+  .auth {
+    top: 14px;
+    right: 14px;
+  }
+}

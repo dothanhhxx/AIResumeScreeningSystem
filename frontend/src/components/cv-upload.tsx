@@ -1,8 +1,14 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { useI18n } from "@/i18n/provider";
+import type { TranslationKey } from "@/i18n/messages";
 
 const ACCEPTED_EXTENSIONS = [".pdf", ".docx"];
+type UploadMessage = {
+  key: TranslationKey;
+  values?: Record<string, string | number>;
+};
 
 function isSupportedFile(file: File): boolean {
   const name = file.name.toLowerCase();
@@ -15,10 +21,11 @@ function formatFileSize(bytes: number): string {
 }
 
 export function CvUpload() {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<UploadMessage | null>(null);
 
   function addFiles(incoming: FileList | File[]) {
     const selected = Array.from(incoming);
@@ -39,10 +46,18 @@ export function CvUpload() {
     });
     setMessage(
       rejected
-        ? `${rejected} file${rejected === 1 ? " was" : "s were"} skipped. Choose PDF or DOCX files.`
+        ? {
+            key:
+              rejected === 1
+                ? "{{count}} file was skipped. Choose PDF or DOCX files."
+                : "{{count}} files were skipped. Choose PDF or DOCX files.",
+            values: { count: rejected },
+          }
         : supported.length
-          ? "Files are selected in this browser only. They have not been uploaded."
-          : "Choose at least one PDF or DOCX file.",
+          ? {
+              key: "Files are selected in this browser only. They have not been uploaded.",
+            }
+          : { key: "Choose at least one PDF or DOCX file." },
     );
   }
 
@@ -65,8 +80,12 @@ export function CvUpload() {
       >
         <div className="panel-heading">
           <div>
-            <h2 id="cv-upload-title">Add candidate resumes</h2>
-            <p>Choose PDF or DOCX files to prepare them for the CV pipeline.</p>
+            <h2 id="cv-upload-title">{t("Add candidate resumes")}</h2>
+            <p>
+              {t(
+                "Choose PDF or DOCX files to prepare them for the CV pipeline.",
+              )}
+            </p>
           </div>
         </div>
 
@@ -77,7 +96,7 @@ export function CvUpload() {
           accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           multiple
           onChange={handleFileChange}
-          aria-label="Choose resume files"
+          aria-label={t("Choose resume files")}
         />
         <div
           className={`cv-dropzone${dragging ? " cv-dropzone-active" : ""}`}
@@ -87,43 +106,52 @@ export function CvUpload() {
           }}
           onDragOver={(event) => event.preventDefault()}
           onDragLeave={(event) => {
+            const nextTarget = event.relatedTarget;
             if (
-              !event.currentTarget.contains(event.relatedTarget as Node | null)
-            )
+              !(nextTarget instanceof Node) ||
+              !event.currentTarget.contains(nextTarget)
+            ) {
               setDragging(false);
+            }
           }}
           onDrop={handleDrop}
         >
           <span className="cv-upload-icon" aria-hidden="true">
             ↑
           </span>
-          <strong>Drop resume files here</strong>
+          <strong>{t("Drop resume files here")}</strong>
           <span>PDF or DOCX</span>
           <button
             className="button button-secondary"
             type="button"
             onClick={() => inputRef.current?.click()}
           >
-            Browse files
+            {t("Browse files")}
           </button>
         </div>
 
         {message && (
           <p className="cv-upload-message" role="status">
-            {message}
+            {t(message.key, message.values)}
           </p>
         )}
 
         {files.length > 0 && (
-          <div className="cv-file-list" aria-label="Selected resume files">
+          <div
+            className="cv-file-list"
+            role="group"
+            aria-label={t("Selected resume files")}
+          >
             <div className="cv-file-list-heading">
-              <strong>{files.length} selected</strong>
+              <strong>
+                {t("{{count}} selected", { count: files.length })}
+              </strong>
               <button
                 type="button"
                 className="text-link"
                 onClick={() => setFiles([])}
               >
-                Clear all
+                {t("Clear all")}
               </button>
             </div>
             {files.map((file) => (
@@ -146,9 +174,9 @@ export function CvUpload() {
                       current.filter((candidate) => candidate !== file),
                     )
                   }
-                  aria-label={`Remove ${file.name}`}
+                  aria-label={t("Remove {{name}}", { name: file.name })}
                 >
-                  Remove
+                  {t("Remove")}
                 </button>
               </div>
             ))}
@@ -156,41 +184,45 @@ export function CvUpload() {
         )}
 
         <div className="cv-integration-note" role="note">
-          <strong>Upload is waiting for Person B&apos;s API contract.</strong>
+          <strong>{t("Upload is waiting for Person B's API contract.")}</strong>
           <span>
-            Files stay in your browser. This page does not send or store resumes
-            yet.
+            {t(
+              "Files stay in your browser. This page does not send or store resumes yet.",
+            )}
           </span>
         </div>
         <div className="cv-upload-footer">
           <span>
-            Uploads remain disabled until the API endpoint, limits, and response
-            fields are agreed.
+            {t(
+              "Uploads remain disabled until the API endpoint, limits, and response fields are agreed.",
+            )}
           </span>
           <button
             className="button button-primary"
             type="button"
             disabled
-            title="Waiting for the CV upload API contract"
+            title={t("Waiting for the CV upload API contract")}
           >
-            Upload unavailable
+            {t("Upload unavailable")}
           </button>
         </div>
       </section>
 
       <aside className="panel cv-privacy-panel">
-        <p className="eyebrow">PRIVACY BY DESIGN</p>
-        <h2>Resumes contain personal information</h2>
+        <p className="eyebrow">{t("PRIVACY BY DESIGN")}</p>
+        <h2>{t("Resumes contain personal information")}</h2>
         <p>
-          Use synthetic files while developing. Do not commit resumes or
-          personal data to Git.
+          {t(
+            "Use synthetic files while developing. Do not commit resumes or personal data to Git.",
+          )}
         </p>
         <ul>
-          <li>Only PDF and DOCX are selected here.</li>
-          <li>No file leaves this browser in this milestone.</li>
+          <li>{t("Only PDF and DOCX are selected here.")}</li>
+          <li>{t("No file leaves this browser in this milestone.")}</li>
           <li>
-            Server-side type, size, and access checks must be added with Person
-            B&apos;s API.
+            {t(
+              "Server-side type, size, and access checks must be added with Person B's API.",
+            )}
           </li>
         </ul>
       </aside>

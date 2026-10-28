@@ -1,41 +1,53 @@
+"use client";
+
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { Icon } from "@/components/icon";
 import { MetricCard } from "@/components/metric-card";
+import { useI18n } from "@/i18n/provider";
 import { recentRoles, reviewQueue, sampleMetrics } from "@/lib/sample-data";
 
 export default function DashboardPage() {
+  const { t } = useI18n();
+
   return (
     <AppShell activePath="/dashboard">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">THURSDAY, OCTOBER 1, 2026</p>
-          <h1>
-            Good morning, Jordan <span className="wave">✳</span>
-          </h1>
+          <p className="eyebrow">{t("RECRUITER OVERVIEW")}</p>
+          <h1>{t("Hiring at a glance")}</h1>
           <p className="page-subtitle">
-            Here&apos;s what&apos;s happening across your hiring pipeline.
+            {t("Here's what's happening across your hiring pipeline.")}
           </p>
         </div>
         <Link className="button button-primary" href="/jobs">
-          <span className="button-plus">+</span> Create a job
+          <span className="button-plus">+</span> {t("Create a job")}
         </Link>
       </div>
 
       <div className="sample-banner">
         <span className="sample-banner-icon">i</span>
         <span>
-          <strong>Preview workspace</strong> All candidate and hiring figures
-          below are synthetic sample data.
+          <strong>{t("Preview workspace")}</strong>{" "}
+          {t(
+            "All candidate and hiring figures below are synthetic sample data.",
+          )}
         </span>
         <Link href="/jobs">
-          Explore job descriptions <Icon name="arrow" size={15} />
+          {t("Explore job descriptions")} <Icon name="arrow" size={15} />
         </Link>
       </div>
 
-      <section className="metrics-grid" aria-label="Hiring overview">
+      <section className="metrics-grid" aria-label={t("Hiring overview")}>
         {sampleMetrics.map((metric) => (
-          <MetricCard key={metric.label} {...metric} />
+          <MetricCard
+            key={metric.label}
+            {...metric}
+            label={t(metric.label)}
+            change={
+              metric.change === "8 new" ? t(metric.change) : metric.change
+            }
+          />
         ))}
       </section>
 
@@ -43,23 +55,23 @@ export default function DashboardPage() {
         <section className="panel roles-panel">
           <div className="panel-heading">
             <div>
-              <h2>Recent job descriptions</h2>
-              <p>Track roles and their candidate pipelines.</p>
+              <h2>{t("Recent job descriptions")}</h2>
+              <p>{t("Track roles and their candidate pipelines.")}</p>
             </div>
             <Link className="text-link" href="/jobs">
-              View all <Icon name="arrow" size={15} />
+              {t("View all")} <Icon name="arrow" size={15} />
             </Link>
           </div>
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>ROLE</th>
-                  <th>APPLICANTS</th>
-                  <th>STATUS</th>
-                  <th>UPDATED</th>
+                  <th>{t("ROLE")}</th>
+                  <th>{t("APPLICANTS")}</th>
+                  <th>{t("STATUS")}</th>
+                  <th>{t("UPDATED")}</th>
                   <th>
-                    <span className="sr-only">Open role</span>
+                    <span className="sr-only">{t("Open role")}</span>
                   </th>
                 </tr>
               </thead>
@@ -68,24 +80,26 @@ export default function DashboardPage() {
                   <tr key={role.title}>
                     <td>
                       <div className="role-title">{role.title}</div>
-                      <div className="role-department">{role.department}</div>
+                      <div className="role-department">
+                        {t(role.department)}
+                      </div>
                     </td>
                     <td>
                       <span className="applicant-count">{role.candidates}</span>
-                      <span className="muted-inline"> candidates</span>
+                      <span className="muted-inline"> {t("candidates")}</span>
                     </td>
                     <td>
                       <span className={`status-pill status-${role.tone}`}>
                         <span />
-                        {role.status}
+                        {t(role.status)}
                       </span>
                     </td>
-                    <td className="muted-cell">{role.updated}</td>
+                    <td className="muted-cell">{t(role.updated)}</td>
                     <td>
                       <Link
                         className="row-arrow"
                         href="/jobs"
-                        aria-label={`View ${role.title}`}
+                        aria-label={t("View {{role}}", { role: role.title })}
                       >
                         <Icon name="arrow" size={17} />
                       </Link>
@@ -96,15 +110,15 @@ export default function DashboardPage() {
             </table>
           </div>
           <Link className="panel-bottom-link" href="/jobs">
-            View all job descriptions <Icon name="arrow" size={15} />
+            {t("View all job descriptions")} <Icon name="arrow" size={15} />
           </Link>
         </section>
 
         <section className="panel queue-panel">
           <div className="panel-heading">
             <div>
-              <h2>Review queue</h2>
-              <p>Strong matches waiting for a human review.</p>
+              <h2>{t("Review queue")}</h2>
+              <p>{t("Strong matches waiting for a human review.")}</p>
             </div>
             <span className="queue-count">8</span>
           </div>
@@ -123,13 +137,13 @@ export default function DashboardPage() {
                 </div>
                 <div className="fit-score">
                   <strong>{candidate.fit}</strong>
-                  <span>fit</span>
+                  <span>{t("fit")}</span>
                 </div>
               </article>
             ))}
           </div>
           <Link className="panel-bottom-link" href="/rankings">
-            Review candidates <Icon name="arrow" size={15} />
+            {t("Review candidates")} <Icon name="arrow" size={15} />
           </Link>
         </section>
       </div>
@@ -137,14 +151,15 @@ export default function DashboardPage() {
       <section className="human-review-note">
         <span className="human-review-icon">♡</span>
         <div>
-          <strong>People make the hiring decisions.</strong>
+          <strong>{t("People make the hiring decisions.")}</strong>
           <span>
-            Match indicators help organize review. They do not make or replace
-            hiring decisions.
+            {t(
+              "Match indicators help organize review. They do not make or replace hiring decisions.",
+            )}
           </span>
         </div>
         <Link href="/rankings">
-          How review works <Icon name="arrow" size={15} />
+          {t("How review works")} <Icon name="arrow" size={15} />
         </Link>
       </section>
     </AppShell>

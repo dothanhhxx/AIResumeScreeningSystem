@@ -1,15 +1,20 @@
+"use client";
+
 import { AppShell } from "@/components/app-shell";
 import { JobsManager } from "@/components/jobs-manager";
+import { useI18n } from "@/i18n/provider";
 
 export default function JobsPage() {
+  const { t } = useI18n();
+
   return (
     <AppShell activePath="/jobs">
       <div className="page-heading">
         <div>
-          <p className="eyebrow">HIRING PIPELINE</p>
-          <h1>Job descriptions</h1>
+          <p className="eyebrow">{t("HIRING PIPELINE")}</p>
+          <h1>{t("Job descriptions")}</h1>
           <p className="page-subtitle">
-            Create and manage the roles your team is hiring for.
+            {t("Create and manage the roles your team is hiring for.")}
           </p>
         </div>
       </div>
