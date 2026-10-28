@@ -75,6 +75,20 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"
 
+    # ── LLM / AI Engine (Person C) ──────────────────────────
+    # TODO(Person C): only "gemini" is implemented. To add another provider (e.g. "openai"),
+    #                 write a BaseLLM subclass in app/llm/ and add a branch in app/llm/factory.py.
+    LLM_PROVIDER: str = "gemini"
+    # TODO(everyone): put your own free key from https://aistudio.google.com/apikey in .env — never commit it.
+    GEMINI_API_KEY: str = ""
+    # TODO(Person C): check in AI Studio which model is on the free tier and set GEMINI_MODEL in .env.
+    #                 "gemini-flash-latest" is an alias that follows Google's current Flash model.
+    GEMINI_MODEL: str = "gemini-flash-latest"
+    GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
+    # TODO(Person A + C): must equal the pgvector column size, i.e. Vector(EMBEDDING_DIM),
+    #                     once Person A adds the embedding column to the CV / Job models.
+    EMBEDDING_DIM: int = 768
+
     # ── CORS ────────────────────────────────────────────────
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
 
