@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { JobsApiError, listJobs } from "@/lib/jobs-api";
 
+vi.mock("@/lib/auth-session", () => ({
+  getAuthAccessToken: vi.fn(() => "test-access-token"),
+}));
+
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
@@ -15,7 +19,7 @@ function mockResponse(body: unknown, status = 200): Response {
 }
 
 describe("jobs API client", () => {
-  it("sends the agreed pagination and status query with cookie credentials", async () => {
+  it("sends API-v1 pagination and status with the bearer access token", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.example.test");
     const page = {
       items: [],
@@ -36,8 +40,15 @@ describe("jobs API client", () => {
     ).resolves.toEqual(page);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.example.test/jobs?page=2&page_size=10&status=active",
-      expect.objectContaining({ credentials: "include" }),
+      "https://api.example.test/api/v1/jobs?page=2&page_size=10&status=active",
+      expect.objectContaining({
+        credentials: "omit",
+        headers: expect.any(Headers),
+      }),
+    );
+    const requestOptions = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    expect(new Headers(requestOptions.headers).get("Authorization")).toBe(
+      "Bearer test-access-token",
     );
   });
 

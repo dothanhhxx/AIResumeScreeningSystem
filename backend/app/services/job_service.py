@@ -3,7 +3,7 @@
 import json
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.job import Job, JobStatus
 from app.schemas.common import PaginatedResponse
@@ -16,23 +16,27 @@ def _encode_skills(skills: list[str] | None) -> str | None:
     return json.dumps(skills, ensure_ascii=False)
 
 
-def create_job(db: Session, payload: JobCreate, created_by: int) -> JobRead:
+async def create_job(
+    db: AsyncSession,
+    payload: JobCreate,
+    created_by: int,
+) -> JobRead:
     """Create a draft owned by the authenticated recruiter."""
     values = payload.model_dump()
     values["required_skills"] = _encode_skills(payload.required_skills)
     job = Job(**values, created_by=created_by, status=JobStatus.DRAFT)
     try:
         db.add(job)
-        db.commit()
-        db.refresh(job)
+        await db.commit()
+        await db.refresh(job)
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise
     return JobRead.model_validate(job)
 
 
-def list_jobs(
-    db: Session,
+async def list_jobs(
+    db: AsyncSession,
     created_by: int,
     page: int,
     page_size: int,
@@ -43,7 +47,7 @@ def list_jobs(
     if status is not None:
         filters.append(Job.status == status)
 
-    total = db.scalar(select(func.count(Job.id)).where(*filters)) or 0
+    total = await db.scalar(select(func.count(Job.id)).where(*filters)) or 0
     statement = (
         select(Job)
         .where(*filters)
@@ -51,27 +55,32 @@ def list_jobs(
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
-    jobs = db.scalars(statement).all()
+    result = await db.scalars(statement)
+    jobs = result.all()
     items = [JobRead.model_validate(job) for job in jobs]
     return PaginatedResponse[JobRead].create(items, total, page, page_size)
 
 
-def get_job(db: Session, job_id: int, created_by: int) -> JobRead | None:
+async def get_job(
+    db: AsyncSession,
+    job_id: int,
+    created_by: int,
+) -> JobRead | None:
     """Fetch a JD only when it belongs to the authenticated recruiter."""
     statement = select(Job).where(Job.id == job_id, Job.created_by == created_by)
-    job = db.scalar(statement)
+    job = await db.scalar(statement)
     return JobRead.model_validate(job) if job is not None else None
 
 
-def update_job(
-    db: Session,
+async def update_job(
+    db: AsyncSession,
     job_id: int,
     created_by: int,
     payload: JobUpdate,
 ) -> JobRead | None:
     """Apply only supplied fields to a recruiter-owned JD."""
     statement = select(Job).where(Job.id == job_id, Job.created_by == created_by)
-    job = db.scalar(statement)
+    job = await db.scalar(statement)
     if job is None:
         return None
 
@@ -82,25 +91,29 @@ def update_job(
         setattr(job, field_name, value)
 
     try:
-        db.commit()
-        db.refresh(job)
+        await db.commit()
+        await db.refresh(job)
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise
     return JobRead.model_validate(job)
 
 
-def archive_job(db: Session, job_id: int, created_by: int) -> JobRead | None:
+async def archive_job(
+    db: AsyncSession,
+    job_id: int,
+    created_by: int,
+) -> JobRead | None:
     """Archive instead of deleting so historical match results remain linked."""
     statement = select(Job).where(Job.id == job_id, Job.created_by == created_by)
-    job = db.scalar(statement)
+    job = await db.scalar(statement)
     if job is None:
         return None
     job.status = JobStatus.ARCHIVED
     try:
-        db.commit()
-        db.refresh(job)
+        await db.commit()
+        await db.refresh(job)
     except Exception:
-        db.rollback()
+        await db.rollback()
         raise
     return JobRead.model_validate(job)

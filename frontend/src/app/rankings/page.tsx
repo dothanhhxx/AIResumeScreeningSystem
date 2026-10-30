@@ -1,6 +1,5 @@
 "use client";
 
-import { AppShell } from "@/components/app-shell";
 import { RankingReview } from "@/components/ranking-review";
 import { useI18n } from "@/i18n/provider";
 
@@ -8,7 +7,7 @@ export default function RankingsPage() {
   const { t } = useI18n();
 
   return (
-    <AppShell activePath="/rankings">
+    <>
       <div className="page-heading">
         <div>
           <p className="eyebrow">{t("HUMAN REVIEW")}</p>
@@ -19,6 +18,6 @@ export default function RankingsPage() {
         </div>
       </div>
       <RankingReview />
-    </AppShell>
+    </>
   );
 }

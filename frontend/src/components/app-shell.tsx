@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Icon } from "@/components/icon";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/i18n/provider";
@@ -15,17 +21,18 @@ const navigation = [
   { href: "/rankings", label: "Candidate review", icon: "rankings" as const },
 ] as const;
 
-export function AppShell({
-  children,
-  activePath,
-}: {
-  children: ReactNode;
-  activePath: string;
-}) {
+export function AppShell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const { session, signOut } = useAuthSession();
+  const pathname = usePathname();
   const router = useRouter();
-  const accountName = session?.user.full_name ?? "Jordan Davis";
+  const activePath = pathname ?? "";
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const accountName = session?.user.full_name ?? t("Demo recruiter");
   const accountRole = session
     ? t(
         session.user.role === "admin"
@@ -34,7 +41,7 @@ export function AppShell({
             ? "Viewer"
             : "Recruiter",
       )
-    : t("Recruiter");
+    : t("Preview account");
   const accountInitials = accountName
     .trim()
     .split(/\s+/)
@@ -48,20 +55,107 @@ export function AppShell({
     router.replace("/login");
   }
 
-  return (
-    <div className="app-frame">
-      <aside className="sidebar">
-        <Link
-          className="brand"
-          href="/dashboard"
-          aria-label={t("TalentLens home")}
-        >
-          <span className="brand-mark">T</span>
-          <span className="brand-name">
-            Talent<span>Lens</span>
-          </span>
-        </Link>
+  const closeMobileNav = useCallback(() => {
+    setIsMobileNavOpen(false);
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      mobileMenuButtonRef.current?.focus();
+    }
+  }, []);
 
+  useEffect(() => {
+    if (!isMobileNavOpen) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    mobileCloseButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeMobileNav();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusableElements =
+        sidebarRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+      if (!focusableElements?.length) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeMobileNav, isMobileNavOpen]);
+
+  if (!navigation.some((item) => item.href === activePath)) {
+    return children;
+  }
+
+  return (
+    <div
+      className={`app-frame${isSidebarCollapsed ? " app-frame--sidebar-collapsed" : ""}${isMobileNavOpen ? " app-frame--mobile-nav-open" : ""}`}
+    >
+      <aside
+        ref={sidebarRef}
+        className="sidebar"
+        id="primary-sidebar"
+        aria-label={t("Main navigation")}
+        role={isMobileNavOpen ? "dialog" : undefined}
+        aria-modal={isMobileNavOpen || undefined}
+      >
+        <div className="sidebar-header">
+          <Link
+            className="brand"
+            href="/dashboard"
+            aria-label={t("TalentLens home")}
+          >
+            <span className="brand-mark">T</span>
+            <span className="brand-name">
+              Talent<span>Lens</span>
+            </span>
+          </Link>
+          <button
+            ref={mobileCloseButtonRef}
+            className="sidebar-mobile-close"
+            type="button"
+            aria-label={t("Close navigation")}
+            onClick={closeMobileNav}
+          >
+            <Icon name="close" size={19} />
+          </button>
+        </div>
+        <button
+          className="sidebar-toggle sidebar-toggle-desktop"
+          type="button"
+          aria-label={
+            isSidebarCollapsed ? t("Expand sidebar") : t("Collapse sidebar")
+          }
+          aria-controls="primary-sidebar"
+          aria-expanded={!isSidebarCollapsed}
+          title={
+            isSidebarCollapsed ? t("Expand sidebar") : t("Collapse sidebar")
+          }
+          onClick={() => setIsSidebarCollapsed((collapsed) => !collapsed)}
+        >
+          <Icon
+            name={isSidebarCollapsed ? "chevron-right" : "chevron-left"}
+            size={16}
+          />
+        </button>
         <div className="workspace-picker">
           <span className="workspace-avatar">T</span>
           <span className="workspace-copy">
@@ -80,6 +174,9 @@ export function AppShell({
                 className={`nav-link${isActive ? " nav-link-active" : ""}`}
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
+                aria-label={t(item.label)}
+                title={isSidebarCollapsed ? t(item.label) : undefined}
+                onClick={closeMobileNav}
               >
                 <Icon name={item.icon} size={18} />
                 <span>{t(item.label)}</span>
@@ -108,18 +205,41 @@ export function AppShell({
           </div>
         </div>
       </aside>
+      {isMobileNavOpen && (
+        <button
+          className="sidebar-backdrop"
+          type="button"
+          aria-label={t("Close navigation")}
+          tabIndex={-1}
+          onClick={closeMobileNav}
+        />
+      )}
 
       <div className="main-column">
         <header className="topbar">
-          <div className="breadcrumb">
-            <span>{t("Workspace")}</span>
-            <span className="breadcrumb-separator">/</span>
-            <strong>
-              {t(
-                navigation.find((item) => item.href === activePath)?.label ??
-                  "Overview",
-              )}
-            </strong>
+          <div className="topbar-leading">
+            <button
+              ref={mobileMenuButtonRef}
+              className="sidebar-toggle sidebar-toggle-mobile"
+              type="button"
+              aria-label={t("Open navigation")}
+              aria-controls="primary-sidebar"
+              aria-expanded={isMobileNavOpen}
+              title={t("Open navigation")}
+              onClick={() => setIsMobileNavOpen(true)}
+            >
+              <Icon name="menu" size={19} />
+            </button>
+            <div className="breadcrumb">
+              <span>{t("Workspace")}</span>
+              <span className="breadcrumb-separator">/</span>
+              <strong>
+                {t(
+                  navigation.find((item) => item.href === activePath)?.label ??
+                    "Overview",
+                )}
+              </strong>
+            </div>
           </div>
           <div className="topbar-actions">
             <LanguageSwitcher />
@@ -139,7 +259,7 @@ export function AppShell({
                 href="/login"
                 aria-label={t("Account")}
               >
-                JD
+                {accountInitials}
               </Link>
             )}
           </div>

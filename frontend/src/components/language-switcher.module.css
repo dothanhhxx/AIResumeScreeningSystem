@@ -1,6 +1,6 @@
 .switcher {
   display: inline-flex;
-  min-height: 34px;
+  min-height: 44px;
   align-items: center;
   gap: 5px;
   padding: 0 10px;
@@ -9,7 +9,7 @@
   background: var(--surface);
   color: var(--muted);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.2px;
 }
@@ -20,7 +20,7 @@
 }
 
 .switcher:focus-visible {
-  outline: 3px solid rgb(98 172 128 / 30%);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
