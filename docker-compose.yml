@@ -42,7 +42,7 @@ services:
 
   # ── MinIO (S3-compatible object storage) ──────────────────
   minio:
-    image: minio/minio:latest
+    image: pgsty/minio:latest
     container_name: resume_minio
     restart: unless-stopped
     environment:
