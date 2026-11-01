@@ -54,9 +54,9 @@ class Settings(BaseSettings):
     def DATABASE_URL_SYNC(self) -> str:
         """Sync URL for Alembic migrations."""
         if self.DATABASE_URL_OVERRIDE:
-            return self.DATABASE_URL_OVERRIDE.replace("+asyncpg", "").replace("+aiosqlite", "")
+            return self.DATABASE_URL_OVERRIDE.replace("+asyncpg", "+psycopg").replace("+aiosqlite", "")
         return (
-            f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
