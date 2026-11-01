@@ -17,6 +17,7 @@ Usage:
 
 import logging
 from io import BytesIO
+from pathlib import Path
 
 import boto3
 from botocore.config import Config
@@ -176,5 +177,59 @@ class StorageService:
             raise StorageServiceError(f"Presigned URL failed: {exc}") from exc
 
 
+class LocalStorageService:
+    """
+    Filesystem storage with the same interface as StorageService.
+
+    Used when STORAGE_BACKEND=local so the app runs without MinIO. Object keys
+    such as ``resumes/abc_name.pdf`` map to files under LOCAL_STORAGE_DIR.
+    """
+
+    def __init__(self, root: str | Path | None = None) -> None:
+        self._root = Path(root or settings.LOCAL_STORAGE_DIR).resolve()
+
+    def _path(self, object_key: str) -> Path:
+        path = (self._root / object_key).resolve()
+        if self._root not in path.parents:
+            raise StorageServiceError(f"Invalid object key: {object_key}")
+        return path
+
+    def upload_file(
+        self,
+        file_bytes: bytes,
+        object_key: str,
+        content_type: str = "application/octet-stream",
+    ) -> str:
+        path = self._path(object_key)
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(file_bytes)
+        except OSError as exc:
+            raise StorageServiceError(f"Upload failed: {exc}") from exc
+        logger.info("Stored '%s' locally (%d bytes).", object_key, len(file_bytes))
+        return object_key
+
+    def download_file(self, object_key: str) -> bytes:
+        try:
+            return self._path(object_key).read_bytes()
+        except OSError as exc:
+            raise StorageServiceError(f"Download failed: {exc}") from exc
+
+    def delete_file(self, object_key: str) -> None:
+        try:
+            self._path(object_key).unlink(missing_ok=True)
+        except OSError as exc:
+            raise StorageServiceError(f"Delete failed: {exc}") from exc
+
+    def get_presigned_url(self, object_key: str, expires_in: int = 3600) -> str:
+        raise StorageServiceError("Presigned URLs are not available with local storage; use /cvs/{id}/file")
+
+
+def _create_storage_service() -> "StorageService | LocalStorageService":
+    if settings.STORAGE_BACKEND.lower() == "local":
+        return LocalStorageService()
+    return StorageService()
+
+
 # ── Singleton ───────────────────────────────────────────────────────────────
-storage_service = StorageService()
+storage_service = _create_storage_service()

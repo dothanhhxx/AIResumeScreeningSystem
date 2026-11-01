@@ -8,11 +8,13 @@ import {
   type DragEvent,
   type FormEvent,
 } from "react";
+import { CvDetailPanel } from "@/components/cv-detail";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/messages";
 import {
   CvsApiError,
   listCvs,
+  PROCESSING_STATUSES,
   uploadCv,
   type CvPage,
   type CvStatus,
@@ -20,6 +22,7 @@ import {
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const CV_PAGE_SIZE = 10;
+const POLL_MS = 3000;
 
 type Feedback = {
   kind: "error" | "info";
@@ -110,6 +113,21 @@ export function CvUpload() {
   const [loadingCvs, setLoadingCvs] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const [selectedCvId, setSelectedCvId] = useState<number | null>(null);
+
+  const hasProcessing =
+    cvPage?.items.some((cv) => PROCESSING_STATUSES.includes(cv.status)) ??
+    false;
+
+  // Refresh statuses automatically while the pipeline is still working
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const timer = window.setTimeout(
+      () => setRefreshVersion((version) => version + 1),
+      POLL_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [hasProcessing, refreshVersion]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -436,7 +454,13 @@ export function CvUpload() {
           {cvPage && cvPage.items.length > 0 && (
             <div className="cv-library-list">
               {cvPage.items.map((cv) => (
-                <article className="cv-library-row" key={cv.id}>
+                <button
+                  type="button"
+                  className={`cv-library-row cv-library-row-button${selectedCvId === cv.id ? " cv-library-row-active" : ""}`}
+                  key={cv.id}
+                  aria-pressed={selectedCvId === cv.id}
+                  onClick={() => setSelectedCvId(cv.id)}
+                >
                   <span className={`cv-status cv-status-${cv.status}`}>
                     {t(statusLabels[cv.status])}
                   </span>
@@ -450,7 +474,7 @@ export function CvUpload() {
                   <time dateTime={cv.created_at}>
                     {formatDate(cv.created_at, language)}
                   </time>
-                </article>
+                </button>
               ))}
             </div>
           )}
@@ -467,32 +491,41 @@ export function CvUpload() {
         </section>
       </section>
 
-      <aside className="panel cv-privacy-panel">
-        <p className="eyebrow">{t("PRIVACY BY DESIGN")}</p>
-        <h2>{t("Resumes contain personal information")}</h2>
-        <p>
-          {t(
-            "Use synthetic files while developing. Do not commit resumes or personal data to Git.",
-          )}
-        </p>
-        <ul>
-          <li>
+      {selectedCvId !== null ? (
+        <CvDetailPanel
+          cvId={selectedCvId}
+          refreshKey={refreshVersion}
+          onClose={() => setSelectedCvId(null)}
+          onChanged={() => setRefreshVersion((version) => version + 1)}
+        />
+      ) : (
+        <aside className="panel cv-privacy-panel">
+          <p className="eyebrow">{t("PRIVACY BY DESIGN")}</p>
+          <h2>{t("Resumes contain personal information")}</h2>
+          <p>
             {t(
-              "Only PDF and DOCX files up to 10 MB are accepted by this form.",
+              "Use synthetic files while developing. Do not commit resumes or personal data to Git.",
             )}
-          </li>
-          <li>
-            {t(
-              "A file leaves this browser only after you submit the upload form.",
-            )}
-          </li>
-          <li>
-            {t(
-              "The backend remains responsible for file validation, storage, and access control.",
-            )}
-          </li>
-        </ul>
-      </aside>
+          </p>
+          <ul>
+            <li>
+              {t(
+                "Only PDF and DOCX files up to 10 MB are accepted by this form.",
+              )}
+            </li>
+            <li>
+              {t(
+                "A file leaves this browser only after you submit the upload form.",
+              )}
+            </li>
+            <li>
+              {t(
+                "The backend remains responsible for file validation, storage, and access control.",
+              )}
+            </li>
+          </ul>
+        </aside>
+      )}
     </div>
   );
 }

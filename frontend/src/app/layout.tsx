@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { AuthSessionProvider } from "@/lib/auth-session";
 import { I18nProvider } from "@/i18n/provider";
 import "./globals.css";
+import "@/styles/workspace.css";
 
 export const metadata: Metadata = {
   title: "TalentLens | AI Resume Screening",

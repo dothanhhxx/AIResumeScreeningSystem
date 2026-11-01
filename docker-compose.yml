@@ -69,17 +69,54 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment: &backend_env
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MINIO_HOST: minio
+      MINIO_PORT: 9000
+      STORAGE_BACKEND: minio
+      PIPELINE_MODE: celery
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app
-    depends_on:
+    depends_on: &backend_deps
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       minio:
         condition: service_started
+
+  # ── Celery worker (parse → extract → score) ───────────────
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: resume_worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment: *backend_env
+    command: celery -A app.workers.celery_app worker --loglevel=info -Q default,parse,extract,score --concurrency=2
+    depends_on:
+      <<: *backend_deps
+      backend:
+        condition: service_started
+
+  # ── Frontend (Next.js) ────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    container_name: resume_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

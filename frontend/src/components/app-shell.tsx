@@ -12,13 +12,19 @@ import {
 import { Icon } from "@/components/icon";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/i18n/provider";
-import { useAuthSession } from "@/lib/auth-session";
+import { getAuthAccessToken, useAuthSession } from "@/lib/auth-session";
 
 const navigation = [
   { href: "/dashboard", label: "Overview", icon: "dashboard" as const },
   { href: "/jobs", label: "Job descriptions", icon: "jobs" as const },
   { href: "/cvs", label: "CV library", icon: "cvs" as const },
   { href: "/rankings", label: "Candidate review", icon: "rankings" as const },
+  {
+    href: "/audit",
+    label: "Audit log",
+    icon: "dashboard" as const,
+    adminOnly: true,
+  },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -54,6 +60,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     signOut();
     router.replace("/login");
   }
+
+  const isAppRoute = navigation.some((item) => item.href === activePath);
+
+  // Workspace pages need a signed-in user; the token lives in sessionStorage.
+  useEffect(() => {
+    if (isAppRoute && !getAuthAccessToken()) {
+      router.replace(`/login?next=${encodeURIComponent(activePath)}`);
+    }
+  }, [activePath, isAppRoute, router, session]);
 
   const closeMobileNav = useCallback(() => {
     setIsMobileNavOpen(false);
@@ -101,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     };
   }, [closeMobileNav, isMobileNavOpen]);
 
-  if (!navigation.some((item) => item.href === activePath)) {
+  if (!isAppRoute) {
     return children;
   }
 
@@ -166,36 +181,31 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <p className="nav-label">{t("WORKSPACE")}</p>
         <nav className="primary-nav" aria-label={t("Main navigation")}>
-          {navigation.map((item) => {
-            const isActive = activePath === item.href;
-            return (
-              <Link
-                key={item.href}
-                className={`nav-link${isActive ? " nav-link-active" : ""}`}
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                aria-label={t(item.label)}
-                title={isSidebarCollapsed ? t(item.label) : undefined}
-                onClick={closeMobileNav}
-              >
-                <Icon name={item.icon} size={18} />
-                <span>{t(item.label)}</span>
-                {item.href === "/rankings" && (
-                  <span className="nav-count">8</span>
-                )}
-              </Link>
-            );
-          })}
+          {navigation
+            .filter(
+              (item) =>
+                !("adminOnly" in item) || session?.user.role === "admin",
+            )
+            .map((item) => {
+              const isActive = activePath === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  className={`nav-link${isActive ? " nav-link-active" : ""}`}
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  aria-label={t(item.label)}
+                  title={isSidebarCollapsed ? t(item.label) : undefined}
+                  onClick={closeMobileNav}
+                >
+                  <Icon name={item.icon} size={18} />
+                  <span>{t(item.label)}</span>
+                </Link>
+              );
+            })}
         </nav>
 
         <div className="sidebar-bottom">
-          <div className="demo-note">
-            <span className="demo-dot" />
-            <span>
-              <strong>{t("Demo workspace")}</strong>
-              <small>{t("Synthetic sample data")}</small>
-            </span>
-          </div>
           <div className="profile-row">
             <span className="profile-avatar">{accountInitials}</span>
             <span className="profile-copy">

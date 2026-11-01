@@ -7,24 +7,23 @@ Endpoints:
     POST   /api/v1/cvs/upload/batch  — Upload multiple CVs (multipart)
     GET    /api/v1/cvs               — List CVs (paginated, filterable)
     GET    /api/v1/cvs/{cv_id}       — Get a single CV by ID
-    DELETE /api/v1/cvs/{cv_id}       — Delete a CV (admin or owner)
-    GET    /api/v1/cvs/{cv_id}/url   — Get a presigned download URL
-
-Note:
-    Person A mounts this router in app/main.py:
-        from app.api import cvs
-        api_router.include_router(cvs.router)
+    DELETE /api/v1/cvs/{cv_id}       — Delete a CV (admin or recruiter)
+    GET    /api/v1/cvs/{cv_id}/url   — Get a presigned download URL (MinIO only)
+    GET    /api/v1/cvs/{cv_id}/file  — Download the original file (any storage backend)
+    POST   /api/v1/cvs/{cv_id}/reprocess — Re-run parse → extract for a CV
 """
 
 import asyncio
 import logging
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db, require_roles
-from app.core.exceptions import AppError
-from app.models.cv import CVStatus
+from app.core.exceptions import AppError, PermissionDeniedError
+from app.models.audit_log import AuditAction
+from app.models.cv import CV, CVStatus
 from app.models.user import User, UserRole
 from app.schemas.common import ApiResponse, PaginatedResponse
 from app.schemas.cv import (
@@ -32,8 +31,9 @@ from app.schemas.cv import (
     CVResponse,
     CVSummaryResponse,
 )
-from app.services import cv_service
-from app.services.storage_service import storage_service
+from app.services import audit_service, cv_service
+from app.services.storage_service import ALLOWED_CONTENT_TYPES, storage_service
+from app.workers.dispatch import enqueue_parse
 
 logger = logging.getLogger(__name__)
 
@@ -43,20 +43,21 @@ router = APIRouter(prefix="/cvs", tags=["CVs"])
 # ── Helper ───────────────────────────────────────────────────────────────────
 
 def _enqueue_parse_task(cv_id: int) -> None:
-    """
-    Enqueue a Celery parse task for the given CV.
-
-    Import is deferred to avoid importing Celery at module load time
-    (which would fail if Redis is not available during testing).
-    """
+    """Queue parsing (Celery or inline, see app/workers/dispatch.py). Non-fatal on failure."""
     try:
-        from app.workers.parse_task import parse_cv_task  # noqa: PLC0415
-
-        parse_cv_task.apply_async(args=[cv_id], queue="parse")
-        logger.info("Enqueued parse_cv_task for CV %d.", cv_id)
+        enqueue_parse(cv_id)
+        logger.info("Enqueued parse task for CV %d.", cv_id)
     except Exception as exc:  # noqa: BLE001
-        # Non-fatal: log and continue — status remains UPLOADED, can be retried
+        # Non-fatal: status remains UPLOADED and the CV can be reprocessed later
         logger.warning("Failed to enqueue parse task for CV %d: %s", cv_id, exc)
+
+
+def _ensure_can_view(cv: CV, user: User) -> None:
+    if user.role not in (UserRole.ADMIN, UserRole.RECRUITER) and cv.uploaded_by != user.id:
+        raise PermissionDeniedError()
+
+
+_writer = require_roles(UserRole.ADMIN, UserRole.RECRUITER)
 
 
 # ── Single upload ─────────────────────────────────────────────────────────────
@@ -72,11 +73,12 @@ def _enqueue_parse_task(cv_id: int) -> None:
     ),
 )
 async def upload_cv(
+    request: Request,
     candidate_name: str = Form(..., description="Candidate's full name"),
     candidate_email: str | None = Form(default=None, description="Candidate's email (optional)"),
     file: UploadFile = File(..., description="CV file (PDF or DOCX, max 10 MB)"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_writer),
 ) -> ApiResponse[CVResponse]:
     """Upload a single CV file and enqueue it for parsing."""
     try:
@@ -93,8 +95,12 @@ async def upload_cv(
         logger.exception("Unexpected error during CV upload.")
         raise HTTPException(status_code=500, detail="CV upload failed.") from exc
 
+    await audit_service.record(
+        db, AuditAction.CV_UPLOAD, user=current_user, resource_type="cv", resource_id=cv.id,
+        detail={"file_name": cv.file_name, "file_size": cv.file_size}, request=request,
+    )
     # Enqueue parsing task (fire-and-forget, non-blocking)
-    await asyncio.get_event_loop().run_in_executor(None, _enqueue_parse_task, cv.id)
+    await asyncio.to_thread(_enqueue_parse_task, cv.id)
 
     return ApiResponse(
         message="CV uploaded and queued for parsing.",
@@ -119,7 +125,7 @@ async def upload_cv_batch(
     candidate_email: str | None = Form(default=None),
     files: list[UploadFile] = File(..., description="List of CV files (PDF/DOCX, max 10 MB each)"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_writer),
 ) -> ApiResponse[CVBatchUploadResponse]:
     """Upload multiple CV files in a single request."""
     if len(files) > 20:
@@ -139,9 +145,11 @@ async def upload_cv_batch(
     # Enqueue parse tasks for all successful uploads
     for item in results:
         if item.success and item.cv_id is not None:
-            await asyncio.get_event_loop().run_in_executor(
-                None, _enqueue_parse_task, item.cv_id
+            await audit_service.record(
+                db, AuditAction.CV_UPLOAD, user=current_user, resource_type="cv", resource_id=item.cv_id,
+                detail={"file_name": item.file_name, "batch": True},
             )
+            await asyncio.to_thread(_enqueue_parse_task, item.cv_id)
 
     succeeded = sum(1 for r in results if r.success)
     response_data = CVBatchUploadResponse(
@@ -209,16 +217,7 @@ async def get_cv(
 ) -> ApiResponse[CVResponse]:
     """Retrieve detailed information about a specific CV."""
     cv = await cv_service.get_cv(db, cv_id)
-
-    # Non-admin users may only view their own CVs
-    if (
-        current_user.role not in (UserRole.ADMIN, UserRole.RECRUITER)
-        and cv.uploaded_by != current_user.id
-    ):
-        from app.core.exceptions import PermissionDeniedError  # noqa: PLC0415
-
-        raise PermissionDeniedError()
-
+    _ensure_can_view(cv, current_user)
     return ApiResponse(data=CVResponse.model_validate(cv))
 
 
@@ -229,14 +228,18 @@ async def get_cv(
     response_model=ApiResponse[None],
     status_code=status.HTTP_200_OK,
     summary="Delete a CV",
-    dependencies=[Depends(require_roles(UserRole.ADMIN, UserRole.RECRUITER))],
 )
 async def delete_cv(
     cv_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(_writer),
 ) -> ApiResponse[None]:
-    """Delete a CV record and its associated file from MinIO (admin/recruiter only)."""
+    """Delete a CV record and its associated file from storage (admin/recruiter only)."""
     await cv_service.delete_cv(db, cv_id)
+    await audit_service.record(
+        db, AuditAction.CV_DELETE, user=current_user, resource_type="cv", resource_id=cv_id, request=request
+    )
     return ApiResponse(message=f"CV {cv_id} deleted successfully.", data=None)
 
 
@@ -256,21 +259,57 @@ async def get_cv_download_url(
 ) -> ApiResponse[dict]:
     """Return a presigned GET URL for the CV's stored file."""
     cv = await cv_service.get_cv(db, cv_id)
-
-    # Access control: non-admin users can only download their own CVs
-    if (
-        current_user.role not in (UserRole.ADMIN, UserRole.RECRUITER)
-        and cv.uploaded_by != current_user.id
-    ):
-        from app.core.exceptions import PermissionDeniedError  # noqa: PLC0415
-
-        raise PermissionDeniedError()
-
-    url = await asyncio.get_event_loop().run_in_executor(
-        None,
-        lambda: storage_service.get_presigned_url(cv.file_url, expires_in=expires_in),
-    )
+    _ensure_can_view(cv, current_user)
+    url = await asyncio.to_thread(storage_service.get_presigned_url, cv.file_url, expires_in)
     return ApiResponse(
         message="Presigned URL generated.",
         data={"url": url, "expires_in": expires_in},
     )
+
+
+# ── Download original file ────────────────────────────────────────────────────
+
+_MIME_BY_EXT = {ext: mime for mime, ext in ALLOWED_CONTENT_TYPES.items()}
+
+
+@router.get("/{cv_id}/file", summary="Download the original CV file")
+async def download_cv_file(
+    cv_id: int,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    cv = await cv_service.get_cv(db, cv_id)
+    _ensure_can_view(cv, current_user)
+    content = await asyncio.to_thread(storage_service.download_file, cv.file_url)
+    await audit_service.record(
+        db, AuditAction.CV_VIEW, user=current_user, resource_type="cv", resource_id=cv.id, request=request
+    )
+    safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in cv.file_name) or f"cv_{cv.id}"
+    return Response(
+        content=content,
+        media_type=_MIME_BY_EXT.get(cv.file_type, "application/octet-stream"),
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
+    )
+
+
+# ── Reprocess ─────────────────────────────────────────────────────────────────
+
+@router.post(
+    "/{cv_id}/reprocess",
+    response_model=ApiResponse[CVResponse],
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Re-run parsing and extraction",
+)
+async def reprocess_cv(
+    cv_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(_writer),
+) -> ApiResponse[CVResponse]:
+    cv = await cv_service.get_cv(db, cv_id)
+    cv.status = CVStatus.UPLOADED
+    cv.error_message = None
+    await db.commit()
+    await db.refresh(cv)
+    await asyncio.to_thread(_enqueue_parse_task, cv.id)
+    return ApiResponse(message="CV queued for reprocessing.", data=CVResponse.model_validate(cv))

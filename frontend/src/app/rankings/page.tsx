@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { RankingReview } from "@/components/ranking-review";
 import { useI18n } from "@/i18n/provider";
 
@@ -17,7 +18,9 @@ export default function RankingsPage() {
           </p>
         </div>
       </div>
-      <RankingReview />
+      <Suspense fallback={<p className="cv-library-state">{t("Loading…")}</p>}>
+        <RankingReview />
+      </Suspense>
     </>
   );
 }

@@ -1,28 +1,35 @@
 """Job description endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_user, get_db, require_roles
+from app.models.audit_log import AuditAction
 from app.models.job import JobStatus
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.common import ApiResponse, PaginatedResponse
 from app.schemas.job import JobCreate, JobRead, JobUpdate
-from app.services import job_service
+from app.services import audit_service, job_service
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 JobListResponse = ApiResponse[PaginatedResponse[JobRead]]
 JobResponse = ApiResponse[JobRead]
+_writer = require_roles(UserRole.ADMIN, UserRole.RECRUITER)
 
 
 @router.post("", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
 async def create_job(
     payload: JobCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_writer),
 ) -> JobResponse:
     job = await job_service.create_job(db, payload, created_by=current_user.id)
+    await audit_service.record(
+        db, AuditAction.JOB_CREATE, user=current_user, resource_type="job", resource_id=job.id,
+        detail={"title": job.title}, request=request,
+    )
     return JobResponse(message="Job created.", data=job)
 
 
@@ -60,22 +67,32 @@ async def get_job(
 async def update_job(
     job_id: int,
     payload: JobUpdate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_writer),
 ) -> JobResponse:
     job = await job_service.update_job(db, job_id, current_user.id, payload)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found.")
+    await audit_service.record(
+        db, AuditAction.JOB_UPDATE, user=current_user, resource_type="job", resource_id=job.id,
+        detail={"fields": sorted(payload.model_fields_set)}, request=request,
+    )
     return JobResponse(message="Job updated.", data=job)
 
 
 @router.delete("/{job_id}", response_model=JobResponse)
 async def archive_job(
     job_id: int,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(_writer),
 ) -> JobResponse:
     job = await job_service.archive_job(db, job_id, created_by=current_user.id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found.")
+    await audit_service.record(
+        db, AuditAction.JOB_DELETE, user=current_user, resource_type="job", resource_id=job.id,
+        detail={"archived": True}, request=request,
+    )
     return JobResponse(message="Job archived.", data=job)

@@ -194,7 +194,7 @@ describe("CV upload and library integration", () => {
     });
   });
 
-  it("shows the router-registration guidance when the CV list returns 404", async () => {
+  it("shows a clear message when the CV list returns 404", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.example.test");
     vi.stubGlobal(
       "fetch",
@@ -204,9 +204,7 @@ describe("CV upload and library integration", () => {
     renderCvUpload();
 
     expect(
-      await screen.findByText(
-        "The CV API route is not registered yet. Ask Person A to mount it.",
-      ),
+      await screen.findByText("The CV API route is not available yet."),
     ).toBeTruthy();
   });
 

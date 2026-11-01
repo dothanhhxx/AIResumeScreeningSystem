@@ -9,7 +9,8 @@ Usage:
 from functools import lru_cache
 from typing import List
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
+
 # pyrefly: ignore [missing-import]
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -36,8 +37,14 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
 
+    # Optional full override, e.g. "sqlite+aiosqlite:///./dev.db" for running without Docker.
+    # When empty the URL is built from the POSTGRES_* values above.
+    DATABASE_URL_OVERRIDE: str = Field(default="", validation_alias="DATABASE_URL")
+
     @property
     def DATABASE_URL(self) -> str:
+        if self.DATABASE_URL_OVERRIDE:
+            return self.DATABASE_URL_OVERRIDE
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -46,10 +53,19 @@ class Settings(BaseSettings):
     @property
     def DATABASE_URL_SYNC(self) -> str:
         """Sync URL for Alembic migrations."""
+        if self.DATABASE_URL_OVERRIDE:
+            return self.DATABASE_URL_OVERRIDE.replace("+asyncpg", "").replace("+aiosqlite", "")
         return (
             f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
+
+    @property
+    def IS_SQLITE(self) -> bool:
+        return self.DATABASE_URL.startswith("sqlite")
+
+    # Create tables on startup (handy for SQLite / tests). Postgres deployments use Alembic.
+    AUTO_CREATE_TABLES: bool = False
 
     # ── Redis ───────────────────────────────────────────────
     REDIS_HOST: str = "localhost"
@@ -66,6 +82,15 @@ class Settings(BaseSettings):
     MINIO_PORT: int = 9000
     MINIO_BUCKET_NAME: str = "resumes"
 
+    # "minio" (S3 compatible, used in Docker) or "local" (files under LOCAL_STORAGE_DIR)
+    STORAGE_BACKEND: str = "minio"
+    LOCAL_STORAGE_DIR: str = "./storage"
+
+    # ── Pipeline ────────────────────────────────────────────
+    # "celery" → parse / extract / score run on Celery workers (needs Redis).
+    # "inline" → the same steps run as background asyncio tasks inside the API process.
+    PIPELINE_MODE: str = "celery"
+
     @property
     def MINIO_ENDPOINT(self) -> str:
         return f"{self.MINIO_HOST}:{self.MINIO_PORT}"
@@ -76,18 +101,24 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
 
     # ── LLM / AI Engine (Person C) ──────────────────────────
-    # TODO(Person C): only "gemini" is implemented. To add another provider (e.g. "openai"),
-    #                 write a BaseLLM subclass in app/llm/ and add a branch in app/llm/factory.py.
+    # "gemini" or "heuristic" (offline, no API key). Add a provider by subclassing BaseLLM
+    # in app/llm/ and adding a branch in app/llm/factory.py.
     LLM_PROVIDER: str = "gemini"
-    # TODO(everyone): put your own free key from https://aistudio.google.com/apikey in .env — never commit it.
+    # Free key from https://aistudio.google.com/apikey — put it in .env, never commit it.
     GEMINI_API_KEY: str = ""
-    # TODO(Person C): check in AI Studio which model is on the free tier and set GEMINI_MODEL in .env.
-    #                 "gemini-flash-latest" is an alias that follows Google's current Flash model.
+    # "gemini-flash-latest" is an alias that follows Google's current free-tier Flash model.
     GEMINI_MODEL: str = "gemini-flash-latest"
     GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
-    # TODO(Person A + C): must equal the pgvector column size, i.e. Vector(EMBEDDING_DIM),
-    #                     once Person A adds the embedding column to the CV / Job models.
+    # Embeddings are stored as JSON on cvs.embedding / jobs.embedding (see migration 0002).
     EMBEDDING_DIM: int = 768
+    # When the LLM is unavailable (no key / quota / outage) fall back to the offline
+    # heuristic extractor and scorer instead of marking the CV as ERROR.
+    LLM_FALLBACK_TO_HEURISTIC: bool = True
+
+    # ── Scoring weights (normalised at runtime) ─────────────
+    SCORE_WEIGHT_RULE: float = 0.4
+    SCORE_WEIGHT_SEMANTIC: float = 0.2
+    SCORE_WEIGHT_LLM: float = 0.4
 
     # ── CORS ────────────────────────────────────────────────
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]

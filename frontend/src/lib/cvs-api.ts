@@ -1,3 +1,4 @@
+import { apiDownload, apiRequest } from "@/lib/api";
 import { getAuthAccessToken } from "@/lib/auth-session";
 
 export const CV_STATUSES = [
@@ -22,6 +23,7 @@ export type CvSummary = {
   file_size: number;
   status: CvStatus;
   uploaded_by: number | null;
+  error_message: string | null;
   created_at: string;
 };
 
@@ -79,6 +81,8 @@ function parseCvSummary(value: unknown): CvSummary | null {
     file_size: value.file_size as number,
     status: value.status,
     uploaded_by: value.uploaded_by as number | null,
+    error_message:
+      typeof value.error_message === "string" ? value.error_message : null,
     created_at: value.created_at,
   };
 }
@@ -218,4 +222,86 @@ export async function listCvs({
     page_size: data.page_size as number,
     total_pages: data.total_pages as number,
   };
+}
+
+export type CvExtraction = {
+  summary: string | null;
+  skills: string[];
+  years_of_experience: number | null;
+  experiences: {
+    title: string;
+    company: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    description: string | null;
+  }[];
+  education: {
+    institution: string | null;
+    degree: string | null;
+    field_of_study: string | null;
+    graduation_year: number | null;
+    gpa: string | null;
+  }[];
+  certifications: string[];
+  languages: string[];
+  extraction_source?: string;
+};
+
+export type CvDetail = CvSummary & {
+  file_url: string;
+  raw_text: string | null;
+  structured_data: string | null;
+  updated_at: string;
+};
+
+export const PROCESSING_STATUSES: CvStatus[] = [
+  "uploaded",
+  "parsing",
+  "parsed",
+  "extracting",
+  "scoring",
+];
+
+export function parseExtraction(detail: CvDetail): CvExtraction | null {
+  if (!detail.structured_data) return null;
+  try {
+    const value: unknown = JSON.parse(detail.structured_data);
+    if (!isRecord(value)) return null;
+    const list = (key: string) =>
+      Array.isArray(value[key]) ? (value[key] as unknown[]) : [];
+    return {
+      summary: typeof value.summary === "string" ? value.summary : null,
+      skills: list("skills").map(String),
+      years_of_experience:
+        typeof value.years_of_experience === "number"
+          ? value.years_of_experience
+          : null,
+      experiences: list("experiences") as CvExtraction["experiences"],
+      education: list("education") as CvExtraction["education"],
+      certifications: list("certifications").map(String),
+      languages: list("languages").map(String),
+      extraction_source:
+        typeof value.extraction_source === "string"
+          ? value.extraction_source
+          : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function getCv(cvId: number, signal?: AbortSignal): Promise<CvDetail> {
+  return apiRequest<CvDetail>(`/cvs/${cvId}`, undefined, signal);
+}
+
+export function reprocessCv(cvId: number): Promise<CvDetail> {
+  return apiRequest<CvDetail>(`/cvs/${cvId}/reprocess`, { method: "POST" });
+}
+
+export async function deleteCv(cvId: number): Promise<void> {
+  await apiRequest<null>(`/cvs/${cvId}`, { method: "DELETE" });
+}
+
+export function downloadCv(cvId: number, fileName: string): Promise<void> {
+  return apiDownload(`/cvs/${cvId}/file`, fileName);
 }

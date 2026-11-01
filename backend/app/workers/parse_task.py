@@ -15,8 +15,9 @@ import logging
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.core.database import async_session_factory
+from app.core.database import async_session_factory, create_worker_session_factory
 from app.core.exceptions import StorageServiceError
 from app.models.cv import CV, CVStatus
 from app.services.parsing import parse_document
@@ -27,30 +28,30 @@ logger = logging.getLogger(__name__)
 
 
 def _trigger_downstream_extract(cv_id: int) -> None:
-    """
-    Attempt to enqueue the downstream extract_task owned by Person C.
+    """Enqueue Person C's extract_info_task (Celery or inline, see app/workers/dispatch.py)."""
+    from app.workers.dispatch import enqueue_extract  # noqa: PLC0415
 
-    Uses dynamic discovery so parse_cv_task succeeds even when extract_task
-    is still being developed by Person C.
-    """
-    task_name = "app.workers.extract_task.extract_info_task"
     try:
-        celery_app.send_task(task_name, args=[cv_id], queue="extract")
-        logger.info("[parse_cv_task] Triggered downstream task '%s' for cv_id=%d.", task_name, cv_id)
-    except Exception as exc:
-        logger.warning(
-            "[parse_cv_task] Downstream extract task '%s' could not be enqueued (Person C): %s",
-            task_name,
-            exc,
-        )
+        enqueue_extract(cv_id)
+        logger.info("[parse_cv_task] Triggered extract_info_task for cv_id=%d.", cv_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("[parse_cv_task] extract_info_task could not be enqueued for cv_id=%d: %s", cv_id, exc)
 
 
-async def _process_cv_parsing(cv_id: int) -> dict[str, Any]:
+async def _process_cv_parsing(
+    cv_id: int,
+    session_factory: async_sessionmaker[AsyncSession] | None = None,
+) -> dict[str, Any]:
     """
     Async implementation of the parsing workflow:
-      DB fetch → MinIO download → parsing factory → DB update → trigger downstream.
+      DB fetch → storage download → parsing factory → DB update → trigger downstream.
+
+    Output contract for Person C (raw_text): plain UTF-8 text normalised by
+    parsing.base.clean_text — LF line endings, single spaces, at most one blank
+    line between blocks, pages simply concatenated, no markup.
     """
-    async with async_session_factory() as db:
+    factory = session_factory or async_session_factory
+    async with factory() as db:
         # 1. Fetch CV from database
         result = await db.execute(select(CV).where(CV.id == cv_id))
         cv = result.scalar_one_or_none()
@@ -60,17 +61,19 @@ async def _process_cv_parsing(cv_id: int) -> dict[str, Any]:
 
         # 2. Update status to PARSING
         cv.status = CVStatus.PARSING
+        cv.error_message = None
         await db.commit()
         await db.refresh(cv)
         logger.info("[parse_cv_task] CV %d status set to PARSING.", cv_id)
 
         try:
             # 3. Download raw file from MinIO
-            file_bytes = storage_service.download_file(cv.file_url)
+            file_bytes = await asyncio.to_thread(storage_service.download_file, cv.file_url)
             logger.info("[parse_cv_task] Downloaded %d bytes from '%s'.", len(file_bytes), cv.file_url)
 
             # 4. Extract text using the parsing factory
-            extracted_text = parse_document(
+            extracted_text = await asyncio.to_thread(
+                parse_document,
                 content=file_bytes,
                 file_type=cv.file_type,
                 enable_ocr=True,
@@ -101,6 +104,7 @@ async def _process_cv_parsing(cv_id: int) -> dict[str, Any]:
             # Mark CV as ERROR on parsing failure
             logger.exception("[parse_cv_task] Error parsing CV %d: %s", cv_id, exc)
             cv.status = CVStatus.ERROR
+            cv.error_message = f"Parsing failed: {exc}"[:2000]
             await db.commit()
             raise
 
@@ -126,7 +130,7 @@ def parse_cv_task(self, cv_id: int) -> dict[str, Any]:
 
     try:
         # Run async parsing pipeline in synchronous Celery task worker
-        return asyncio.run(_process_cv_parsing(cv_id))
+        return asyncio.run(_process_cv_parsing(cv_id, create_worker_session_factory()))
     except (StorageServiceError, ConnectionError) as transient_exc:
         logger.warning(
             "[parse_cv_task] Transient error processing cv_id=%d: %s. Scheduling retry.",

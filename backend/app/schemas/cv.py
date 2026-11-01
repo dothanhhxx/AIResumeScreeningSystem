@@ -86,6 +86,7 @@ class CVResponse(CVBase):
         default=None,
         description="User ID of the uploader",
     )
+    error_message: str | None = Field(default=None, description="Last pipeline error, if any")
     created_at: datetime
     updated_at: datetime
 
@@ -105,6 +106,7 @@ class CVSummaryResponse(BaseModel):
     file_size: int
     status: CVStatus
     uploaded_by: int | None
+    error_message: str | None = None
     created_at: datetime
 
 

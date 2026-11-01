@@ -10,6 +10,7 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models._types import enum_values
 
 
 class AuditAction(str, enum.Enum):
@@ -40,7 +41,11 @@ class AuditLog(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
 
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
-    action: Mapped[AuditAction] = mapped_column(Enum(AuditAction), nullable=False, index=True)
+    action: Mapped[AuditAction] = mapped_column(
+        Enum(AuditAction, values_callable=enum_values),
+        nullable=False,
+        index=True,
+    )
     resource_type: Mapped[str | None] = mapped_column(String(50), nullable=True)     # "cv", "job", etc.
     resource_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)                  # JSON extra info

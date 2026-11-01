@@ -18,6 +18,7 @@ PHONE_TOKEN = "[PHONE]"
 URL_TOKEN = "[URL]"
 DOB_TOKEN = "[DOB]"
 NAME_TOKEN = "[NAME]"
+ADDRESS_TOKEN = "[ADDRESS]"
 
 _EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 
@@ -37,6 +38,15 @@ _DATE = r"\d{1,2}\s*[/.\-]\s*\d{1,2}\s*[/.\-]\s*\d{2,4}"
 _DOB_RE = re.compile(rf"({_DOB_LABEL}\s*[:\-]?\s*){_DATE}", re.IGNORECASE)
 
 
+# Street addresses have no reliable shape, so only labelled ones are masked: the rest of the
+# line after "Địa chỉ:", "Address:", "Nơi ở:", "Quê quán:" ... is replaced.
+_ADDRESS_LABEL = (
+    r"(?:địa\s*chỉ(?:\s*liên\s*hệ|\s*thường\s*trú|\s*hiện\s*tại)?|đ/c|nơi\s*ở(?:\s*hiện\s*tại)?|chỗ\s*ở|"
+    r"quê\s*quán|hộ\s*khẩu(?:\s*thường\s*trú)?|thường\s*trú|home\s*address|address|addr\.?)"
+)
+_ADDRESS_RE = re.compile(rf"(?im)^(\s*[-•*]?\s*{_ADDRESS_LABEL}\s*[:\-]\s*)\S.*$")
+
+
 def _mask_phone(match: re.Match[str]) -> str:
     raw = match.group(0)
     digits = sum(ch.isdigit() for ch in raw)
@@ -45,10 +55,9 @@ def _mask_phone(match: re.Match[str]) -> str:
     return raw
 
 
-# TODO(Person C): street addresses are not masked yet — they have no reliable pattern.
-# TODO(Person B): known_names relies on CV.candidate_name being filled at upload time.
+# known_names relies on CV.candidate_name, which the upload API requires.
 def strip_pii(text: str, known_names: list[str] | None = None) -> str:
-    """Replace emails, URLs, phone numbers, dates of birth and known names with placeholder tokens."""
+    """Replace emails, URLs, phone numbers, dates of birth, labelled addresses and known names with tokens."""
     if not text:
         return text
 
@@ -56,6 +65,7 @@ def strip_pii(text: str, known_names: list[str] | None = None) -> str:
     text = _EMAIL_RE.sub(EMAIL_TOKEN, text)
     text = _URL_RE.sub(URL_TOKEN, text)
     text = _DOB_RE.sub(lambda m: m.group(1) + DOB_TOKEN, text)
+    text = _ADDRESS_RE.sub(lambda m: m.group(1) + ADDRESS_TOKEN, text)
     text = _PHONE_RE.sub(_mask_phone, text)
 
     for name in known_names or []:

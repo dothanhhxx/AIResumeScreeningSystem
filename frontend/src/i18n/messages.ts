@@ -401,6 +401,108 @@ const vietnameseMessages = {
     "Tệp chỉ rời khỏi trình duyệt sau khi bạn gửi biểu mẫu tải lên.",
   "The backend remains responsible for file validation, storage, and access control.":
     "Backend chịu trách nhiệm xác thực tệp, lưu trữ và kiểm soát quyền truy cập.",
+  ACTION: "HÀNH ĐỘNG",
+  "AI score {{ai}} was adjusted to {{score}} by a recruiter.":
+    "Điểm AI {{ai}} đã được nhà tuyển dụng điều chỉnh thành {{score}}.",
+  "AI score: {{score}}": "Điểm AI: {{score}}",
+  Action: "Hành động",
+  "Adjusted score (optional)": "Điểm điều chỉnh (không bắt buộc)",
+  "Adjusted score must be between 0 and 100.":
+    "Điểm điều chỉnh phải nằm trong khoảng 0 đến 100.",
+  "All actions": "Tất cả hành động",
+  "All candidates": "Tất cả ứng viên",
+  "All processed": "Đã xử lý xong",
+  "Audit log": "Nhật ký kiểm toán",
+  COMPLIANCE: "TUÂN THỦ",
+  "CV DETAILS": "CHI TIẾT CV",
+  "Candidate #{{id}}": "Ứng viên #{{id}}",
+  "Certifications & languages": "Chứng chỉ & ngoại ngữ",
+  "Choose a job to see its ranking.": "Chọn một vị trí để xem bảng xếp hạng.",
+  Close: "Đóng",
+  "Confirm delete": "Xác nhận xoá",
+  "Create a job description first": "Hãy tạo mô tả công việc trước",
+  DETAILS: "CHI TIẾT",
+  "Decision saved.": "Đã lưu quyết định.",
+  Delete: "Xoá",
+  "Download file": "Tải tệp",
+  Education: "Học vấn",
+  "Every sign-in, upload, matching run and decision is recorded here.":
+    "Mọi lần đăng nhập, tải CV, chạy so khớp và quyết định đều được ghi lại tại đây.",
+  Experience: "Kinh nghiệm",
+  "Extracted by": "Trích xuất bởi",
+  "Gaps to verify": "Điểm cần xác minh",
+  "Give a reason when you adjust the AI score.":
+    "Hãy nêu lý do khi điều chỉnh điểm AI.",
+  "LLM unavailable: offline rule-based scoring.":
+    "Không dùng LLM: chấm điểm theo quy tắc ngoại tuyến.",
+  LLM: "LLM",
+  "Match indicators support review and do not decide for the recruiter.":
+    "Chỉ số so khớp hỗ trợ việc đánh giá và không quyết định thay nhà tuyển dụng.",
+  "Name or skill": "Tên hoặc kỹ năng",
+  "No CVs are ready yet. Upload resumes and wait until they are extracted.":
+    "Chưa có CV nào sẵn sàng. Hãy tải CV lên và đợi trích xuất xong.",
+  "No audit entries yet.": "Chưa có mục nhật ký nào.",
+  "No job descriptions yet. Create one to start matching.":
+    "Chưa có mô tả công việc. Hãy tạo một mô tả để bắt đầu so khớp.",
+  "No ranked candidates yet": "Chưa có ứng viên được xếp hạng",
+  "No required skills matched": "Chưa khớp kỹ năng yêu cầu nào",
+  "None recorded": "Chưa ghi nhận",
+  "Notes for your team (optional)": "Ghi chú cho nhóm (không bắt buộc)",
+  "Nothing waiting. Run AI matching on a job to fill the queue.":
+    "Không có hồ sơ chờ. Hãy chạy so khớp AI cho một vị trí.",
+  Off: "Tắt",
+  "Only administrators can view the audit log.":
+    "Chỉ quản trị viên mới xem được nhật ký kiểm toán.",
+  "Open CV library": "Mở thư viện CV",
+  "Open the CV library to see the error and reprocess them.":
+    "Mở thư viện CV để xem lỗi và xử lý lại.",
+  "Processing… this view refreshes automatically.":
+    "Đang xử lý… màn hình sẽ tự cập nhật.",
+  "RANK {{rank}}": "HẠNG {{rank}}",
+  RESOURCE: "ĐỐI TƯỢNG",
+  Reprocess: "Xử lý lại",
+  Rules: "Quy tắc",
+  "Run AI matching": "Chạy so khớp AI",
+  "Score breakdown": "Chi tiết điểm",
+  "Scored by {{model}} · weights {{weights}}":
+    "Chấm bởi {{model}} · trọng số {{weights}}",
+  "Scoring in progress: {{count}} CV(s) remaining…":
+    "Đang chấm điểm: còn {{count}} CV…",
+  "Scoring {{count}} CV(s) in the background. Results update automatically.":
+    "Đang chấm {{count}} CV ở chế độ nền. Kết quả sẽ tự cập nhật.",
+  "Select a candidate to review the evidence.":
+    "Chọn một ứng viên để xem bằng chứng.",
+  Semantic: "Ngữ nghĩa",
+  "Sign in to review candidates.": "Hãy đăng nhập để đánh giá ứng viên.",
+  "Sign in to see your hiring overview.":
+    "Hãy đăng nhập để xem tổng quan tuyển dụng.",
+  Skills: "Kỹ năng",
+  "Starting…": "Đang bắt đầu…",
+  Strengths: "Điểm mạnh",
+  "Suggested interview questions": "Câu hỏi phỏng vấn gợi ý",
+  TIME: "THỜI GIAN",
+  "This job has no explicit requirements to check.":
+    "Vị trí này chưa có yêu cầu cụ thể để đối chiếu.",
+  USER: "NGƯỜI DÙNG",
+  "Upload CVs in the CV library, then choose Run AI matching to score them against this job.":
+    "Tải CV lên thư viện CV, sau đó chọn Chạy so khớp AI để chấm điểm theo vị trí này.",
+  "Viewers can read rankings but cannot record decisions.":
+    "Người xem chỉ đọc được bảng xếp hạng, không thể ghi quyết định.",
+  "Why this outcome? Required when adjusting the score.":
+    "Vì sao chọn kết quả này? Bắt buộc khi điều chỉnh điểm.",
+  "Why this score": "Vì sao có điểm này",
+  "Work history": "Quá trình làm việc",
+  "Your role cannot perform this action.":
+    "Vai trò của bạn không thể thực hiện thao tác này.",
+  adjusted: "đã chỉnh",
+  "incl. interview stage": "gồm vòng phỏng vấn",
+  match: "phù hợp",
+  "{{count}} CV(s) could not be processed.": "{{count}} CV không xử lý được.",
+  "{{count}} processing": "{{count}} đang xử lý",
+  "{{count}} scored for {{job}}": "{{count}} ứng viên đã chấm cho {{job}}",
+  "{{count}} scored": "{{count}} đã chấm",
+  "{{count}} total": "{{count}} tổng cộng",
+  "{{years}} years": "{{years}} năm",
 } as const;
 
 export type TranslationKey = keyof typeof vietnameseMessages;

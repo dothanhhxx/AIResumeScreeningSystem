@@ -10,6 +10,7 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models._types import enum_values
 
 
 class CVStatus(str, enum.Enum):
@@ -35,17 +36,30 @@ class CV(Base):
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)               # bytes
     file_type: Mapped[str] = mapped_column(String(50), nullable=False)            # pdf / docx
 
-    status: Mapped[CVStatus] = mapped_column(Enum(CVStatus), default=CVStatus.UPLOADED, nullable=False, index=True)
+    status: Mapped[CVStatus] = mapped_column(
+        Enum(CVStatus, values_callable=enum_values),
+        default=CVStatus.UPLOADED,
+        nullable=False,
+        index=True,
+    )
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)             # Parsed plaintext
     structured_data: Mapped[str | None] = mapped_column(Text, nullable=True)      # JSON blob from AI
+    embedding: Mapped[str | None] = mapped_column(Text, nullable=True)            # JSON list[float]
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)        # Last pipeline error
 
     uploaded_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
 
     # ── Relationships ───────────────────────────────────────
-    match_results = relationship("MatchResult", back_populates="cv", lazy="selectin")
+    match_results = relationship(
+        "MatchResult", back_populates="cv", lazy="selectin", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     def __repr__(self) -> str:
         return f"<CV {self.candidate_name} status={self.status.value}>"

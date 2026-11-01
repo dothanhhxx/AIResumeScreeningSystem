@@ -89,6 +89,8 @@ async def update_job(
         values["required_skills"] = _encode_skills(values["required_skills"])
     for field_name, value in values.items():
         setattr(job, field_name, value)
+    if values.keys() & {"title", "description", "requirements", "required_skills"}:
+        job.embedding = None  # recomputed by the next scoring run
 
     try:
         await db.commit()

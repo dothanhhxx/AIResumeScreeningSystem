@@ -5,33 +5,49 @@ Owner: Person A (thêm router)
 Only Person A registers routers here. Every API router is mounted under /api/v1.
 """
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import auth
+from app.api import audit, auth, cvs, dashboard, jobs, matching
 from app.config import settings
-from app.core.database import engine
+from app.core.database import create_all_tables, engine
 from app.core.exceptions import AppError
 from app.schemas.common import ApiErrorResponse, HealthResponse
+from app.workers.dispatch import inline_runner
 
 API_PREFIX = "/api/v1"
+
+logging.basicConfig(
+    level=logging.DEBUG if settings.DEBUG else logging.INFO,
+    format="%(levelname)s %(name)s: %(message)s",
+)
+for noisy in ("sqlalchemy.engine", "httpx", "botocore", "urllib3", "multipart"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
-    # startup
+    if settings.AUTO_CREATE_TABLES or settings.IS_SQLITE:
+        await create_all_tables()
+    if settings.PIPELINE_MODE.lower() == "inline":
+        inline_runner.start()
+        logger.info("Pipeline mode: inline (background asyncio consumer)")
+    else:
+        logger.info("Pipeline mode: celery")
     yield
-    # shutdown
+    await inline_runner.stop()
     await engine.dispose()
 
 
 app = FastAPI(
     title=settings.APP_NAME,
-    version="0.1.0",
+    version="1.0.0",
     lifespan=lifespan,
 )
 
@@ -57,9 +73,11 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
 # ── Routers ─────────────────────────────────────────────────
 api_router = APIRouter(prefix=API_PREFIX)
 api_router.include_router(auth.router)
-# TODO(integration): app/api/jobs.py (Person D) is written against a sync `Session`,
-# while get_db yields an AsyncSession — mount it once it is ported to async:
-#   from app.api import jobs; api_router.include_router(jobs.router)
+api_router.include_router(jobs.router)
+api_router.include_router(cvs.router)
+api_router.include_router(matching.router)
+api_router.include_router(dashboard.router)
+api_router.include_router(audit.router)
 app.include_router(api_router)
 
 
@@ -68,6 +86,6 @@ app.include_router(api_router)
 async def health_check():
     return HealthResponse(
         status="ok",
-        version="0.1.0",
+        version="1.0.0",
         environment=settings.APP_ENV,
     )
