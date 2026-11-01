@@ -19,7 +19,7 @@
 .eyebrow {
   margin: 0 0 7px;
   color: var(--green);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.2px;
 }
@@ -36,18 +36,18 @@
 .subtitle {
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
 .demoBadge {
   flex: 0 0 auto;
-  padding: 6px 9px;
+  padding: 7px 11px;
   border: 1px solid #ead9ad;
   border-radius: 999px;
   background: #fff9e9;
   color: #775b19;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -82,7 +82,7 @@
   border-radius: 50%;
   background: var(--green-soft);
   color: var(--green);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -95,7 +95,7 @@
 .candidateIdentity strong {
   overflow: hidden;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -103,7 +103,7 @@
 .candidateIdentity div > span {
   overflow: hidden;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -111,23 +111,24 @@
 .identityToggle {
   display: inline-flex;
   flex: 0 0 auto;
+  min-height: 44px;
   align-items: center;
   gap: 8px;
   color: var(--ink);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .identityToggle input {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   margin: 0;
   accent-color: var(--green);
 }
 
 .identityToggle input:focus-visible {
-  outline: 3px solid rgb(98 172 128 / 30%);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -140,20 +141,20 @@
 }
 
 .evidenceHeading h3 {
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .evidenceHeading p {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .noScore {
   flex: 0 0 auto;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .evidenceList {
@@ -167,8 +168,8 @@
 .evidenceItem {
   display: grid;
   grid-template-columns: minmax(155px, 0.7fr) minmax(0, 1.8fr);
-  gap: 18px;
-  padding: 13px 14px;
+  gap: 20px;
+  padding: 15px 16px;
   border: 1px solid var(--line);
   border-radius: 9px;
 }
@@ -184,7 +185,7 @@
 .category {
   width: 100%;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -192,33 +193,34 @@
 
 .requirement > strong {
   color: var(--ink);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .status {
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
-  padding: 3px 7px;
+  padding: 5px 9px;
+  gap: 6px;
   border-radius: 999px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 650;
   line-height: 1.4;
 }
 
 .status_found {
   background: #eaf4ed;
-  color: #27664a;
+  color: #245b3e;
 }
 
 .status_unclear {
   background: #fff5dc;
-  color: #785c17;
+  color: #674b0d;
 }
 
 .status_not-found {
   background: #f0f2f1;
-  color: #5d6c63;
+  color: #4a5b50;
 }
 
 .evidence {
@@ -227,37 +229,50 @@
 
 .evidence blockquote {
   margin: 0;
-  padding-left: 10px;
-  border-left: 2px solid #9fc5aa;
-  color: #34463b;
-  font-size: 11px;
-  line-height: 1.6;
+  padding: 12px 14px;
+  border-left: 3px solid #79a989;
+  border-radius: 0 8px 8px 0;
+  background: #f6faf7;
+  color: #2c4033;
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 .source,
 .reviewHint {
   display: block;
   margin-top: 6px;
-  color: var(--muted);
-  font-size: 10px;
+  color: #465c4d;
+  font-size: 11px;
   line-height: 1.5;
 }
 
+.source {
+  width: fit-content;
+  padding: 4px 8px;
+  border: 1px solid #dce9df;
+  border-radius: 6px;
+  background: #f5f9f6;
+}
+
 .reviewHint {
-  color: #785c17;
+  padding-left: 9px;
+  border-left: 2px solid #d3ad5b;
+  color: #674b0d;
+  font-size: 12px;
 }
 
 .noEvidence {
   margin: 0;
-  color: var(--muted);
-  font-size: 11px;
+  color: #465c4d;
+  font-size: 12px;
   line-height: 1.6;
 }
 
 .disclaimer {
   margin: 13px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.6;
 }
 

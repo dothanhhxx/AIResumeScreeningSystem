@@ -1,7 +1,7 @@
 /* Shared visual tokens for the recruiter interface and Tailwind utilities. */
 :root {
   --ink: #1d2b24;
-  --muted: #63746b;
+  --muted: #53665a;
   --line: #dce7e0;
   --surface: #ffffff;
   --canvas: #f4f7f5;
@@ -11,7 +11,7 @@
   --green-hover: #1f513b;
   --green-soft: #eaf4ed;
   --green-border: #d5e6da;
-  --focus: #62ac80;
+  --focus: #286b49;
   --font-family-sans: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --control-radius: 8px;
   --panel-radius: 14px;

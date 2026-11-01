@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { AppShell } from "@/components/app-shell";
 import { Icon } from "@/components/icon";
 import { MetricCard } from "@/components/metric-card";
 import { useI18n } from "@/i18n/provider";
@@ -11,7 +10,7 @@ export default function DashboardPage() {
   const { t } = useI18n();
 
   return (
-    <AppShell activePath="/dashboard">
+    <>
       <div className="page-heading">
         <div>
           <p className="eyebrow">{t("RECRUITER OVERVIEW")}</p>
@@ -162,6 +161,6 @@ export default function DashboardPage() {
           {t("How review works")} <Icon name="arrow" size={15} />
         </Link>
       </section>
-    </AppShell>
+    </>
   );
 }

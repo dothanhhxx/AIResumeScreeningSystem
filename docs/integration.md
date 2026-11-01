@@ -1,15 +1,19 @@
 # Person D integration contracts
 
 ## Job model ↔ schema (Person A ↔ Person D)
-Initial contract reviewed from Person A's `Job` model: integer ID; `created_by` owner ID from the authenticated user; lowercase `draft`, `active`, `closed`, and `archived` states; skills stored as JSON text; and database-managed timestamps. Person D's schema exposes skills as `list[str]`. The frontend job-management page is implemented against that contract; end-to-end use still depends on the shared API's auth dependencies and router registration.
+
+Initial contract reviewed from Person A's `Job` model: integer ID; `created_by` owner ID from the authenticated user; lowercase `draft`, `active`, `closed`, and `archived` states; skills stored as JSON text; and database-managed timestamps. Person D's schema exposes skills as `list[str]`. The Person D job service/router now use `AsyncSession`; the frontend client targets `/api/v1/jobs` and sends the current Bearer token. End-to-end use still depends on Person A registering the jobs router in `app/main.py`.
 
 ## CV upload UI ↔ upload API (Person B ↔ Person D)
-The upload screen accepts PDF/DOCX selections in the browser and does not transmit them yet. Before enabling upload, agree on endpoint, single/multiple-file behavior, multipart field names, size/type limits, duplicate handling, processing status, response fields, and authorization. Do not use real resumes in development or commit any resume files.
+
+Person D's CV page now sends one PDF/DOCX file with `candidate_name` and optional `candidate_email` to `POST /api/v1/cvs/upload`. It reads paginated summaries from `GET /api/v1/cvs` and displays only the processing status returned by the API. The batch endpoint applies one candidate name/email to every file, so the UI intentionally uploads one candidate at a time. The client enforces the current 10 MB limit for usability; the backend remains authoritative for file validation. Person A must register the CV router in `app/main.py` before these requests work end-to-end. Person B's newer parser commit is still on a separate branch, so extraction completion depends on that work being merged and configured. Use synthetic resumes during development and never commit personal CV files.
 
 ## Scoring response ↔ matching API ↔ ranking UI (Person C ↔ Person D)
+
 The ranking screen is an intentionally empty integration scaffold; `app/api/matching.py` is not implemented until C's scoring/task contract is available. Its filters, ranking list, and evidence slots stay inactive rather than guessing response fields. Agree on request/response JSON, whether matching is asynchronous, run ID and status states, score fields and scale, evidence/provenance, pagination/sort order, ownership checks, and error format. Use C's actual `MatchResult` and task interfaces; do not infer persisted fields from the UI.
 
 ## Current integration gaps
-- The shared backend foundation and Person A's job model/schema are available in the repo. The API dependency module and job-router registration still need to be confirmed in the shared backend before JD routes can be exercised end-to-end. Person D has not edited those backend-owned files.
-- The frontend currently assumes credentialed cookie auth. Confirm CORS and session-cookie behavior with A before deployment; change the API client if A's auth contract uses bearer tokens.
-- Person B's upload contract and Person C's scoring response/task files have not been supplied. The CV selection UI is intentionally local-only, and ranking/matching are not presented as live functionality. Fill the ranking placeholders only after C's real fields and task lifecycle are available.
+
+- Person A's job model/schema and async database dependency are available. The Person D jobs router/service now match the async dependency, but `app/main.py` still does not register the jobs router. Its existing TODO comment still describes the old synchronous implementation; Person A can correct that comment while registering the router.
+- Person D's CV client and page match Person B's single-upload and list response contracts. Person A still needs to register the CV router in `app/main.py`; the newer Person B parser work has not been merged into `main`.
+- The ranking screen remains an integration scaffold. `app/api/matching.py` and Person C's final scoring/task contract are still unavailable; keep ranking placeholders inactive until the real response and task lifecycle are agreed.

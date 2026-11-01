@@ -16,6 +16,10 @@ const vietnameseMessages = {
   Recruiter: "Nhà tuyển dụng",
   "TalentLens home": "Trang chủ TalentLens",
   "Main navigation": "Điều hướng chính",
+  "Collapse sidebar": "Thu gọn thanh điều hướng",
+  "Expand sidebar": "Mở rộng thanh điều hướng",
+  "Open navigation": "Mở thanh điều hướng",
+  "Close navigation": "Đóng thanh điều hướng",
   Account: "Tài khoản",
   "Human review stays in control": "Quyết định vẫn do con người kiểm soát",
   "Privacy · Support": "Quyền riêng tư · Hỗ trợ",
@@ -46,8 +50,8 @@ const vietnameseMessages = {
   Password: "Mật khẩu",
   "Create account": "Tạo tài khoản",
   "Sign in": "Đăng nhập",
-  "Password reset is not available yet.":
-    "Chức năng đặt lại mật khẩu hiện chưa khả dụng.",
+  "Password reset will be available after the authentication service is integrated.":
+    "Chức năng đặt lại mật khẩu sẽ khả dụng sau khi tích hợp dịch vụ xác thực.",
   "The first account becomes an administrator. After setup, only administrators can create accounts.":
     "Tài khoản đầu tiên sẽ là quản trị viên. Sau đó, chỉ quản trị viên mới có thể tạo tài khoản.",
   "Creating an account…": "Đang tạo tài khoản…",
@@ -64,14 +68,16 @@ const vietnameseMessages = {
   "An account with this email already exists.":
     "Email này đã được dùng cho một tài khoản khác.",
   "Check the information and try again.": "Hãy kiểm tra thông tin và thử lại.",
-  "Authentication is not configured. Set NEXT_PUBLIC_API_BASE_URL.":
-    "Chưa cấu hình xác thực. Hãy đặt NEXT_PUBLIC_API_BASE_URL.",
+  "Authentication service is not configured. Set NEXT_PUBLIC_API_BASE_URL in the frontend environment.":
+    "Chưa cấu hình dịch vụ xác thực. Hãy đặt NEXT_PUBLIC_API_BASE_URL trong môi trường frontend.",
   "Could not connect to the authentication service. Check that the backend is running.":
     "Không thể kết nối dịch vụ xác thực. Hãy kiểm tra backend có đang chạy không.",
   "The server could not complete the request. Try again later.":
     "Máy chủ chưa thể xử lý yêu cầu. Hãy thử lại sau.",
   Administrator: "Quản trị viên",
   Viewer: "Người xem",
+  "Demo recruiter": "Nhà tuyển dụng demo",
+  "Preview account": "Tài khoản xem trước",
   "Sign out": "Đăng xuất",
   "By continuing, you agree to your organization's access and data handling policies.":
     "Khi tiếp tục, bạn đồng ý với chính sách truy cập và xử lý dữ liệu của tổ chức.",
@@ -250,8 +256,8 @@ const vietnameseMessages = {
   "Product · Remote": "Sản phẩm · Làm việc từ xa",
   "Engineering · Hanoi": "Kỹ thuật · Hà Nội",
   "Marketing · Hybrid": "Tiếp thị · Kết hợp trực tiếp và từ xa",
-  "Your session is not authenticated. Sign in after Person A's auth API is connected.":
-    "Phiên của bạn chưa được xác thực. Hãy đăng nhập sau khi kết nối API xác thực của Person A.",
+  "Your session expired or is invalid. Sign in again.":
+    "Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Hãy đăng nhập lại.",
   "Something went wrong. Please try again.": "Đã xảy ra lỗi. Vui lòng thử lại.",
   "e.g. Product Designer": "Ví dụ: Chuyên viên thiết kế sản phẩm",
   "Job title": "Chức danh công việc",
@@ -298,7 +304,15 @@ const vietnameseMessages = {
   "Configure the API base URL and sign in once Person A's auth endpoint is integrated.":
     "Cấu hình URL API và đăng nhập sau khi tích hợp endpoint xác thực của Person A.",
   "No job descriptions yet": "Chưa có mô tả công việc",
+  "The job management API route is not available yet.":
+    "API quản lý mô tả công việc hiện chưa khả dụng.",
   "No roles on this page": "Không có vị trí nào trên trang này",
+  "No roles match this filter": "Không có vị trí nào khớp bộ lọc này",
+  "Try another status filter to find a job description.":
+    "Hãy chọn trạng thái khác để tìm mô tả công việc.",
+  "Return to the previous page to see the remaining roles.":
+    "Quay lại trang trước để xem các vị trí còn lại.",
+  "Show all roles": "Hiển thị tất cả vị trí",
   "Create a draft JD to start organizing the role requirements for your team.":
     "Tạo bản nháp JD để bắt đầu sắp xếp yêu cầu vị trí cho nhóm.",
   "Create your first draft": "Tạo bản nháp đầu tiên",
@@ -328,9 +342,65 @@ const vietnameseMessages = {
     "Không thể kết nối backend. Hãy kiểm tra backend có đang chạy không.",
   "Set NEXT_PUBLIC_API_BASE_URL to connect the backend.":
     "Hãy đặt NEXT_PUBLIC_API_BASE_URL để kết nối backend.",
+  "Backend connection is not configured. Set NEXT_PUBLIC_API_BASE_URL in the frontend environment.":
+    "Chưa cấu hình kết nối backend. Hãy đặt NEXT_PUBLIC_API_BASE_URL trong môi trường frontend.",
   "The backend returned an invalid response.":
     "Backend trả về phản hồi không hợp lệ.",
   "Request failed ({{status}}).": "Yêu cầu thất bại ({{status}}).",
+  "Upload one resume at a time and track its current processing status.":
+    "Tải từng CV lên và theo dõi trạng thái xử lý hiện tại.",
+  "Upload one resume at a time and link it to its candidate.":
+    "Tải từng CV lên và liên kết với ứng viên tương ứng.",
+  "The CV API route is not available yet.": "API CV hiện chưa khả dụng.",
+  "Sign in before uploading resumes.": "Hãy đăng nhập trước khi tải CV lên.",
+  "Sign in to access the CV library.": "Hãy đăng nhập để truy cập thư viện CV.",
+  "Upload one CV per candidate. Select one file at a time.":
+    "Mỗi ứng viên tải một CV. Hãy chọn từng tệp một.",
+  "Choose a PDF or DOCX resume.": "Hãy chọn CV định dạng PDF hoặc DOCX.",
+  "The selected file exceeds the 10 MB limit.":
+    "Tệp đã chọn vượt quá giới hạn 10 MB.",
+  "Selected {{name}}. It stays in this browser until you upload it.":
+    "Đã chọn {{name}}. Tệp vẫn ở trong trình duyệt cho đến khi bạn tải lên.",
+  "Uploaded {{name}} as CV #{{id}}. Current status: {{status}}.":
+    "Đã tải CV của {{name}} lên với mã #{{id}}. Trạng thái hiện tại: {{status}}.",
+  "Candidate full name": "Họ tên đầy đủ của ứng viên",
+  "Candidate email (optional)": "Email ứng viên (không bắt buộc)",
+  "Enter the candidate's name": "Nhập họ tên ứng viên",
+  "candidate@example.com": "ungvien@example.com",
+  "Choose resume file": "Chọn tệp CV",
+  "Drop one resume here": "Thả một tệp CV vào đây",
+  "PDF or DOCX · maximum 10 MB": "PDF hoặc DOCX · tối đa 10 MB",
+  "Selected resume file": "Tệp CV đã chọn",
+  "One CV per candidate": "Mỗi ứng viên một CV",
+  "The upload API links one candidate name and optional email to one file. Processing status is supplied by the backend.":
+    "API tải lên liên kết tên ứng viên và email tùy chọn với một tệp. Backend cung cấp trạng thái xử lý.",
+  "Files are sent only after you choose Upload resume. Use synthetic data while developing.":
+    "Tệp chỉ được gửi khi bạn chọn Tải CV lên. Hãy dùng dữ liệu giả lập trong quá trình phát triển.",
+  "Uploading…": "Đang tải lên…",
+  "Upload resume": "Tải CV lên",
+  "Uploaded resumes": "CV đã tải lên",
+  "{{count}} resumes in this workspace":
+    "{{count}} CV trong không gian làm việc này",
+  "Refreshing…": "Đang làm mới…",
+  Refresh: "Làm mới",
+  "Loading resumes…": "Đang tải danh sách CV…",
+  "No resumes have been uploaded yet.": "Chưa có CV nào được tải lên.",
+  Uploaded: "Đã tải lên",
+  Parsing: "Đang trích xuất văn bản",
+  Parsed: "Đã trích xuất văn bản",
+  Extracting: "Đang trích xuất thông tin",
+  Extracted: "Đã trích xuất thông tin",
+  Scoring: "Đang chấm điểm",
+  Scored: "Đã chấm điểm",
+  Error: "Lỗi xử lý",
+  "Loading…": "Đang tải…",
+  "Load more": "Tải thêm",
+  "Only PDF and DOCX files up to 10 MB are accepted by this form.":
+    "Biểu mẫu chỉ nhận tệp PDF và DOCX có dung lượng tối đa 10 MB.",
+  "A file leaves this browser only after you submit the upload form.":
+    "Tệp chỉ rời khỏi trình duyệt sau khi bạn gửi biểu mẫu tải lên.",
+  "The backend remains responsible for file validation, storage, and access control.":
+    "Backend chịu trách nhiệm xác thực tệp, lưu trữ và kiểm soát quyền truy cập.",
 } as const;
 
 export type TranslationKey = keyof typeof vietnameseMessages;

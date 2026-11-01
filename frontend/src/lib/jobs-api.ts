@@ -1,3 +1,5 @@
+import { getAuthAccessToken } from "@/lib/auth-session";
+
 export type JobStatus = "draft" | "active" | "closed" | "archived";
 
 export type Job = {
@@ -57,7 +59,7 @@ function apiUrl(path: string): string {
       0,
     );
   }
-  return `${baseUrl}${path}`;
+  return `${baseUrl}/api/v1${path}`;
 }
 
 async function request<T>(
@@ -73,11 +75,13 @@ async function request<T>(
     if (init?.body && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
+    const accessToken = getAuthAccessToken();
+    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
 
     response = await fetch(url, {
       ...init,
       signal,
-      credentials: "include",
+      credentials: "omit",
       headers,
     });
   } catch {
@@ -106,12 +110,12 @@ async function request<T>(
           .join(" ")
       : "";
     const message =
-      typeof detail === "string"
-        ? detail
-        : validationMessages ||
-          (isRecord(body) && typeof body.message === "string"
-            ? body.message
-            : `Request failed (${response.status}).`);
+      validationMessages ||
+      (isRecord(body) && typeof body.message === "string"
+        ? body.message
+        : typeof detail === "string"
+          ? detail
+          : `Request failed (${response.status}).`);
     throw new JobsApiError(message, response.status);
   }
   if (

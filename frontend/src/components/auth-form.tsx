@@ -27,7 +27,7 @@ function getErrorNotice(
 
   if (error.kind === "configuration") {
     return {
-      key: "Authentication is not configured. Set NEXT_PUBLIC_API_BASE_URL.",
+      key: "Authentication service is not configured. Set NEXT_PUBLIC_API_BASE_URL in the frontend environment.",
       kind: "error",
     };
   }
@@ -160,20 +160,6 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       />
       <div className="password-label">
         <label htmlFor="password">{t("Password")}</label>
-        {!isRegistering && (
-          <button
-            className="text-button"
-            type="button"
-            onClick={() =>
-              setNotice({
-                key: "Password reset is not available yet.",
-                kind: "info",
-              })
-            }
-          >
-            {t("Forgot password?")}
-          </button>
-        )}
       </div>
       <input
         id="password"
@@ -187,6 +173,22 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         maxLength={72}
         required
       />
+      {!isRegistering && (
+        <div className="password-help">
+          <button
+            className="text-button"
+            type="button"
+            onClick={() =>
+              setNotice({
+                key: "Password reset will be available after the authentication service is integrated.",
+                kind: "info",
+              })
+            }
+          >
+            {t("Forgot password?")}
+          </button>
+        </div>
+      )}
       <button
         className="button button-primary login-submit"
         type="submit"

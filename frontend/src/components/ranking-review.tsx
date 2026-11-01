@@ -8,8 +8,14 @@ export function RankingReview() {
 
   return (
     <>
-      <div className="ranking-integration-banner" role="note">
-        <span className="sample-banner-icon">i</span>
+      <div
+        className="ranking-integration-banner"
+        role="status"
+        aria-live="polite"
+      >
+        <span className="sample-banner-icon" aria-hidden="true">
+          i
+        </span>
         <span>
           <strong>{t("Waiting for Person C's scoring contract.")}</strong>{" "}
           {t(
@@ -58,8 +64,10 @@ export function RankingReview() {
                 <p>{t("List and sorting will follow Person C's response.")}</p>
               </div>
             </div>
-            <div className="ranking-empty-state">
-              <span className="empty-icon">⌁</span>
+            <div className="ranking-empty-state" role="status">
+              <span className="empty-icon" aria-hidden="true">
+                ⌁
+              </span>
               <h3>{t("Ranking data will appear here")}</h3>
               <p>
                 {t(
