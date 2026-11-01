@@ -6,10 +6,11 @@ Owner: Person A
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models._types import enum_values
 
 
 class DecisionStatus(str, enum.Enum):
@@ -31,13 +32,19 @@ class Decision(Base):
     )
     decided_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     status: Mapped[DecisionStatus] = mapped_column(
-        Enum(DecisionStatus), default=DecisionStatus.PENDING, nullable=False
+        Enum(DecisionStatus, values_callable=enum_values), default=DecisionStatus.PENDING, nullable=False
     )
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Recruiter override of the AI score (0-100); ranking uses it when set
+    score_override: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
 
     # ── Relationships ───────────────────────────────────────
     match_result = relationship("MatchResult", back_populates="decision")

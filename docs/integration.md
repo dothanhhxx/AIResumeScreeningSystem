@@ -1,15 +1,47 @@
-# Person D integration contracts
+# Integration contracts (agreed)
 
-## Job model ↔ schema (Person A ↔ Person D)
-Initial contract reviewed from Person A's `Job` model: integer ID; `created_by` owner ID from the authenticated user; lowercase `draft`, `active`, `closed`, and `archived` states; skills stored as JSON text; and database-managed timestamps. Person D's schema exposes skills as `list[str]`. The frontend job-management page is implemented against that contract; end-to-end use still depends on the shared API's auth dependencies and router registration.
+All integration points from the team plan are now implemented and covered by
+`backend/tests/test_api/` (offline end-to-end) and the frontend tests.
 
-## CV upload UI ↔ upload API (Person B ↔ Person D)
-The upload screen accepts PDF/DOCX selections in the browser and does not transmit them yet. Before enabling upload, agree on endpoint, single/multiple-file behavior, multipart field names, size/type limits, duplicate handling, processing status, response fields, and authorization. Do not use real resumes in development or commit any resume files.
+## A ↔ B — CV model, status, schema
 
-## Scoring response ↔ matching API ↔ ranking UI (Person C ↔ Person D)
-The ranking screen is an intentionally empty integration scaffold; `app/api/matching.py` is not implemented until C's scoring/task contract is available. Its filters, ranking list, and evidence slots stay inactive rather than guessing response fields. Agree on request/response JSON, whether matching is asynchronous, run ID and status states, score fields and scale, evidence/provenance, pagination/sort order, ownership checks, and error format. Use C's actual `MatchResult` and task interfaces; do not infer persisted fields from the UI.
+- `CV.status` lifecycle: `uploaded → parsing → parsed → extracting → extracted → scoring → scored`, or `error`.
+- Enum columns persist the lowercase **values** (`values_callable=enum_values`) to match the Postgres enum types from migration 0001.
+- `CV.error_message` holds the last pipeline error; `POST /cvs/{id}/reprocess` restarts parsing.
+- Storage backend is configurable (`STORAGE_BACKEND=minio|local`); `GET /cvs/{id}/file` works with both.
 
-## Current integration gaps
-- The shared backend foundation and Person A's job model/schema are available in the repo. The API dependency module and job-router registration still need to be confirmed in the shared backend before JD routes can be exercised end-to-end. Person D has not edited those backend-owned files.
-- The frontend currently assumes credentialed cookie auth. Confirm CORS and session-cookie behavior with A before deployment; change the API client if A's auth contract uses bearer tokens.
-- Person B's upload contract and Person C's scoring response/task files have not been supplied. The CV selection UI is intentionally local-only, and ranking/matching are not presented as live functionality. Fill the ranking placeholders only after C's real fields and task lifecycle are available.
+## A ↔ C — MatchResult, embeddings
+
+Migration `0002_scoring_pipeline` adds:
+
+- `cvs.embedding`, `jobs.embedding` — JSON `{"model": "...", "v": [...]}`. Stored as text so the same code runs on
+  Postgres and SQLite; cosine similarity is computed in Python (fine at this scale, pgvector not required).
+  Vectors are only compared when produced by the same model. Updating a JD's text clears its embedding.
+- `match_results.rule_score / semantic_score / llm_score / details / updated_at`, unique `(cv_id, job_id)` so
+  re-running a match updates the row.
+- `decisions.score_override` — recruiter-adjusted score used for ranking when set.
+
+## A ↔ D — Job model / schema
+
+Unchanged from the original contract; JD writes require `admin` or `recruiter`. Jobs remain owner-scoped
+(admins can open any job in matching).
+
+## B ↔ C — raw_text format and task chain
+
+- `raw_text` = output of `parsing.base.clean_text`: LF line endings, single spaces, at most one blank line between
+  blocks, pages concatenated, no markup. The extraction prompt explains this format to the LLM.
+- Chain: `parse_cv_task` → `extract_info_task` → (on demand) `score_match_task`, dispatched through
+  `app/workers/dispatch.py` either to Celery queues `parse` / `extract` / `score` or to the in-process inline runner.
+- Celery tasks use a NullPool session factory per task (each task runs its own event loop).
+
+## C ↔ D — Scoring response ↔ ranking UI
+
+- Matching is asynchronous. `POST /matching/run {job_id, cv_ids?}` → `202 {job_id, queued, cv_ids, skipped}`;
+  the UI polls `GET /matching/jobs/{job_id}/results` while `pending_cvs > 0`.
+- Every score is 0–100. `overall_score` = Σ weight·score over the engines that ran; weights are in `details.weights`,
+  engine provenance in `details.sources` and `model_name` (`heuristic` when no LLM was used).
+- `effective_score` = `decision.score_override ?? overall_score`; ranking order is `effective_score` desc, `rank` is 1-based.
+- `details.evidence[]` = `{requirement, category, status: found|unclear|not_found, quote}`; quotes come from the
+  PII-stripped CV text. `details.strengths / gaps / interview_questions` are short strings.
+- Decisions: `PUT /matching/results/{id}/decision {status, reason, note, score_override}`; the UI requires a reason
+  when the score is overridden. Each create/update is written to the audit log with the AI score for comparison.

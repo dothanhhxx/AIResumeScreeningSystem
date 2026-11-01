@@ -2,18 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps
+# Tesseract (eng + vie) for OCR of scanned CVs
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc libpq-dev \
+    && apt-get install -y --no-install-recommends gcc libpq-dev tesseract-ocr tesseract-ocr-vie \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python deps
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir -e ".[dev]"
+# Install dependencies first (cached layer), then the app itself
+RUN mkdir -p app && touch app/__init__.py && pip install --no-cache-dir -e ".[dev]"
 
-# Copy app code
 COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Apply migrations, then start the API. The worker service overrides this command.
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

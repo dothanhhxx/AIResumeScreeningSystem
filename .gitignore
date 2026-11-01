@@ -37,3 +37,10 @@ htmlcov/
 
 # ── MinIO data (local) ─────────────────────────────────────
 minio_data/
+
+# ── Local dev (SQLite + file storage) ──────────────────────
+backend/storage/
+backend/*.db
+backend/*.db-wal
+backend/*.db-shm
+.ruff_cache/

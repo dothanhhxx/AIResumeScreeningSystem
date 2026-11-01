@@ -16,6 +16,10 @@ const vietnameseMessages = {
   Recruiter: "Nhà tuyển dụng",
   "TalentLens home": "Trang chủ TalentLens",
   "Main navigation": "Điều hướng chính",
+  "Collapse sidebar": "Thu gọn thanh điều hướng",
+  "Expand sidebar": "Mở rộng thanh điều hướng",
+  "Open navigation": "Mở thanh điều hướng",
+  "Close navigation": "Đóng thanh điều hướng",
   Account: "Tài khoản",
   "Human review stays in control": "Quyết định vẫn do con người kiểm soát",
   "Privacy · Support": "Quyền riêng tư · Hỗ trợ",
@@ -46,8 +50,8 @@ const vietnameseMessages = {
   Password: "Mật khẩu",
   "Create account": "Tạo tài khoản",
   "Sign in": "Đăng nhập",
-  "Password reset is not available yet.":
-    "Chức năng đặt lại mật khẩu hiện chưa khả dụng.",
+  "Password reset will be available after the authentication service is integrated.":
+    "Chức năng đặt lại mật khẩu sẽ khả dụng sau khi tích hợp dịch vụ xác thực.",
   "The first account becomes an administrator. After setup, only administrators can create accounts.":
     "Tài khoản đầu tiên sẽ là quản trị viên. Sau đó, chỉ quản trị viên mới có thể tạo tài khoản.",
   "Creating an account…": "Đang tạo tài khoản…",
@@ -64,14 +68,16 @@ const vietnameseMessages = {
   "An account with this email already exists.":
     "Email này đã được dùng cho một tài khoản khác.",
   "Check the information and try again.": "Hãy kiểm tra thông tin và thử lại.",
-  "Authentication is not configured. Set NEXT_PUBLIC_API_BASE_URL.":
-    "Chưa cấu hình xác thực. Hãy đặt NEXT_PUBLIC_API_BASE_URL.",
+  "Authentication service is not configured. Set NEXT_PUBLIC_API_BASE_URL in the frontend environment.":
+    "Chưa cấu hình dịch vụ xác thực. Hãy đặt NEXT_PUBLIC_API_BASE_URL trong môi trường frontend.",
   "Could not connect to the authentication service. Check that the backend is running.":
     "Không thể kết nối dịch vụ xác thực. Hãy kiểm tra backend có đang chạy không.",
   "The server could not complete the request. Try again later.":
     "Máy chủ chưa thể xử lý yêu cầu. Hãy thử lại sau.",
   Administrator: "Quản trị viên",
   Viewer: "Người xem",
+  "Demo recruiter": "Nhà tuyển dụng demo",
+  "Preview account": "Tài khoản xem trước",
   "Sign out": "Đăng xuất",
   "By continuing, you agree to your organization's access and data handling policies.":
     "Khi tiếp tục, bạn đồng ý với chính sách truy cập và xử lý dữ liệu của tổ chức.",
@@ -250,8 +256,8 @@ const vietnameseMessages = {
   "Product · Remote": "Sản phẩm · Làm việc từ xa",
   "Engineering · Hanoi": "Kỹ thuật · Hà Nội",
   "Marketing · Hybrid": "Tiếp thị · Kết hợp trực tiếp và từ xa",
-  "Your session is not authenticated. Sign in after Person A's auth API is connected.":
-    "Phiên của bạn chưa được xác thực. Hãy đăng nhập sau khi kết nối API xác thực của Person A.",
+  "Your session expired or is invalid. Sign in again.":
+    "Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Hãy đăng nhập lại.",
   "Something went wrong. Please try again.": "Đã xảy ra lỗi. Vui lòng thử lại.",
   "e.g. Product Designer": "Ví dụ: Chuyên viên thiết kế sản phẩm",
   "Job title": "Chức danh công việc",
@@ -298,7 +304,15 @@ const vietnameseMessages = {
   "Configure the API base URL and sign in once Person A's auth endpoint is integrated.":
     "Cấu hình URL API và đăng nhập sau khi tích hợp endpoint xác thực của Person A.",
   "No job descriptions yet": "Chưa có mô tả công việc",
+  "The job management API route is not available yet.":
+    "API quản lý mô tả công việc hiện chưa khả dụng.",
   "No roles on this page": "Không có vị trí nào trên trang này",
+  "No roles match this filter": "Không có vị trí nào khớp bộ lọc này",
+  "Try another status filter to find a job description.":
+    "Hãy chọn trạng thái khác để tìm mô tả công việc.",
+  "Return to the previous page to see the remaining roles.":
+    "Quay lại trang trước để xem các vị trí còn lại.",
+  "Show all roles": "Hiển thị tất cả vị trí",
   "Create a draft JD to start organizing the role requirements for your team.":
     "Tạo bản nháp JD để bắt đầu sắp xếp yêu cầu vị trí cho nhóm.",
   "Create your first draft": "Tạo bản nháp đầu tiên",
@@ -328,9 +342,167 @@ const vietnameseMessages = {
     "Không thể kết nối backend. Hãy kiểm tra backend có đang chạy không.",
   "Set NEXT_PUBLIC_API_BASE_URL to connect the backend.":
     "Hãy đặt NEXT_PUBLIC_API_BASE_URL để kết nối backend.",
+  "Backend connection is not configured. Set NEXT_PUBLIC_API_BASE_URL in the frontend environment.":
+    "Chưa cấu hình kết nối backend. Hãy đặt NEXT_PUBLIC_API_BASE_URL trong môi trường frontend.",
   "The backend returned an invalid response.":
     "Backend trả về phản hồi không hợp lệ.",
   "Request failed ({{status}}).": "Yêu cầu thất bại ({{status}}).",
+  "Upload one resume at a time and track its current processing status.":
+    "Tải từng CV lên và theo dõi trạng thái xử lý hiện tại.",
+  "Upload one resume at a time and link it to its candidate.":
+    "Tải từng CV lên và liên kết với ứng viên tương ứng.",
+  "The CV API route is not available yet.": "API CV hiện chưa khả dụng.",
+  "Sign in before uploading resumes.": "Hãy đăng nhập trước khi tải CV lên.",
+  "Sign in to access the CV library.": "Hãy đăng nhập để truy cập thư viện CV.",
+  "Upload one CV per candidate. Select one file at a time.":
+    "Mỗi ứng viên tải một CV. Hãy chọn từng tệp một.",
+  "Choose a PDF or DOCX resume.": "Hãy chọn CV định dạng PDF hoặc DOCX.",
+  "The selected file exceeds the 10 MB limit.":
+    "Tệp đã chọn vượt quá giới hạn 10 MB.",
+  "Selected {{name}}. It stays in this browser until you upload it.":
+    "Đã chọn {{name}}. Tệp vẫn ở trong trình duyệt cho đến khi bạn tải lên.",
+  "Uploaded {{name}} as CV #{{id}}. Current status: {{status}}.":
+    "Đã tải CV của {{name}} lên với mã #{{id}}. Trạng thái hiện tại: {{status}}.",
+  "Candidate full name": "Họ tên đầy đủ của ứng viên",
+  "Candidate email (optional)": "Email ứng viên (không bắt buộc)",
+  "Enter the candidate's name": "Nhập họ tên ứng viên",
+  "candidate@example.com": "ungvien@example.com",
+  "Choose resume file": "Chọn tệp CV",
+  "Drop one resume here": "Thả một tệp CV vào đây",
+  "PDF or DOCX · maximum 10 MB": "PDF hoặc DOCX · tối đa 10 MB",
+  "Selected resume file": "Tệp CV đã chọn",
+  "One CV per candidate": "Mỗi ứng viên một CV",
+  "The upload API links one candidate name and optional email to one file. Processing status is supplied by the backend.":
+    "API tải lên liên kết tên ứng viên và email tùy chọn với một tệp. Backend cung cấp trạng thái xử lý.",
+  "Files are sent only after you choose Upload resume. Use synthetic data while developing.":
+    "Tệp chỉ được gửi khi bạn chọn Tải CV lên. Hãy dùng dữ liệu giả lập trong quá trình phát triển.",
+  "Uploading…": "Đang tải lên…",
+  "Upload resume": "Tải CV lên",
+  "Uploaded resumes": "CV đã tải lên",
+  "{{count}} resumes in this workspace":
+    "{{count}} CV trong không gian làm việc này",
+  "Refreshing…": "Đang làm mới…",
+  Refresh: "Làm mới",
+  "Loading resumes…": "Đang tải danh sách CV…",
+  "No resumes have been uploaded yet.": "Chưa có CV nào được tải lên.",
+  Uploaded: "Đã tải lên",
+  Parsing: "Đang trích xuất văn bản",
+  Parsed: "Đã trích xuất văn bản",
+  Extracting: "Đang trích xuất thông tin",
+  Extracted: "Đã trích xuất thông tin",
+  Scoring: "Đang chấm điểm",
+  Scored: "Đã chấm điểm",
+  Error: "Lỗi xử lý",
+  "Loading…": "Đang tải…",
+  "Load more": "Tải thêm",
+  "Only PDF and DOCX files up to 10 MB are accepted by this form.":
+    "Biểu mẫu chỉ nhận tệp PDF và DOCX có dung lượng tối đa 10 MB.",
+  "A file leaves this browser only after you submit the upload form.":
+    "Tệp chỉ rời khỏi trình duyệt sau khi bạn gửi biểu mẫu tải lên.",
+  "The backend remains responsible for file validation, storage, and access control.":
+    "Backend chịu trách nhiệm xác thực tệp, lưu trữ và kiểm soát quyền truy cập.",
+  ACTION: "HÀNH ĐỘNG",
+  "AI score {{ai}} was adjusted to {{score}} by a recruiter.":
+    "Điểm AI {{ai}} đã được nhà tuyển dụng điều chỉnh thành {{score}}.",
+  "AI score: {{score}}": "Điểm AI: {{score}}",
+  Action: "Hành động",
+  "Adjusted score (optional)": "Điểm điều chỉnh (không bắt buộc)",
+  "Adjusted score must be between 0 and 100.":
+    "Điểm điều chỉnh phải nằm trong khoảng 0 đến 100.",
+  "All actions": "Tất cả hành động",
+  "All candidates": "Tất cả ứng viên",
+  "All processed": "Đã xử lý xong",
+  "Audit log": "Nhật ký kiểm toán",
+  COMPLIANCE: "TUÂN THỦ",
+  "CV DETAILS": "CHI TIẾT CV",
+  "Candidate #{{id}}": "Ứng viên #{{id}}",
+  "Certifications & languages": "Chứng chỉ & ngoại ngữ",
+  "Choose a job to see its ranking.": "Chọn một vị trí để xem bảng xếp hạng.",
+  Close: "Đóng",
+  "Confirm delete": "Xác nhận xoá",
+  "Create a job description first": "Hãy tạo mô tả công việc trước",
+  DETAILS: "CHI TIẾT",
+  "Decision saved.": "Đã lưu quyết định.",
+  Delete: "Xoá",
+  "Download file": "Tải tệp",
+  Education: "Học vấn",
+  "Every sign-in, upload, matching run and decision is recorded here.":
+    "Mọi lần đăng nhập, tải CV, chạy so khớp và quyết định đều được ghi lại tại đây.",
+  Experience: "Kinh nghiệm",
+  "Extracted by": "Trích xuất bởi",
+  "Gaps to verify": "Điểm cần xác minh",
+  "Give a reason when you adjust the AI score.":
+    "Hãy nêu lý do khi điều chỉnh điểm AI.",
+  "LLM unavailable: offline rule-based scoring.":
+    "Không dùng LLM: chấm điểm theo quy tắc ngoại tuyến.",
+  LLM: "LLM",
+  "Match indicators support review and do not decide for the recruiter.":
+    "Chỉ số so khớp hỗ trợ việc đánh giá và không quyết định thay nhà tuyển dụng.",
+  "Name or skill": "Tên hoặc kỹ năng",
+  "No CVs are ready yet. Upload resumes and wait until they are extracted.":
+    "Chưa có CV nào sẵn sàng. Hãy tải CV lên và đợi trích xuất xong.",
+  "No audit entries yet.": "Chưa có mục nhật ký nào.",
+  "No job descriptions yet. Create one to start matching.":
+    "Chưa có mô tả công việc. Hãy tạo một mô tả để bắt đầu so khớp.",
+  "No ranked candidates yet": "Chưa có ứng viên được xếp hạng",
+  "No required skills matched": "Chưa khớp kỹ năng yêu cầu nào",
+  "None recorded": "Chưa ghi nhận",
+  "Notes for your team (optional)": "Ghi chú cho nhóm (không bắt buộc)",
+  "Nothing waiting. Run AI matching on a job to fill the queue.":
+    "Không có hồ sơ chờ. Hãy chạy so khớp AI cho một vị trí.",
+  Off: "Tắt",
+  "Only administrators can view the audit log.":
+    "Chỉ quản trị viên mới xem được nhật ký kiểm toán.",
+  "Open CV library": "Mở thư viện CV",
+  "Open the CV library to see the error and reprocess them.":
+    "Mở thư viện CV để xem lỗi và xử lý lại.",
+  "Processing… this view refreshes automatically.":
+    "Đang xử lý… màn hình sẽ tự cập nhật.",
+  "RANK {{rank}}": "HẠNG {{rank}}",
+  RESOURCE: "ĐỐI TƯỢNG",
+  Reprocess: "Xử lý lại",
+  Rules: "Quy tắc",
+  "Run AI matching": "Chạy so khớp AI",
+  "Score breakdown": "Chi tiết điểm",
+  "Scored by {{model}} · weights {{weights}}":
+    "Chấm bởi {{model}} · trọng số {{weights}}",
+  "Scoring in progress: {{count}} CV(s) remaining…":
+    "Đang chấm điểm: còn {{count}} CV…",
+  "Scoring {{count}} CV(s) in the background. Results update automatically.":
+    "Đang chấm {{count}} CV ở chế độ nền. Kết quả sẽ tự cập nhật.",
+  "Select a candidate to review the evidence.":
+    "Chọn một ứng viên để xem bằng chứng.",
+  Semantic: "Ngữ nghĩa",
+  "Sign in to review candidates.": "Hãy đăng nhập để đánh giá ứng viên.",
+  "Sign in to see your hiring overview.":
+    "Hãy đăng nhập để xem tổng quan tuyển dụng.",
+  Skills: "Kỹ năng",
+  "Starting…": "Đang bắt đầu…",
+  Strengths: "Điểm mạnh",
+  "Suggested interview questions": "Câu hỏi phỏng vấn gợi ý",
+  TIME: "THỜI GIAN",
+  "This job has no explicit requirements to check.":
+    "Vị trí này chưa có yêu cầu cụ thể để đối chiếu.",
+  USER: "NGƯỜI DÙNG",
+  "Upload CVs in the CV library, then choose Run AI matching to score them against this job.":
+    "Tải CV lên thư viện CV, sau đó chọn Chạy so khớp AI để chấm điểm theo vị trí này.",
+  "Viewers can read rankings but cannot record decisions.":
+    "Người xem chỉ đọc được bảng xếp hạng, không thể ghi quyết định.",
+  "Why this outcome? Required when adjusting the score.":
+    "Vì sao chọn kết quả này? Bắt buộc khi điều chỉnh điểm.",
+  "Why this score": "Vì sao có điểm này",
+  "Work history": "Quá trình làm việc",
+  "Your role cannot perform this action.":
+    "Vai trò của bạn không thể thực hiện thao tác này.",
+  adjusted: "đã chỉnh",
+  "incl. interview stage": "gồm vòng phỏng vấn",
+  match: "phù hợp",
+  "{{count}} CV(s) could not be processed.": "{{count}} CV không xử lý được.",
+  "{{count}} processing": "{{count}} đang xử lý",
+  "{{count}} scored for {{job}}": "{{count}} ứng viên đã chấm cho {{job}}",
+  "{{count}} scored": "{{count}} đã chấm",
+  "{{count}} total": "{{count}} tổng cộng",
+  "{{years}} years": "{{years}} năm",
 } as const;
 
 export type TranslationKey = keyof typeof vietnameseMessages;

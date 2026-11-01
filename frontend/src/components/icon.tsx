@@ -1,7 +1,17 @@
 import type { ReactNode } from "react";
 
 type IconName =
-  "dashboard" | "jobs" | "cvs" | "rankings" | "settings" | "search" | "arrow";
+  | "dashboard"
+  | "jobs"
+  | "cvs"
+  | "rankings"
+  | "settings"
+  | "search"
+  | "arrow"
+  | "menu"
+  | "close"
+  | "chevron-left"
+  | "chevron-right";
 
 const paths: Record<IconName, ReactNode> = {
   dashboard: (
@@ -50,6 +60,10 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M5 12h14M13 6l6 6-6 6" />
     </>
   ),
+  menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  close: <path d="m18 6-12 12M6 6l12 12" />,
+  "chevron-left": <path d="m15 18-6-6 6-6" />,
+  "chevron-right": <path d="m9 18 6-6-6-6" />,
 };
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {

@@ -27,9 +27,9 @@ celery_app = Celery(
         # Register task modules here so the worker discovers them on startup.
         # Person B owns:
         "app.workers.parse_task",
-        # Person C will add:
-        # "app.workers.extract_task",
-        # "app.workers.score_task",
+        # Person C owns:
+        "app.workers.extract_task",
+        "app.workers.score_task",
     ],
 )
 
@@ -52,9 +52,13 @@ celery_app.conf.update(
     task_queues={
         "default": {},
         "parse": {},
+        "extract": {},
+        "score": {},
     },
     task_routes={
         "app.workers.parse_task.parse_cv_task": {"queue": "parse"},
+        "app.workers.extract_task.extract_info_task": {"queue": "extract"},
+        "app.workers.score_task.score_match_task": {"queue": "score"},
     },
 
     # Retry policy defaults

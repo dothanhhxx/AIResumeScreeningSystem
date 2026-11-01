@@ -51,12 +51,15 @@ function messageForError(
     error instanceof JobsApiError &&
     error.message === "Set NEXT_PUBLIC_API_BASE_URL to connect the backend."
   ) {
-    return t("Set NEXT_PUBLIC_API_BASE_URL to connect the backend.");
+    return t(
+      "Backend connection is not configured. Set NEXT_PUBLIC_API_BASE_URL in the frontend environment.",
+    );
+  }
+  if (error instanceof JobsApiError && error.status === 404) {
+    return t("The job management API route is not available yet.");
   }
   if (error instanceof JobsApiError && error.status === 401) {
-    return t(
-      "Your session is not authenticated. Sign in after Person A's auth API is connected.",
-    );
+    return t("Your session expired or is invalid. Sign in again.");
   }
   if (error instanceof JobsApiError && error.status === 0) {
     return t("Could not reach the backend. Check that it is running.");
@@ -243,7 +246,8 @@ export function JobsManager() {
   const [reloadVersion, setReloadVersion] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<unknown>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [actionError, setActionError] = useState<unknown>(null);
   const [notice, setNotice] = useState<TranslationKey | "">("");
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [creating, setCreating] = useState(false);
@@ -254,7 +258,7 @@ export function JobsManager() {
 
     async function loadJobs() {
       setLoading(true);
-      setError(null);
+      setLoadError(null);
       try {
         const result = await listJobs({
           page,
@@ -267,7 +271,7 @@ export function JobsManager() {
         setTotalPages(Math.max(result.total_pages, 1));
       } catch (loadError) {
         if (controller.signal.aborted) return;
-        setError(loadError);
+        setLoadError(loadError);
         setJobs([]);
         setTotal(0);
       } finally {
@@ -281,7 +285,7 @@ export function JobsManager() {
 
   async function handleSave(input: JobInput, nextStatus?: JobStatus) {
     setSaving(true);
-    setError(null);
+    setActionError(null);
     try {
       if (editingJob) {
         await updateJob(editingJob.id, {
@@ -298,7 +302,7 @@ export function JobsManager() {
       setEditingJob(null);
       setReloadVersion((version) => version + 1);
     } catch (saveError) {
-      setError(saveError);
+      setActionError(saveError);
     } finally {
       setSaving(false);
     }
@@ -307,14 +311,14 @@ export function JobsManager() {
   async function handleArchive() {
     if (!archivingJob) return;
     setSaving(true);
-    setError(null);
+    setActionError(null);
     try {
       await archiveJob(archivingJob.id);
       setNotice("Job description archived. Its match history is retained.");
       setArchivingJob(null);
       setReloadVersion((version) => version + 1);
     } catch (archiveError) {
-      setError(archiveError);
+      setActionError(archiveError);
     } finally {
       setSaving(false);
     }
@@ -325,7 +329,23 @@ export function JobsManager() {
     setPage(1);
   }
 
+  function openCreateDialog() {
+    setActionError(null);
+    setCreating(true);
+  }
+
+  function openEditDialog(job: Job) {
+    setActionError(null);
+    setEditingJob(job);
+  }
+
+  function openArchiveDialog(job: Job) {
+    setActionError(null);
+    setArchivingJob(job);
+  }
+
   const modalJob = editingJob;
+  const noRolesForFilter = total === 0 && statusFilter !== "all";
 
   return (
     <>
@@ -348,35 +368,23 @@ export function JobsManager() {
           ))}
         </div>
         <div className="jobs-toolbar-actions">
-          <p className="jobs-total">
-            {total === 1
-              ? t("{{count}} role", { count: total })
-              : t("{{count}} roles", { count: total })}
-          </p>
+          {!loading && loadError === null && (
+            <p className="jobs-total">
+              {total === 1
+                ? t("{{count}} role", { count: total })
+                : t("{{count}} roles", { count: total })}
+            </p>
+          )}
           <button
             className="button button-primary"
             type="button"
-            onClick={() => setCreating(true)}
+            onClick={openCreateDialog}
           >
             <span className="button-plus">+</span> {t("New job")}
           </button>
         </div>
       </div>
 
-      {error !== null && (
-        <div className="jobs-alert jobs-alert-error" role="alert">
-          <strong>{t("Could not load job descriptions.")}</strong>
-          <span>{messageForError(error, t)}</span>
-          {!loading && (
-            <button
-              type="button"
-              onClick={() => setReloadVersion((version) => version + 1)}
-            >
-              {t("Retry")}
-            </button>
-          )}
-        </div>
-      )}
       {notice && (
         <div className="jobs-alert jobs-alert-success" role="status">
           <span>{t(notice)}</span>
@@ -392,40 +400,77 @@ export function JobsManager() {
 
       <section className="panel jobs-panel" aria-label={t("Job descriptions")}>
         {loading ? (
-          <div className="jobs-state">
-            <span className="loading-mark" />
+          <div className="jobs-state" role="status" aria-live="polite">
+            <span className="loading-mark" aria-hidden="true" />
             <p>{t("Loading job descriptions…")}</p>
           </div>
-        ) : error ? (
-          <div className="jobs-state">
-            <span className="empty-icon">!</span>
-            <h2>{t("Backend connection needed")}</h2>
-            <p>
-              {t(
-                "Configure the API base URL and sign in once Person A's auth endpoint is integrated.",
-              )}
-            </p>
+        ) : loadError !== null ? (
+          <div className="jobs-state jobs-state-error" role="alert">
+            <span className="empty-icon" aria-hidden="true">
+              !
+            </span>
+            <h2>{t("Could not load job descriptions.")}</h2>
+            <p>{messageForError(loadError, t)}</p>
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={() => setReloadVersion((version) => version + 1)}
+            >
+              {t("Retry")}
+            </button>
           </div>
         ) : jobs.length === 0 ? (
-          <div className="jobs-state">
-            <span className="empty-icon">▤</span>
+          <div className="jobs-state" role="status">
+            <span className="empty-icon" aria-hidden="true">
+              ▤
+            </span>
             <h2>
-              {total === 0
-                ? t("No job descriptions yet")
-                : t("No roles on this page")}
+              {noRolesForFilter
+                ? t("No roles match this filter")
+                : total === 0
+                  ? t("No job descriptions yet")
+                  : t("No roles on this page")}
             </h2>
             <p>
-              {t(
-                "Create a draft JD to start organizing the role requirements for your team.",
-              )}
+              {noRolesForFilter
+                ? t("Try another status filter to find a job description.")
+                : total === 0
+                  ? t(
+                      "Create a draft JD to start organizing the role requirements for your team.",
+                    )
+                  : t(
+                      "Return to the previous page to see the remaining roles.",
+                    )}
             </p>
-            <button
-              className="button button-primary"
-              type="button"
-              onClick={() => setCreating(true)}
-            >
-              {t("Create your first draft")}
-            </button>
+            {noRolesForFilter ? (
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={() => chooseFilter("all")}
+              >
+                {t("Show all roles")}
+              </button>
+            ) : total === 0 ? (
+              <button
+                className="button button-primary"
+                type="button"
+                onClick={openCreateDialog}
+              >
+                {t("Create your first draft")}
+              </button>
+            ) : (
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={() =>
+                  page > 1
+                    ? setPage((current) => Math.max(current - 1, 1))
+                    : setReloadVersion((version) => version + 1)
+                }
+              >
+                {t(page > 1 ? "Previous" : "Retry")}
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -488,7 +533,7 @@ export function JobsManager() {
                           <button
                             className="icon-button"
                             type="button"
-                            onClick={() => setEditingJob(job)}
+                            onClick={() => openEditDialog(job)}
                             aria-label={`${t("Edit")} ${job.title}`}
                           >
                             {t("Edit")}
@@ -497,7 +542,7 @@ export function JobsManager() {
                             <button
                               className="icon-button icon-button-danger"
                               type="button"
-                              onClick={() => setArchivingJob(job)}
+                              onClick={() => openArchiveDialog(job)}
                               aria-label={`${t("Archive")} ${job.title}`}
                             >
                               {t("Archive")}
@@ -566,9 +611,9 @@ export function JobsManager() {
                 ×
               </button>
             </header>
-            {error !== null && (
+            {actionError !== null && (
               <div className="jobs-alert jobs-alert-error" role="alert">
-                {messageForError(error, t)}
+                {messageForError(actionError, t)}
               </div>
             )}
             <JobForm
@@ -602,9 +647,9 @@ export function JobsManager() {
                 ×
               </button>
             </header>
-            {error !== null && (
+            {actionError !== null && (
               <div className="jobs-alert jobs-alert-error" role="alert">
-                {messageForError(error, t)}
+                {messageForError(actionError, t)}
               </div>
             )}
             <JobForm
@@ -641,9 +686,9 @@ export function JobsManager() {
                 ×
               </button>
             </header>
-            {error !== null && (
+            {actionError !== null && (
               <div className="jobs-alert jobs-alert-error" role="alert">
-                {messageForError(error, t)}
+                {messageForError(actionError, t)}
               </div>
             )}
             <p className="confirm-copy">

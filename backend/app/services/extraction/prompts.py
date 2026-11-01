@@ -9,7 +9,9 @@ so the prompt only needs to explain how to fill each field.
 EXTRACTION_PROMPT = """You are an HR assistant that extracts structured information from resumes.
 
 The resume below may be written in Vietnamese, English or a mix of both.
-Personal data has been replaced with tokens such as [NAME], [EMAIL], [PHONE], [URL], [DOB] — ignore them.
+Personal data has been replaced with tokens such as [NAME], [EMAIL], [PHONE], [URL], [DOB], [ADDRESS] — ignore them.
+The text was extracted from a PDF/DOCX (or OCR of a scan): pages are concatenated, line breaks inside
+sections may be arbitrary and some OCR typos can remain.
 
 Rules:
 - Only use information that is explicitly present in the resume. Never invent or guess.
@@ -27,8 +29,8 @@ Resume:
 """
 
 
-# TODO(Person B + C): agree on the raw_text format from the parser (page breaks, tables, OCR noise)
-#                     and adjust the prompt if parsed text needs extra explanation.
+# raw_text contract (Person B -> C): output of parsing.base.clean_text — LF line endings, single spaces,
+# at most one blank line between blocks, pages concatenated, no markup.
 def build_extraction_prompt(cv_text: str, today: str) -> str:
     """`cv_text` must already be passed through `strip_pii`. `today` is YYYY-MM."""
     return EXTRACTION_PROMPT.format(cv_text=cv_text.strip(), today=today)

@@ -3,10 +3,14 @@ LLM factory — picks the provider from settings.
 Owner: Person C
 """
 
+import logging
 from functools import lru_cache
 
 from app.config import settings
+from app.core.exceptions import AIServiceError
 from app.llm.base import BaseLLM
+
+logger = logging.getLogger(__name__)
 
 
 @lru_cache
@@ -24,8 +28,16 @@ def get_llm() -> BaseLLM:
             embedding_dim=settings.EMBEDDING_DIM,
         )
 
-    # TODO(Person C): add more providers here when needed, e.g.
-    #   if provider == "openai":
-    #       from app.llm.openai import OpenAILLM
-    #       return OpenAILLM(...)
+    # Add more providers here (subclass BaseLLM), e.g. "openai" -> app/llm/openai.py
     raise ValueError(f"Unsupported LLM_PROVIDER: {settings.LLM_PROVIDER}")
+
+
+def get_llm_or_none() -> BaseLLM | None:
+    """The configured LLM, or None when running offline (LLM_PROVIDER=heuristic or no API key)."""
+    if settings.LLM_PROVIDER.lower() == "heuristic":
+        return None
+    try:
+        return get_llm()
+    except (AIServiceError, ValueError) as exc:
+        logger.warning("LLM unavailable, using heuristic engines: %s", exc)
+        return None
