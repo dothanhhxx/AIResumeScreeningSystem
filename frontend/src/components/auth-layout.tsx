@@ -77,6 +77,15 @@ export function AuthLayout({
           <h2>{t(title)}</h2>
           <p className="login-subtitle">{t(description)}</p>
           {children}
+          {mode === "login" && (
+            <Link
+              className="button button-secondary login-demo-cta"
+              href="/demo"
+            >
+              {t("Explore the read-only demo")}
+              <span aria-hidden="true">→</span>
+            </Link>
+          )}
         </div>
         <footer className="login-footer">
           <span>© 2026 TalentLens</span>

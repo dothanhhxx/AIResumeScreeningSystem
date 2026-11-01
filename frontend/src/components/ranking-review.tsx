@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   useCallback,
@@ -451,9 +452,12 @@ export function RankingReview() {
   const { session } = useAuthSession();
   const searchParams = useSearchParams();
   const requestedJob = Number(searchParams?.get("job") ?? "") || null;
-  const canDecide = session?.user.role !== "viewer";
+  const canDecide = Boolean(session && session.user.role !== "viewer");
 
   const [jobs, setJobs] = useState<Job[] | null>(null);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [jobsReloadVersion, setJobsReloadVersion] = useState(0);
   const [jobId, setJobId] = useState<number | null>(null);
   const [decisionFilter, setDecisionFilter] = useState<DecisionStatus | "all">(
     "all",
@@ -461,6 +465,7 @@ export function RankingReview() {
   const [search, setSearch] = useState("");
   const [hideIdentity, setHideIdentity] = useState(true);
   const [ranking, setRanking] = useState<JobRanking | null>(null);
+  const [rankingError, setRankingError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -472,19 +477,25 @@ export function RankingReview() {
       .then((page) => {
         const usable = page.items.filter((job) => job.status !== "archived");
         setJobs(usable);
+        setRanking(null);
+        setRankingError(null);
+        setSelectedId(null);
         const preferred =
           usable.find((job) => job.id === requestedJob) ??
           usable.find((job) => job.status === "active") ??
           usable[0];
-        setJobId((current) => current ?? preferred?.id ?? null);
+        setJobId(preferred?.id ?? null);
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         setJobs([]);
-        setNotice({ kind: "error", text: errorText(error, t) });
+        setJobsError(errorText(error, t));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setJobsLoading(false);
       });
     return () => controller.abort();
-  }, [requestedJob, t]);
+  }, [jobsReloadVersion, requestedJob, t]);
 
   const refresh = useCallback(() => setVersion((value) => value + 1), []);
 
@@ -494,6 +505,7 @@ export function RankingReview() {
     getJobRanking(jobId, decisionFilter, controller.signal)
       .then((data) => {
         setRanking(data);
+        setRankingError(null);
         setSelectedId((current) =>
           current && data.items.some((item) => item.id === current)
             ? current
@@ -502,7 +514,7 @@ export function RankingReview() {
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        setNotice({ kind: "error", text: errorText(error, t) });
+        setRankingError(errorText(error, t));
       });
     return () => controller.abort();
   }, [jobId, decisionFilter, version, t]);
@@ -518,6 +530,7 @@ export function RankingReview() {
     if (jobId === null) return;
     setRunning(true);
     setNotice(null);
+    setRankingError(null);
     try {
       const run = await runMatching(jobId);
       setNotice({
@@ -540,7 +553,7 @@ export function RankingReview() {
     }
   }
 
-  const loading = jobId !== null && ranking?.job_id !== jobId;
+  const loading = jobId !== null && ranking === null && rankingError === null;
 
   const visible = useMemo(() => {
     const items = ranking?.items ?? [];
@@ -574,6 +587,9 @@ export function RankingReview() {
               value={jobId ?? ""}
               disabled={!jobs || jobs.length === 0}
               onChange={(event) => {
+                setRanking(null);
+                setRankingError(null);
+                setNotice(null);
                 setJobId(Number(event.target.value) || null);
                 setSelectedId(null);
               }}
@@ -594,9 +610,13 @@ export function RankingReview() {
             <span>{t("Review status")}</span>
             <select
               value={decisionFilter}
-              onChange={(event) =>
-                setDecisionFilter(event.target.value as DecisionStatus | "all")
-              }
+              onChange={(event) => {
+                setRanking(null);
+                setRankingError(null);
+                setNotice(null);
+                setDecisionFilter(event.target.value as DecisionStatus | "all");
+                setSelectedId(null);
+              }}
             >
               <option value="all">{t("All candidates")}</option>
               {DECISION_STATUSES.map((value) => (
@@ -620,12 +640,24 @@ export function RankingReview() {
               <input
                 type="checkbox"
                 checked={hideIdentity}
+                aria-describedby="identity-scope-note"
                 onChange={(event) =>
                   setHideIdentity(event.currentTarget.checked)
                 }
               />
-              <span>{t("Hide identifying details")}</span>
+              <span
+                title={t(
+                  "This hides the name and email fields, but resume text may still identify a candidate.",
+                )}
+              >
+                {t("Hide name and email")}
+              </span>
             </label>
+            <span id="identity-scope-note" className="sr-only">
+              {t(
+                "This hides the name and email fields, but resume text may still identify a candidate.",
+              )}
+            </span>
             <button
               className="button button-primary"
               type="button"
@@ -644,6 +676,37 @@ export function RankingReview() {
           >
             {notice.text}
           </p>
+        )}
+        {jobsError && (
+          <div className="ranking-fetch-error" role="alert">
+            <span>{jobsError}</span>
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={() => {
+                setJobsLoading(true);
+                setJobsError(null);
+                setJobsReloadVersion((currentVersion) => currentVersion + 1);
+              }}
+            >
+              {t("Retry")}
+            </button>
+          </div>
+        )}
+        {rankingError && (
+          <div className="ranking-fetch-error" role="alert">
+            <span>{rankingError}</span>
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={() => {
+                setRankingError(null);
+                refresh();
+              }}
+            >
+              {t("Retry")}
+            </button>
+          </div>
         )}
         {ranking && ranking.pending_cvs > 0 && (
           <p className="ranking-progress" role="status">
@@ -673,12 +736,33 @@ export function RankingReview() {
               </div>
             </div>
 
+            {jobsLoading && jobs === null && (
+              <p className="cv-library-state" role="status">
+                {t("Loading job descriptions…")}
+              </p>
+            )}
+            {!jobsLoading && jobsError === null && jobs?.length === 0 && (
+              <div className="ranking-empty-state" role="status">
+                <h3>{t("Create a job description first")}</h3>
+                <p>{t("Add a job description before reviewing candidates.")}</p>
+                <Link className="button button-primary" href="/jobs">
+                  {t("Create a job")}
+                </Link>
+              </div>
+            )}
             {loading && (
               <p className="cv-library-state" role="status">
                 {t("Loading…")}
               </p>
             )}
-            {ranking && visible.length === 0 && (
+            {rankingError && !ranking && (
+              <p className="cv-library-state" role="status">
+                {t(
+                  "Could not load candidate rankings. Use Retry to try again.",
+                )}
+              </p>
+            )}
+            {ranking && ranking.items.length === 0 && (
               <div className="ranking-empty-state" role="status">
                 <span className="empty-icon" aria-hidden="true">
                   ⌁
@@ -689,6 +773,22 @@ export function RankingReview() {
                     "Upload CVs in the CV library, then choose Run AI matching to score them against this job.",
                   )}
                 </p>
+                <Link className="button button-secondary" href="/cvs">
+                  {t("Open CV library")}
+                </Link>
+              </div>
+            )}
+            {ranking && ranking.items.length > 0 && visible.length === 0 && (
+              <div className="ranking-empty-state" role="status">
+                <h3>{t("No candidates match your search")}</h3>
+                <p>{t("Try another name or skill.")}</p>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() => setSearch("")}
+                >
+                  {t("Clear search")}
+                </button>
               </div>
             )}
             <ol className="ranking-list">
@@ -741,6 +841,27 @@ export function RankingReview() {
                 canDecide={canDecide}
                 onSaved={refresh}
               />
+            ) : ranking && ranking.items.length === 0 ? (
+              <div className="ranking-empty-state">
+                <h3 id="evidence-title">{t("Candidate evidence")}</h3>
+                <p>
+                  {t(
+                    "No candidate evidence is available until a CV is scored.",
+                  )}
+                </p>
+              </div>
+            ) : ranking && visible.length === 0 ? (
+              <div className="ranking-empty-state">
+                <h3 id="evidence-title">{t("Candidate evidence")}</h3>
+                <p>{t("Clear your search to review candidate evidence.")}</p>
+              </div>
+            ) : rankingError ? (
+              <div className="ranking-empty-state">
+                <h3 id="evidence-title">{t("Candidate evidence")}</h3>
+                <p>
+                  {t("Candidate evidence is unavailable until rankings load.")}
+                </p>
+              </div>
             ) : (
               <div className="ranking-empty-state">
                 <h3 id="evidence-title">{t("Candidate evidence")}</h3>

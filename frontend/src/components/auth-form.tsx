@@ -14,6 +14,46 @@ type FormNotice = {
   values?: Record<string, string | number>;
 };
 
+function getPostLoginDestination(
+  requestedPath: string | null,
+  role: "admin" | "recruiter" | "viewer",
+): string {
+  if (
+    !requestedPath ||
+    !requestedPath.startsWith("/") ||
+    requestedPath.startsWith("//") ||
+    requestedPath.includes("\\")
+  ) {
+    return "/dashboard";
+  }
+
+  try {
+    const destination = new URL(requestedPath, window.location.origin);
+    const appRoutes = new Set([
+      "/dashboard",
+      "/jobs",
+      "/cvs",
+      "/rankings",
+      "/audit",
+      "/users",
+    ]);
+
+    if (
+      destination.origin !== window.location.origin ||
+      !appRoutes.has(destination.pathname) ||
+      ((destination.pathname === "/audit" ||
+        destination.pathname === "/users") &&
+        role !== "admin")
+    ) {
+      return "/dashboard";
+    }
+
+    return `${destination.pathname}${destination.search}${destination.hash}`;
+  } catch {
+    return "/dashboard";
+  }
+}
+
 function getErrorNotice(
   error: unknown,
   mode: "login" | "register",
@@ -42,7 +82,7 @@ function getErrorNotice(
   }
   if (error.status === 401) {
     return {
-      key: "Your session expired. Sign in again before creating an account.",
+      key: "Sign in as an administrator before creating additional accounts.",
       kind: "error",
     };
   }
@@ -79,6 +119,16 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
   const isRegistering = mode === "register";
 
+  if (isRegistering && session && session.user.role !== "admin") {
+    return (
+      <p className="login-notice login-notice-info" role="status">
+        {t(
+          "Only administrators can create additional accounts. Contact your workspace administrator.",
+        )}
+      </p>
+    );
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmitting) return;
@@ -112,7 +162,10 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       } else {
         const token = await loginAccount({ email, password });
         signIn(token);
-        router.replace("/dashboard");
+        const requestedPath = new URLSearchParams(window.location.search).get(
+          "next",
+        );
+        router.replace(getPostLoginDestination(requestedPath, token.user.role));
       }
     } catch (error) {
       setNotice(getErrorNotice(error, mode));
@@ -180,7 +233,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             type="button"
             onClick={() =>
               setNotice({
-                key: "Password reset will be available after the authentication service is integrated.",
+                key: "Password reset is not available yet. Contact your administrator.",
                 kind: "info",
               })
             }
@@ -219,6 +272,15 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 export function AuthSwitch({ mode }: { mode: "login" | "register" }) {
   const isRegistering = mode === "register";
   const { t } = useI18n();
+  const { session } = useAuthSession();
+
+  if (session) {
+    return (
+      <p className="login-support">
+        <Link href="/dashboard">{t("Back to workspace")}</Link>
+      </p>
+    );
+  }
 
   return (
     <p className="login-support">

@@ -25,6 +25,12 @@ const navigation = [
     icon: "dashboard" as const,
     adminOnly: true,
   },
+  {
+    href: "/users",
+    label: "User management",
+    icon: "settings" as const,
+    adminOnly: true,
+  },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -35,10 +41,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const activePath = pathname ?? "";
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
-  const accountName = session?.user.full_name ?? t("Demo recruiter");
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+  const accountTriggerRef = useRef<HTMLButtonElement>(null);
+  const accountName = session?.user.full_name;
   const accountRole = session
     ? t(
         session.user.role === "admin"
@@ -47,16 +56,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             ? "Viewer"
             : "Recruiter",
       )
-    : t("Preview account");
-  const accountInitials = accountName
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase();
+    : null;
+  const accountInitials =
+    accountName
+      ?.trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part.charAt(0))
+      .join("")
+      .toUpperCase() ?? "";
 
   function handleSignOut() {
+    setIsAccountMenuOpen(false);
     signOut();
     router.replace("/login");
   }
@@ -115,6 +126,29 @@ export function AppShell({ children }: { children: ReactNode }) {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [closeMobileNav, isMobileNavOpen]);
+
+  useEffect(() => {
+    if (!isAccountMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setIsAccountMenuOpen(false);
+      accountTriggerRef.current?.focus();
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAccountMenuOpen]);
 
   if (!isAppRoute) {
     return children;
@@ -205,15 +239,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
         </nav>
 
-        <div className="sidebar-bottom">
-          <div className="profile-row">
-            <span className="profile-avatar">{accountInitials}</span>
-            <span className="profile-copy">
-              <strong>{accountName}</strong>
-              <small>{accountRole}</small>
-            </span>
+        {session && accountName && accountRole && (
+          <div className="sidebar-bottom">
+            <div className="profile-row">
+              <span className="profile-avatar">{accountInitials}</span>
+              <span className="profile-copy">
+                <strong>{accountName}</strong>
+                <small>{accountRole}</small>
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </aside>
       {isMobileNavOpen && (
         <button
@@ -254,24 +290,49 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="topbar-actions">
             <LanguageSwitcher />
             {session ? (
-              <button
-                className="avatar-small account-avatar-button"
-                type="button"
-                aria-label={t("Sign out")}
-                title={t("Sign out")}
-                onClick={handleSignOut}
-              >
-                {accountInitials}
-              </button>
-            ) : (
-              <Link
-                className="avatar-small"
-                href="/login"
-                aria-label={t("Account")}
-              >
-                {accountInitials}
-              </Link>
-            )}
+              <div className="account-menu-wrap" ref={accountMenuRef}>
+                <button
+                  ref={accountTriggerRef}
+                  className="avatar-small account-avatar-button"
+                  type="button"
+                  aria-label={t("Account")}
+                  aria-expanded={isAccountMenuOpen}
+                  aria-controls={
+                    isAccountMenuOpen ? "account-menu-panel" : undefined
+                  }
+                  title={t("Account")}
+                  onClick={() => setIsAccountMenuOpen((isOpen) => !isOpen)}
+                >
+                  {accountInitials}
+                </button>
+                {isAccountMenuOpen && accountName && accountRole ? (
+                  <section
+                    className="account-menu-panel"
+                    id="account-menu-panel"
+                    aria-label={t("Account")}
+                  >
+                    <p className="account-menu-label">{t("Account")}</p>
+                    <div className="account-menu-profile">
+                      <span className="account-menu-avatar" aria-hidden="true">
+                        {accountInitials}
+                      </span>
+                      <span className="account-menu-copy">
+                        <strong>{accountName}</strong>
+                        <small>{accountRole}</small>
+                      </span>
+                    </div>
+                    <div className="account-menu-divider" />
+                    <button
+                      className="account-menu-signout"
+                      type="button"
+                      onClick={handleSignOut}
+                    >
+                      {t("Sign out")}
+                    </button>
+                  </section>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </header>
         <main className="page-content">{children}</main>

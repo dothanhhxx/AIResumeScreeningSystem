@@ -21,6 +21,14 @@ const vietnameseMessages = {
   "Open navigation": "Mở thanh điều hướng",
   "Close navigation": "Đóng thanh điều hướng",
   Account: "Tài khoản",
+  ADMINISTRATION: "QUẢN TRỊ",
+  "User management": "Quản lý tài khoản",
+  "Manage access to your hiring workspace.":
+    "Quản lý quyền truy cập vào không gian tuyển dụng của bạn.",
+  "Create a recruiter account": "Tạo tài khoản nhà tuyển dụng",
+  "New accounts are created with the Recruiter role.":
+    "Tài khoản mới sẽ có vai trò Nhà tuyển dụng.",
+  "Use at least 8 characters.": "Sử dụng ít nhất 8 ký tự.",
   "Human review stays in control": "Quyết định vẫn do con người kiểm soát",
   "Privacy · Support": "Quyền riêng tư · Hỗ trợ",
   "PEOPLE-FIRST HIRING": "TUYỂN DỤNG LẤY CON NGƯỜI LÀM TRỌNG TÂM",
@@ -36,6 +44,118 @@ const vietnameseMessages = {
   "WELCOME BACK": "CHÀO MỪNG TRỞ LẠI",
   "GET STARTED": "BẮT ĐẦU",
   "Sign in to your workspace": "Đăng nhập vào không gian làm việc",
+  "Sign in to workspace": "Đăng nhập không gian làm việc",
+  "Explore the read-only demo": "Khám phá bản demo chỉ xem",
+  DEMO: "BẢN DEMO",
+  "READ-ONLY PRODUCT TOUR": "GIỚI THIỆU SẢN PHẨM · CHỈ XEM",
+  "Explore the TalentLens workspace": "Khám phá không gian TalentLens",
+  "See how job requirements, resume evidence, and human review fit together.":
+    "Xem cách yêu cầu công việc, bằng chứng trong CV và khâu con người xem xét kết hợp với nhau.",
+  "Illustrative sample · not live AI output":
+    "Minh họa · không phải kết quả AI trực tiếp",
+  "Demo data notice": "Thông tin dữ liệu demo",
+  "Safe demo mode": "Chế độ demo an toàn",
+  "All people, resumes, jobs, and match indicators are invented examples. This page makes no API requests and does not save changes.":
+    "Toàn bộ người, CV, công việc và chỉ số so khớp đều là ví dụ hư cấu. Trang này không gọi API và không lưu thay đổi.",
+  "Demo sections": "Các mục demo",
+  "Synthetic data · read-only preview":
+    "Dữ liệu giả lập · bản xem trước chỉ đọc",
+  "Go to the real workspace": "Đến không gian làm việc thật",
+  "WORKSPACE OVERVIEW": "TỔNG QUAN KHÔNG GIAN LÀM VIỆC",
+  "A clearer view of the hiring pipeline":
+    "Tổng quan rõ ràng về quy trình tuyển dụng",
+  "Read only": "Chỉ xem",
+  "Across two teams": "Trong hai nhóm",
+  "Sample CVs": "CV mẫu",
+  "Invented demo records": "Hồ sơ demo hư cấu",
+  "For human review": "Chờ con người xem xét",
+  "Not automated decisions": "Không phải quyết định tự động",
+  "RECENT ROLES": "VỊ TRÍ GẦN ĐÂY",
+  "Job pipeline": "Quy trình tuyển dụng",
+  "Synthetic records": "Hồ sơ giả lập",
+  TEAM: "NHÓM",
+  CANDIDATES: "ỨNG VIÊN",
+  "{{count}} sample CVs": "{{count}} CV mẫu",
+  "Product Analyst": "Chuyên viên phân tích sản phẩm",
+  "Product & Data": "Sản phẩm & Dữ liệu",
+  "Frontend Engineer": "Kỹ sư Frontend",
+  Engineering: "Kỹ thuật",
+  "People Operations Intern": "Thực tập sinh Vận hành nhân sự",
+  People: "Nhân sự",
+  Today: "Hôm nay",
+  "2 days ago": "2 ngày trước",
+  "AI can organize evidence; people make hiring decisions.":
+    "AI có thể sắp xếp bằng chứng; con người đưa ra quyết định tuyển dụng.",
+  "A match indicator is only a prompt for review. It is not a recommendation to hire or reject.":
+    "Chỉ số so khớp chỉ gợi ý nội dung cần xem xét, không phải đề xuất tuyển hay loại ứng viên.",
+  "Example job descriptions": "Mô tả công việc mẫu",
+  "Sample roles and candidate counts for a product walkthrough.":
+    "Vị trí và số lượng ứng viên mẫu để giới thiệu sản phẩm.",
+  "Sample CV library": "Thư viện CV mẫu",
+  "These invented profiles show how parsed resume details can be organized.":
+    "Các hồ sơ hư cấu này minh họa cách sắp xếp thông tin trích xuất từ CV.",
+  "No uploads in demo": "Demo không hỗ trợ tải lên",
+  "Sample extracted skills": "Kỹ năng trích xuất mẫu",
+  "Synthetic resume · no personal details":
+    "CV giả lập · không có thông tin cá nhân",
+  "Review evidence, not just a number":
+    "Xem bằng chứng, không chỉ nhìn điểm số",
+  "Select a sample candidate to inspect requirement-level evidence.":
+    "Chọn ứng viên mẫu để xem bằng chứng theo từng yêu cầu.",
+  "Illustrative only": "Chỉ mang tính minh họa",
+  "Sample candidates": "Ứng viên mẫu",
+  "Candidate 01": "Ứng viên 01",
+  "Candidate 02": "Ứng viên 02",
+  "Candidate 03": "Ứng viên 03",
+  "Candidate 04": "Ứng viên 04",
+  "Illustrative indicator": "Chỉ số minh họa",
+  "Example indicators do not represent a validated model score.":
+    "Chỉ số mẫu không đại diện cho điểm số của mô hình đã được kiểm định.",
+  "SAMPLE EVIDENCE": "BẰNG CHỨNG MẪU",
+  "example only": "chỉ là ví dụ",
+  "A missing phrase is not proof that a candidate lacks a skill.":
+    "Không tìm thấy cụm từ trong CV không có nghĩa là ứng viên thiếu kỹ năng đó.",
+  "Needs human review": "Cần người xem xét",
+  "Experiment design": "Thiết kế thử nghiệm",
+  SQL: "SQL",
+  Python: "Python",
+  "Not found in sample": "Không thấy trong CV mẫu",
+  "Built SQL reports to monitor weekly activation and retention trends.":
+    "Xây dựng báo cáo SQL để theo dõi xu hướng kích hoạt và duy trì người dùng hằng tuần.",
+  "Used Python to clean event data and automate recurring analysis.":
+    "Dùng Python làm sạch dữ liệu sự kiện và tự động hóa các phân tích định kỳ.",
+  "Supported an onboarding experiment; ownership of the test design is unclear.":
+    "Hỗ trợ thử nghiệm quy trình làm quen; chưa rõ mức độ phụ trách thiết kế thử nghiệm.",
+  "Maintained warehouse queries used in monthly product reviews.":
+    "Duy trì truy vấn kho dữ liệu dùng trong các buổi đánh giá sản phẩm hằng tháng.",
+  "No Python experience is stated in the provided sample resume.":
+    "CV mẫu được cung cấp không đề cập kinh nghiệm Python.",
+  "Sample CV · Project experience": "CV mẫu · Kinh nghiệm dự án",
+  "Sample CV · Technical skills": "CV mẫu · Kỹ năng chuyên môn",
+  "Sample CV · Work history": "CV mẫu · Quá trình làm việc",
+  "Sample CV · Full text reviewed": "CV mẫu · Đã xem toàn bộ nội dung",
+  "Sample CV · Education project": "CV mẫu · Dự án học tập",
+  "Partnered with product managers to interpret A/B test outcomes.":
+    "Phối hợp với quản lý sản phẩm để diễn giải kết quả thử nghiệm A/B.",
+  "References relational data work without naming the query language.":
+    "Đề cập làm việc với dữ liệu quan hệ nhưng không nêu ngôn ngữ truy vấn.",
+  "Prepared research datasets and reproducible analysis in Python.":
+    "Chuẩn bị bộ dữ liệu nghiên cứu và phân tích có thể tái lập bằng Python.",
+  "No experiment design experience is stated in this sample.":
+    "CV mẫu này không đề cập kinh nghiệm thiết kế thử nghiệm.",
+  "Product analytics": "Phân tích sản phẩm",
+  Tableau: "Tableau",
+  "A/B testing": "Thử nghiệm A/B",
+  Research: "Nghiên cứu",
+  Dashboards: "Bảng điều khiển dữ liệu",
+  TypeScript: "TypeScript",
+  React: "React",
+  Accessibility: "Khả năng tiếp cận",
+  "Ready for review": "Sẵn sàng xem xét",
+  Reviewed: "Đã xem xét",
+  "Processing complete": "Đã xử lý xong",
+  "The recruiter remains responsible for every real hiring decision.":
+    "Nhà tuyển dụng vẫn chịu trách nhiệm với mọi quyết định tuyển dụng thực tế.",
   "Enter your details to continue to your team dashboard.":
     "Nhập thông tin để tiếp tục đến bảng điều khiển của nhóm.",
   "Create your workspace account": "Tạo tài khoản không gian làm việc",
@@ -50,8 +170,9 @@ const vietnameseMessages = {
   Password: "Mật khẩu",
   "Create account": "Tạo tài khoản",
   "Sign in": "Đăng nhập",
-  "Password reset will be available after the authentication service is integrated.":
-    "Chức năng đặt lại mật khẩu sẽ khả dụng sau khi tích hợp dịch vụ xác thực.",
+  "Back to workspace": "Quay lại không gian làm việc",
+  "Password reset is not available yet. Contact your administrator.":
+    "Tính năng đặt lại mật khẩu hiện chưa khả dụng. Hãy liên hệ quản trị viên.",
   "The first account becomes an administrator. After setup, only administrators can create accounts.":
     "Tài khoản đầu tiên sẽ là quản trị viên. Sau đó, chỉ quản trị viên mới có thể tạo tài khoản.",
   "Creating an account…": "Đang tạo tài khoản…",
@@ -61,8 +182,10 @@ const vietnameseMessages = {
   "Account created. You can continue managing accounts.":
     "Đã tạo tài khoản. Bạn có thể tiếp tục quản lý tài khoản.",
   "Email or password is incorrect.": "Email hoặc mật khẩu không chính xác.",
-  "Your session expired. Sign in again before creating an account.":
-    "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại trước khi tạo tài khoản.",
+  "Sign in as an administrator before creating additional accounts.":
+    "Hãy đăng nhập bằng tài khoản quản trị viên trước khi tạo thêm tài khoản.",
+  "Only administrators can create additional accounts. Contact your workspace administrator.":
+    "Chỉ quản trị viên mới có thể tạo thêm tài khoản. Hãy liên hệ quản trị viên không gian làm việc.",
   "Only the first account or an administrator can create an account.":
     "Chỉ tài khoản đầu tiên hoặc quản trị viên mới có thể tạo tài khoản.",
   "An account with this email already exists.":
@@ -76,8 +199,6 @@ const vietnameseMessages = {
     "Máy chủ chưa thể xử lý yêu cầu. Hãy thử lại sau.",
   Administrator: "Quản trị viên",
   Viewer: "Người xem",
-  "Demo recruiter": "Nhà tuyển dụng demo",
-  "Preview account": "Tài khoản xem trước",
   "Sign out": "Đăng xuất",
   "By continuing, you agree to your organization's access and data handling policies.":
     "Khi tiếp tục, bạn đồng ý với chính sách truy cập và xử lý dữ liệu của tổ chức.",
@@ -95,6 +216,13 @@ const vietnameseMessages = {
     "Toàn bộ số liệu ứng viên và tuyển dụng bên dưới đều là dữ liệu giả lập.",
   "Explore job descriptions": "Xem mô tả công việc",
   "Hiring overview": "Tổng quan tuyển dụng",
+  "Loading hiring overview…": "Đang tải tổng quan tuyển dụng…",
+  "Loading job descriptions…": "Đang tải mô tả công việc…",
+  "Loading review queue…": "Đang tải danh sách cần xem xét…",
+  "Recent job descriptions are unavailable.":
+    "Danh sách mô tả công việc gần đây hiện chưa khả dụng.",
+  "Review queue is unavailable.": "Danh sách cần xem xét hiện chưa khả dụng.",
+  Retry: "Thử lại",
   "Active roles": "Vị trí đang tuyển",
   "CVs received": "CV đã nhận",
   "Needs review": "Cần xem xét",
@@ -297,9 +425,7 @@ const vietnameseMessages = {
   "New job": "Vị trí mới",
   "Could not load job descriptions.":
     "Không thể tải danh sách mô tả công việc.",
-  Retry: "Thử lại",
   "Dismiss notification": "Đóng thông báo",
-  "Loading job descriptions…": "Đang tải mô tả công việc…",
   "Backend connection needed": "Cần kết nối backend",
   "Configure the API base URL and sign in once Person A's auth endpoint is integrated.":
     "Cấu hình URL API và đăng nhập sau khi tích hợp endpoint xác thực của Person A.",
@@ -421,6 +547,23 @@ const vietnameseMessages = {
   Close: "Đóng",
   "Confirm delete": "Xác nhận xoá",
   "Create a job description first": "Hãy tạo mô tả công việc trước",
+  "Add a job description before reviewing candidates.":
+    "Hãy thêm mô tả công việc trước khi xem xét ứng viên.",
+  "Hide name and email": "Ẩn tên và email",
+  "This hides the name and email fields, but resume text may still identify a candidate.":
+    "Tùy chọn này ẩn tên và email, nhưng nội dung CV vẫn có thể nhận diện ứng viên.",
+  "No candidate evidence is available until a CV is scored.":
+    "Chưa có bằng chứng ứng viên cho đến khi CV được chấm điểm.",
+  "Clear your search to review candidate evidence.":
+    "Hãy xóa tìm kiếm để xem bằng chứng ứng viên.",
+  "Candidate evidence is unavailable until rankings load.":
+    "Bằng chứng ứng viên chưa khả dụng cho đến khi tải được bảng xếp hạng.",
+  "Could not load candidate rankings. Use Retry to try again.":
+    "Không thể tải xếp hạng ứng viên. Chọn Thử lại để tải lại.",
+  "No candidates match your search":
+    "Không có ứng viên phù hợp với nội dung tìm kiếm",
+  "Try another name or skill.": "Thử tìm bằng tên hoặc kỹ năng khác.",
+  "Clear search": "Xóa tìm kiếm",
   DETAILS: "CHI TIẾT",
   "Decision saved.": "Đã lưu quyết định.",
   Delete: "Xoá",

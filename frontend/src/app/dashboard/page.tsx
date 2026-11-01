@@ -54,13 +54,19 @@ export default function DashboardPage() {
   const { t, language } = useI18n();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [reloadVersion, setReloadVersion] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
     getDashboardSummary(controller.signal)
-      .then(setSummary)
+      .then((data) => {
+        setSummary(data);
+        setError(null);
+      })
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return;
+        setSummary(null);
         if (reason instanceof ApiError && reason.status === 401) {
           setError(t("Sign in to see your hiring overview."));
         } else if (reason instanceof ApiError && reason.status === 0) {
@@ -68,9 +74,12 @@ export default function DashboardPage() {
         } else {
           setError(t("Something went wrong. Please try again."));
         }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [t]);
+  }, [reloadVersion, t]);
 
   const metrics = summary
     ? ([
@@ -124,9 +133,20 @@ export default function DashboardPage() {
       </div>
 
       {error && (
-        <p className="cv-upload-message cv-upload-message-error" role="alert">
-          {error}
-        </p>
+        <div className="dashboard-error-banner" role="alert">
+          <span>{error}</span>
+          <button
+            className="button button-secondary"
+            type="button"
+            onClick={() => {
+              setLoading(true);
+              setError(null);
+              setReloadVersion((version) => version + 1);
+            }}
+          >
+            {t("Retry")}
+          </button>
+        </div>
       )}
       {summary && summary.error_cvs > 0 && (
         <div className="sample-banner">
@@ -146,15 +166,13 @@ export default function DashboardPage() {
       )}
 
       <section className="metrics-grid" aria-label={t("Hiring overview")}>
-        {summary
-          ? metrics.map((metric) => (
-              <MetricCard key={metric.label} {...metric} />
-            ))
-          : !error && (
-              <p className="cv-library-state" role="status">
-                {t("Loading…")}
-              </p>
-            )}
+        {loading && !summary ? (
+          <p className="cv-library-state dashboard-loading" role="status">
+            {t("Loading hiring overview…")}
+          </p>
+        ) : summary ? (
+          metrics.map((metric) => <MetricCard key={metric.label} {...metric} />)
+        ) : null}
       </section>
 
       <div className="dashboard-grid">
@@ -168,11 +186,19 @@ export default function DashboardPage() {
               {t("View all")} <Icon name="arrow" size={15} />
             </Link>
           </div>
-          {summary && summary.recent_jobs.length === 0 ? (
+          {loading && !summary ? (
+            <p className="cv-library-state dashboard-empty" role="status">
+              {t("Loading job descriptions…")}
+            </p>
+          ) : error ? (
+            <p className="cv-library-state dashboard-empty">
+              {t("Recent job descriptions are unavailable.")}
+            </p>
+          ) : summary?.recent_jobs.length === 0 ? (
             <p className="cv-library-state dashboard-empty">
               {t("No job descriptions yet. Create one to start matching.")}
             </p>
-          ) : (
+          ) : summary && summary.recent_jobs.length > 0 ? (
             <div className="table-wrap">
               <table>
                 <thead>
@@ -187,7 +213,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {summary?.recent_jobs.map((role) => (
+                  {summary.recent_jobs.map((role) => (
                     <tr key={role.id}>
                       <td>
                         <div className="role-title">{role.title}</div>
@@ -228,7 +254,7 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
-          )}
+          ) : null}
           <Link className="panel-bottom-link" href="/jobs">
             {t("View all job descriptions")} <Icon name="arrow" size={15} />
           </Link>
@@ -243,6 +269,16 @@ export default function DashboardPage() {
             <span className="queue-count">{summary?.needs_review ?? 0}</span>
           </div>
           <div className="queue-list">
+            {loading && !summary && (
+              <p className="cv-library-state dashboard-empty" role="status">
+                {t("Loading review queue…")}
+              </p>
+            )}
+            {error && (
+              <p className="cv-library-state dashboard-empty">
+                {t("Review queue is unavailable.")}
+              </p>
+            )}
             {summary?.review_queue.length === 0 && (
               <p className="cv-library-state dashboard-empty">
                 {t(

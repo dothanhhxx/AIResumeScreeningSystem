@@ -170,7 +170,7 @@ describe("RankingReview", () => {
     expect(screen.getByText("Candidate #20")).toBeTruthy();
     expect(screen.queryByText("Alice Nguyen")).toBeNull();
 
-    fireEvent.click(screen.getByLabelText("Hide identifying details"));
+    fireEvent.click(screen.getByLabelText("Hide name and email"));
     expect((await screen.findAllByText("Alice Nguyen")).length).toBeGreaterThan(
       0,
     );
