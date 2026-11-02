@@ -1,7 +1,22 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { CvUpload } from "@/components/cv-upload";
 import { useI18n } from "@/i18n/provider";
+
+function CvLibrary() {
+  const searchParams = useSearchParams();
+  const requestedCvId = Number(searchParams.get("cv"));
+  const selectedCvId =
+    Number.isSafeInteger(requestedCvId) && requestedCvId > 0
+      ? requestedCvId
+      : null;
+
+  return (
+    <CvUpload key={selectedCvId ?? "library"} requestedCvId={selectedCvId} />
+  );
+}
 
 export default function CvsPage() {
   const { t } = useI18n();
@@ -19,7 +34,9 @@ export default function CvsPage() {
           </p>
         </div>
       </div>
-      <CvUpload />
+      <Suspense fallback={<p className="cv-library-state">{t("Loading…")}</p>}>
+        <CvLibrary />
+      </Suspense>
     </>
   );
 }

@@ -99,7 +99,11 @@ function renderFeedback(
   return feedback.text ?? t("Something went wrong. Please try again.");
 }
 
-export function CvUpload() {
+export function CvUpload({
+  requestedCvId = null,
+}: {
+  requestedCvId?: number | null;
+}) {
   const { t, language } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const [candidateName, setCandidateName] = useState("");
@@ -113,7 +117,9 @@ export function CvUpload() {
   const [loadingCvs, setLoadingCvs] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
-  const [selectedCvId, setSelectedCvId] = useState<number | null>(null);
+  const [selectedCvId, setSelectedCvId] = useState<number | null>(
+    requestedCvId,
+  );
 
   const hasProcessing =
     cvPage?.items.some((cv) => PROCESSING_STATUSES.includes(cv.status)) ??

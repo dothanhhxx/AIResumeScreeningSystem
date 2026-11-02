@@ -2181,6 +2181,125 @@ tbody tr:last-child td {
   }
 }
 
+/* AI result transparency: explain score meaning and expose available sources. */
+.ranking-transparency-note,
+.ranking-source-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #cfe3d8;
+  border-radius: 10px;
+  background: #f2f8f4;
+  color: #31483d;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.ranking-transparency-icon {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  place-items: center;
+  border: 1px solid #8ab79f;
+  border-radius: 50%;
+  color: #24654b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ranking-provenance {
+  display: grid;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f9fbf9;
+}
+
+.ranking-provenance-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.ranking-provenance-heading h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.ranking-provenance-heading > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.ranking-source-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.ranking-source-grid > div {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.ranking-source-grid dt {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.ranking-source-grid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ranking-provenance .detail-provenance {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.ranking-source-notice {
+  flex-direction: column;
+  gap: 5px;
+  border-color: #eadbb7;
+  background: #fffbf1;
+  color: #665326;
+}
+
+.evidence-source-link {
+  margin-top: 11px;
+}
+
+.evidence-source-access-note {
+  margin: 11px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 560px) {
+  .ranking-source-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Shared visual refinements */
 html {
   scroll-behavior: smooth;

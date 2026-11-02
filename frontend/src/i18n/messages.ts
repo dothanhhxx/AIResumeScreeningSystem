@@ -361,6 +361,11 @@ const vietnameseMessages = {
   "Identity details are hidden": "Thông tin định danh đang được ẩn",
   "Hide identifying details": "Ẩn thông tin định danh",
   "Evidence by requirement": "Bằng chứng theo tiêu chí",
+  "Open original CV": "Mở CV gốc",
+  "Turn off identity hiding to open the original CV.":
+    "Hãy tắt chế độ ẩn danh tính để mở CV gốc.",
+  "Original CV access follows your account permissions.":
+    "Quyền mở CV gốc tuân theo quyền truy cập của tài khoản.",
   "Not found in the CV does not mean the candidate lacks the skill.":
     "Không tìm thấy trong CV không đồng nghĩa ứng viên không có kỹ năng.",
   "No demo score is shown": "Không hiển thị điểm giả lập",
@@ -576,8 +581,18 @@ const vietnameseMessages = {
   "Gaps to verify": "Điểm cần xác minh",
   "Give a reason when you adjust the AI score.":
     "Hãy nêu lý do khi điều chỉnh điểm AI.",
-  "LLM unavailable: offline rule-based scoring.":
-    "Không dùng LLM: chấm điểm theo quy tắc ngoại tuyến.",
+  "A 0–100 match score is a comparison signal, not a probability or a hiring recommendation. Verify extracted details and evidence against the original CV before deciding.":
+    "Điểm so khớp 0–100 là tín hiệu so sánh, không phải xác suất hay đề xuất tuyển dụng. Hãy kiểm tra thông tin trích xuất và bằng chứng với CV gốc trước khi quyết định.",
+  "Language-model score was not produced for this result. Review the available scoring signals and CV evidence before deciding.":
+    "Kết quả này không có điểm từ mô hình ngôn ngữ. Hãy xem các tín hiệu chấm điểm hiện có và bằng chứng trong CV trước khi quyết định.",
+  "Semantic matching used offline text hashing, a lightweight lexical fallback that has not been evaluated against labeled examples.":
+    "So khớp ngữ nghĩa đã dùng phép băm văn bản ngoại tuyến, một phương án dự phòng từ vựng nhẹ chưa được đánh giá trên dữ liệu có nhãn.",
+  "Scoring provenance": "Nguồn gốc kết quả chấm điểm",
+  "Engine version {{version}}": "Phiên bản bộ máy {{version}}",
+  "Not reported": "Không có thông tin",
+  "Not used": "Không sử dụng",
+  "Deterministic rule scorer": "Bộ chấm điểm theo quy tắc",
+  "Offline text hashing": "Băm văn bản ngoại tuyến",
   LLM: "LLM",
   "Match indicators support review and do not decide for the recruiter.":
     "Chỉ số so khớp hỗ trợ việc đánh giá và không quyết định thay nhà tuyển dụng.",

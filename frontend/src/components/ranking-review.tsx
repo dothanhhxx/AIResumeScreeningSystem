@@ -55,6 +55,17 @@ function formatScore(score: number | null | undefined): string {
     : String(Math.round(score));
 }
 
+function scoringSourceLabel(
+  source: string | undefined,
+  t: (key: TranslationKey) => string,
+): string {
+  if (!source) return t("Not reported");
+  if (source === "none") return t("Not used");
+  if (source === "rule_scorer") return t("Deterministic rule scorer");
+  if (source === "hashing-bow-v1") return t("Offline text hashing");
+  return source;
+}
+
 function initials(name: string): string {
   return name
     .trim()
@@ -258,11 +269,13 @@ function DecisionForm({
 function ResultDetail({
   result,
   hideIdentity,
+  canViewOriginalCv,
   canDecide,
   onSaved,
 }: {
   result: RankedMatch;
   hideIdentity: boolean;
+  canViewOriginalCv: boolean;
   canDecide: boolean;
   onSaved: () => void;
 }) {
@@ -272,6 +285,8 @@ function ResultDetail({
     : result.candidate.candidate_name;
   const overridden = result.decision?.score_override != null;
   const usedLlm = result.llm_score !== null;
+  const sources = result.details.sources ?? {};
+  const semanticSource = sources.semantic;
 
   return (
     <>
@@ -302,6 +317,17 @@ function ResultDetail({
       </header>
 
       <div className="ranking-detail-body">
+        <p className="ranking-transparency-note" role="note">
+          <span className="ranking-transparency-icon" aria-hidden="true">
+            i
+          </span>
+          <span>
+            {t(
+              "A 0–100 match score is a comparison signal, not a probability or a hiring recommendation. Verify extracted details and evidence against the original CV before deciding.",
+            )}
+          </span>
+        </p>
+
         {overridden && (
           <p className="detail-override-note">
             {t("AI score {{ai}} was adjusted to {{score}} by a recruiter.", {
@@ -374,6 +400,24 @@ function ResultDetail({
               ))}
             </ul>
           )}
+          {canViewOriginalCv ? (
+            hideIdentity ? (
+              <p className="evidence-source-access-note">
+                {t("Turn off identity hiding to open the original CV.")}
+              </p>
+            ) : (
+              <Link
+                className="text-link evidence-source-link"
+                href={`/cvs?cv=${result.cv_id}`}
+              >
+                {t("Open original CV")}
+              </Link>
+            )
+          ) : (
+            <p className="evidence-source-access-note">
+              {t("Original CV access follows your account permissions.")}
+            </p>
+          )}
         </section>
 
         <div className="detail-columns">
@@ -412,18 +456,62 @@ function ResultDetail({
           </section>
         )}
 
-        <p className="detail-provenance">
-          {t("Scored by {{model}} · weights {{weights}}", {
-            model: result.model_name ?? "—",
-            weights: Object.entries(result.details.weights)
-              .map(
-                ([engine, weight]) => `${engine} ${Math.round(weight * 100)}%`,
-              )
-              .join(", "),
-          })}
-          {!usedLlm &&
-            ` · ${t("LLM unavailable: offline rule-based scoring.")}`}
-        </p>
+        <section
+          className="ranking-provenance"
+          aria-labelledby="provenance-title"
+        >
+          <div className="ranking-provenance-heading">
+            <h3 id="provenance-title">{t("Scoring provenance")}</h3>
+            <span>
+              {t("Engine version {{version}}", {
+                version: result.model_version ?? t("Not reported"),
+              })}
+            </span>
+          </div>
+          <dl className="ranking-source-grid">
+            <div>
+              <dt>{t("Rules")}</dt>
+              <dd>{scoringSourceLabel(sources.rule, t)}</dd>
+            </div>
+            <div>
+              <dt>{t("Semantic")}</dt>
+              <dd>{scoringSourceLabel(semanticSource, t)}</dd>
+            </div>
+            <div>
+              <dt>{t("LLM")}</dt>
+              <dd>{scoringSourceLabel(sources.llm, t)}</dd>
+            </div>
+          </dl>
+          <p className="detail-provenance">
+            {t("Scored by {{model}} · weights {{weights}}", {
+              model: result.model_name ?? "—",
+              weights: Object.entries(result.details.weights)
+                .map(
+                  ([engine, weight]) =>
+                    `${engine} ${Math.round(weight * 100)}%`,
+                )
+                .join(", "),
+            })}
+          </p>
+          {(!usedLlm || semanticSource === "hashing-bow-v1") && (
+            <p className="ranking-source-notice" role="note">
+              {!usedLlm && (
+                <span>
+                  {t(
+                    "Language-model score was not produced for this result. Review the available scoring signals and CV evidence before deciding.",
+                  )}
+                </span>
+              )}
+              {semanticSource === "hashing-bow-v1" && (
+                <span>
+                  {t(
+                    "Semantic matching used offline text hashing, a lightweight lexical fallback that has not been evaluated against labeled examples.",
+                  )}
+                </span>
+              )}
+            </p>
+          )}
+        </section>
       </div>
 
       <DecisionForm
@@ -838,6 +926,9 @@ export function RankingReview() {
               <ResultDetail
                 result={selected}
                 hideIdentity={hideIdentity}
+                canViewOriginalCv={Boolean(
+                  session && session.user.role !== "viewer",
+                )}
                 canDecide={canDecide}
                 onSaved={refresh}
               />

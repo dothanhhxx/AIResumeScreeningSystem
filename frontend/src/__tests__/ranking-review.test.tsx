@@ -102,7 +102,11 @@ function match(id: number, name: string, score: number, rank: number) {
         },
       ],
       weights: { rule: 0.67, semantic: 0.33 },
-      sources: {},
+      sources: {
+        rule: "rule_scorer",
+        semantic: "hashing-bow-v1",
+        llm: "none",
+      },
     },
   };
 }
@@ -185,10 +189,28 @@ describe("RankingReview", () => {
     expect(screen.getByText("“Built APIs with Python”")).toBeTruthy();
     expect(screen.getByText("Not found in CV")).toBeTruthy();
     expect(screen.getByText("Describe a Kubernetes deployment.")).toBeTruthy();
-    expect(screen.getByText(/LLM unavailable/)).toBeTruthy();
+    expect(
+      screen.getByText(/Language-model score was not produced/),
+    ).toBeTruthy();
+    expect(screen.getByText("Offline text hashing")).toBeTruthy();
+    expect(screen.getByText("Deterministic rule scorer")).toBeTruthy();
+    expect(screen.getAllByText(/probability/).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByText("Candidate #20"));
     expect(await screen.findByText("Explanation for Bao Tran")).toBeTruthy();
+  });
+
+  it("links to the source CV only after identity hiding is turned off", async () => {
+    renderReview();
+    await screen.findByRole("heading", { name: "Candidate #10" });
+
+    expect(screen.queryByRole("link", { name: "Open original CV" })).toBeNull();
+
+    fireEvent.click(screen.getByLabelText("Hide name and email"));
+    const sourceLink = await screen.findByRole("link", {
+      name: "Open original CV",
+    });
+    expect(sourceLink.getAttribute("href")).toBe("/cvs?cv=10");
   });
 
   it("starts a matching run for the selected job", async () => {
@@ -263,5 +285,8 @@ describe("RankingReview", () => {
         .getByRole("button", { name: "Run AI matching" })
         .hasAttribute("disabled"),
     ).toBe(true);
+    expect(
+      screen.getByText("Original CV access follows your account permissions."),
+    ).toBeTruthy();
   });
 });

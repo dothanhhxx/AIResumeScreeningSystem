@@ -6,6 +6,15 @@ import { CvsApiError, listCvs } from "@/lib/cvs-api";
 
 vi.mock("@/lib/auth-session", () => ({
   getAuthAccessToken: vi.fn(() => "test-access-token"),
+  useAuthSession: () => ({
+    session: {
+      accessToken: "test-access-token",
+      expiresAt: Date.now() + 60_000,
+      user: { id: 7, full_name: "Recruiter", role: "recruiter" },
+    },
+    signIn: () => undefined,
+    signOut: () => undefined,
+  }),
 }));
 
 afterEach(() => {
@@ -206,6 +215,61 @@ describe("CV upload and library integration", () => {
     expect(
       await screen.findByText("The CV API route is not available yet."),
     ).toBeTruthy();
+  });
+
+  it("opens the requested CV from a source link in the rankings page", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.example.test");
+    const page = {
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+      total_pages: 0,
+    };
+    const detail = {
+      id: 42,
+      candidate_name: "Sample Candidate",
+      candidate_email: null,
+      file_name: "sample-resume.pdf",
+      file_type: "pdf",
+      file_size: 8,
+      status: "scored",
+      uploaded_by: 7,
+      error_message: null,
+      created_at: "2026-10-30T10:00:00Z",
+      file_url: "resumes/42.pdf",
+      raw_text: "Synthetic CV text",
+      structured_data: null,
+      updated_at: "2026-10-30T10:00:00Z",
+    };
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/cvs?page=")) {
+        return Promise.resolve(
+          mockResponse({ success: true, message: "OK", data: page }),
+        );
+      }
+      if (url.endsWith("/cvs/42")) {
+        return Promise.resolve(
+          mockResponse({ success: true, message: "OK", data: detail }),
+        );
+      }
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <I18nProvider>
+        <CvUpload requestedCvId={42} />
+      </I18nProvider>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Sample Candidate" }),
+    ).toBeTruthy();
+    expect(
+      fetchMock.mock.calls.some(([url]) => String(url).endsWith("/cvs/42")),
+    ).toBe(true);
   });
 
   it("does not send a request when the API base URL is missing", async () => {
