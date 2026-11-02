@@ -24,8 +24,8 @@ from app.models import (  # noqa: F401
 # Alembic Config object
 config = context.config
 
-# Override URL from pydantic settings (sync driver for Alembic)
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_SYNC)
+# Override URL from pydantic settings (sync driver for Alembic; escape % for ConfigParser)
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_SYNC.replace("%", "%%"))
 
 # Logging
 if config.config_file_name is not None:
