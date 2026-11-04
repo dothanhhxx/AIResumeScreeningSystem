@@ -6,7 +6,7 @@ import { useI18n } from "@/i18n/provider";
 export function LanguageSwitcher({
   variant = "default",
 }: {
-  variant?: "default" | "auth";
+  variant?: "default" | "auth" | "landing";
 }) {
   const { language, setLanguage, t } = useI18n();
   const nextLanguage = language === "en" ? "vi" : "en";
@@ -14,7 +14,7 @@ export function LanguageSwitcher({
 
   return (
     <button
-      className={`${styles.switcher} ${variant === "auth" ? styles.auth : ""}`}
+      className={`${styles.switcher} ${variant === "default" ? "" : styles[variant]}`}
       type="button"
       aria-label={t("Switch display language to {{language}}", {
         language: targetLanguage,

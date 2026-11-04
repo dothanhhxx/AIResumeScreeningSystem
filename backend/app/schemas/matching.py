@@ -172,3 +172,21 @@ class JobRanking(BaseModel):
     total: int
     pending_cvs: int = Field(description="CVs still being scored for this job")
     items: list[RankedMatch]
+
+
+class HistoryItem(BaseModel):
+    """One screening outcome: a CV scored against a JD, plus the human decision if any."""
+
+    result_id: int
+    job_id: int
+    job_title: str
+    cv_id: int
+    candidate_name: str
+    ai_score: float
+    effective_score: float
+    decision_status: DecisionStatus
+    decision_reason: str | None = None
+    decided_by_name: str | None = None
+    decided_at: datetime | None = None
+    scored_at: datetime | None = None
+    model_name: str | None = None

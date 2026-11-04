@@ -6,9 +6,9 @@ Owner: Person D (API) / Person C (scoring engine in app/services/matching/)
 import json
 import logging
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from app.core.exceptions import NotFoundError, PermissionDeniedError
 from app.models.cv import CV, CVStatus
@@ -16,10 +16,12 @@ from app.models.decision import Decision, DecisionStatus
 from app.models.job import Job
 from app.models.match_result import MatchResult
 from app.models.user import User, UserRole
+from app.schemas.common import PaginatedResponse
 from app.schemas.matching import (
     CandidateBrief,
     DecisionRead,
     DecisionUpsert,
+    HistoryItem,
     JobRanking,
     MatchDetails,
     MatchResultRead,
@@ -95,11 +97,10 @@ def to_ranked(result: MatchResult, cv: CV) -> RankedMatch:
     )
 
 
-async def get_job_for_user(db: AsyncSession, job_id: int, user: User) -> Job:
+async def get_job_or_404(db: AsyncSession, job_id: int) -> Job:
+    """JDs are company-shared, so any signed-in user may read one; write gates live on the endpoints."""
     job = await db.get(Job, job_id)
     if job is None:
-        raise NotFoundError("Job", job_id)
-    if user.role != UserRole.ADMIN and job.created_by != user.id:
         raise NotFoundError("Job", job_id)
     return job
 
@@ -165,13 +166,12 @@ async def get_ranking(
     return JobRanking(job_id=job.id, job_title=job.title, total=len(ranked), pending_cvs=pending, items=ranked)
 
 
-async def get_result_for_user(db: AsyncSession, result_id: int, user: User) -> tuple[MatchResult, CV]:
+async def get_result(db: AsyncSession, result_id: int) -> tuple[MatchResult, CV]:
     result = await db.scalar(
         select(MatchResult).where(MatchResult.id == result_id).options(selectinload(MatchResult.decision))
     )
     if result is None:
         raise NotFoundError("Match result", result_id)
-    await get_job_for_user(db, result.job_id, user)
     cv = await db.get(CV, result.cv_id)
     if cv is None:
         raise NotFoundError("CV", result.cv_id)
@@ -201,3 +201,68 @@ async def upsert_decision(
     await db.commit()
     await db.refresh(decision)
     return decision, created
+
+
+# ── Screening history ───────────────────────────────────────
+async def list_history(
+    db: AsyncSession,
+    *,
+    page: int,
+    page_size: int,
+    job_id: int | None = None,
+    decision_status: DecisionStatus | None = None,
+    search: str | None = None,
+) -> PaginatedResponse[HistoryItem]:
+    """Every scored CV/JD pair, newest activity first (a decision counts as activity)."""
+    decider = aliased(User)
+    activity = func.coalesce(Decision.updated_at, MatchResult.updated_at, MatchResult.created_at)
+
+    filters = []
+    if job_id is not None:
+        filters.append(MatchResult.job_id == job_id)
+    if decision_status == DecisionStatus.PENDING:
+        filters.append(or_(Decision.id.is_(None), Decision.status == DecisionStatus.PENDING))
+    elif decision_status is not None:
+        filters.append(Decision.status == decision_status)
+    if search and search.strip():
+        pattern = f"%{search.strip()}%"
+        filters.append(or_(CV.candidate_name.ilike(pattern), Job.title.ilike(pattern)))
+
+    base = (
+        select(MatchResult, Decision, Job.title, CV.candidate_name, decider.full_name)
+        .join(Job, Job.id == MatchResult.job_id)
+        .join(CV, CV.id == MatchResult.cv_id)
+        .outerjoin(Decision, Decision.match_result_id == MatchResult.id)
+        .outerjoin(decider, decider.id == Decision.decided_by)
+        .where(*filters)
+    )
+    total = await db.scalar(select(func.count()).select_from(base.subquery())) or 0
+    rows = (
+        await db.execute(
+            base.order_by(activity.desc(), MatchResult.id.desc()).offset((page - 1) * page_size).limit(page_size)
+        )
+    ).all()
+
+    items = [
+        HistoryItem(
+            result_id=result.id,
+            job_id=result.job_id,
+            job_title=job_title,
+            cv_id=result.cv_id,
+            candidate_name=candidate_name,
+            ai_score=result.overall_score,
+            effective_score=(
+                decision.score_override
+                if decision is not None and decision.score_override is not None
+                else result.overall_score
+            ),
+            decision_status=decision.status if decision is not None else DecisionStatus.PENDING,
+            decision_reason=decision.reason if decision is not None else None,
+            decided_by_name=decider_name,
+            decided_at=decision.updated_at if decision is not None else None,
+            scored_at=result.updated_at or result.created_at,
+            model_name=result.model_name,
+        )
+        for result, decision, job_title, candidate_name, decider_name in rows
+    ]
+    return PaginatedResponse[HistoryItem].create(items, total, page, page_size)

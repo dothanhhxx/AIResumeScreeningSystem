@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { BrandLogo } from "@/components/brand-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/i18n/provider";
 import { demoCandidates, demoCvLibrary, demoJobs } from "@/lib/demo-fixtures";
@@ -29,23 +30,31 @@ export function DemoWorkspace() {
   return (
     <main className={styles.demoShell}>
       <header className={styles.header}>
-        <Link
-          className={styles.brand}
-          href="/demo"
-          aria-label="TalentLens demo"
-        >
-          <span className={styles.brandMark}>T</span>
-          <span className={styles.brandName}>
-            Talent<span>Lens</span>
-          </span>
-          <span className={styles.demoBadge}>{t("DEMO")}</span>
-        </Link>
-        <div className={styles.headerActions}>
-          <LanguageSwitcher />
-          <Link className={styles.signInLink} href="/login">
-            {t("Sign in to workspace")}
-            <span aria-hidden="true">↗</span>
-          </Link>
+        <div className={styles.headerFrame}>
+          <div className={styles.brandGroup}>
+            <Link
+              className={styles.brand}
+              href="/"
+              aria-label="TalentLens demo"
+            >
+              <BrandLogo
+                variant="dark"
+                size="md"
+                tagline={t("From resume noise to explainable hiring clarity.")}
+              />
+            </Link>
+            <span className={styles.demoBadge}>{t("DEMO")}</span>
+          </div>
+          <div className={styles.headerActions}>
+            <Link className={styles.homeLink} href="/">
+              {t("Home page")}
+            </Link>
+            <LanguageSwitcher variant="landing" />
+            <Link className={styles.signInLink} href="/login">
+              {t("Sign in to workspace")}
+              <span aria-hidden="true">↗</span>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -111,8 +120,24 @@ export function DemoWorkspace() {
         )}
 
         <footer className={styles.footer}>
-          <span>{t("Synthetic data · read-only preview")}</span>
-          <Link href="/login">{t("Go to the real workspace")}</Link>
+          <div className={styles.footerBrandGroup}>
+            <Link href="/" className={styles.footerBrandLink}>
+              <BrandLogo
+                variant="dark"
+                size="sm"
+                showTagline
+                tagline={t(
+                  "From resume noise to explainable hiring clarity.",
+                )}
+              />
+            </Link>
+            <span>{t("Synthetic data · read-only preview")}</span>
+          </div>
+          <div className={styles.footerActions}>
+            <Link href="/">{t("Home page")}</Link>
+            <span aria-hidden="true">·</span>
+            <Link href="/login">{t("Go to the real workspace")}</Link>
+          </div>
         </footer>
       </div>
     </main>

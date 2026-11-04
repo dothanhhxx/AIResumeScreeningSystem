@@ -43,7 +43,6 @@ async def list_jobs(
 ) -> JobListResponse:
     result = await job_service.list_jobs(
         db,
-        created_by=current_user.id,
         page=page,
         page_size=page_size,
         status=status_filter,
@@ -57,7 +56,7 @@ async def get_job(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> JobResponse:
-    job = await job_service.get_job(db, job_id, created_by=current_user.id)
+    job = await job_service.get_job(db, job_id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found.")
     return JobResponse(data=job)
@@ -71,7 +70,7 @@ async def update_job(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(_writer),
 ) -> JobResponse:
-    job = await job_service.update_job(db, job_id, current_user.id, payload)
+    job = await job_service.update_job(db, job_id, current_user, payload)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found.")
     await audit_service.record(
@@ -88,7 +87,7 @@ async def archive_job(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(_writer),
 ) -> JobResponse:
-    job = await job_service.archive_job(db, job_id, created_by=current_user.id)
+    job = await job_service.archive_job(db, job_id, current_user)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found.")
     await audit_service.record(

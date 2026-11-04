@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PipelineSteps } from "@/components/pipeline-steps";
 import { useI18n } from "@/i18n/provider";
 import { ApiError } from "@/lib/api";
 import { useAuthSession } from "@/lib/auth-session";
@@ -27,7 +28,7 @@ export function CvDetailPanel({
 }) {
   const { t } = useI18n();
   const { session } = useAuthSession();
-  const canWrite = session?.user.role !== "viewer";
+  const canWrite = Boolean(session && session.user.role !== "viewer");
   const [detail, setDetail] = useState<CvDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -100,6 +101,7 @@ export function CvDetailPanel({
           {detail.error_message}
         </p>
       )}
+      {detail && <PipelineSteps status={detail.status} />}
       {processing && (
         <p className="ranking-progress" role="status">
           <span className="ranking-spinner" aria-hidden="true" />
@@ -224,7 +226,9 @@ export function CvDetailPanel({
               {t("Reprocess")}
             </button>
           )}
-          {canWrite &&
+          {session &&
+            (session.user.role === "admin" ||
+              (canWrite && detail.uploaded_by === session.user.id)) &&
             (confirmDelete ? (
               <button
                 className="button button-danger"

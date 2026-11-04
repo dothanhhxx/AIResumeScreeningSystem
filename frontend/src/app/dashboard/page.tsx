@@ -12,6 +12,7 @@ import {
   type DashboardSummary,
 } from "@/lib/dashboard-api";
 import type { JobStatus } from "@/lib/jobs-api";
+import { scoreTone } from "@/lib/score-tone";
 
 const jobStatusLabels: Record<JobStatus, TranslationKey> = {
   draft: "Draft",
@@ -302,7 +303,9 @@ export default function DashboardPage() {
                   <span>{candidate.job_title}</span>
                   <small>{candidate.matched_skills.join(", ")}</small>
                 </div>
-                <div className="fit-score">
+                <div
+                  className={`fit-score score-${scoreTone(candidate.score)}`}
+                >
                   <strong>{Math.round(candidate.score)}%</strong>
                   <span>{t("fit")}</span>
                 </div>

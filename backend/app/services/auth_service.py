@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.core.exceptions import DuplicateError, InvalidCredentialsError, PermissionDeniedError
+from app.core.exceptions import BadRequestError, DuplicateError, InvalidCredentialsError, PermissionDeniedError
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User, UserRole
 from app.schemas.auth import RegisterRequest, TokenResponse, UserRead
@@ -32,13 +32,14 @@ async def register_user(
     current_user: User | None,
 ) -> User:
     """
-    Accounts are created by admins only. Bootstrap exception: when the users
-    table is empty, the first registration is allowed and becomes ADMIN.
+    Create a new user account. Self-registration is closed:
+    - When the users table is empty, the first registration becomes ADMIN (initial setup).
+    - After that, only an authenticated admin can create accounts, and picks the role.
     """
     if await count_users(session) == 0:
         role = UserRole.ADMIN
     elif current_user is None or current_user.role != UserRole.ADMIN:
-        raise PermissionDeniedError("Only admins can create accounts")
+        raise PermissionDeniedError("Accounts are created by an administrator.")
     else:
         role = payload.role
 
@@ -78,3 +79,18 @@ def issue_token(user: User) -> TokenResponse:
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         user=UserRead.model_validate(user),
     )
+
+
+async def change_password(session: AsyncSession, user: User, current_password: str, new_password: str) -> None:
+    """
+    Replace the signed-in user's password.
+
+    A wrong current password is a 400, not a 401: the session itself is valid,
+    and the frontend signs people out on 401.
+    """
+    if not verify_password(current_password, user.hashed_password):
+        raise BadRequestError("Current password is incorrect.")
+    if current_password == new_password:
+        raise BadRequestError("Choose a password you have not used for this account.")
+    user.hashed_password = hash_password(new_password)
+    await session.commit()

@@ -12,7 +12,7 @@ from fastapi import APIRouter, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import audit, auth, cvs, dashboard, jobs, matching
+from app.api import audit, auth, cvs, dashboard, jobs, matching, system, users
 from app.config import settings
 from app.core.database import create_all_tables, engine
 from app.core.exceptions import AppError
@@ -78,6 +78,8 @@ api_router.include_router(cvs.router)
 api_router.include_router(matching.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(audit.router)
+api_router.include_router(system.router)
+api_router.include_router(users.router)
 app.include_router(api_router)
 
 

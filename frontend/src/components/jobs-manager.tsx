@@ -12,6 +12,7 @@ import {
   type JobStatus,
 } from "@/lib/jobs-api";
 import { useI18n } from "@/i18n/provider";
+import { useAuthSession } from "@/lib/auth-session";
 import type { TranslationKey } from "@/i18n/messages";
 
 const PAGE_SIZE = 10;
@@ -238,6 +239,17 @@ function JobForm({
 
 export function JobsManager() {
   const { t, language } = useI18n();
+  const { session } = useAuthSession();
+  // JDs are company-shared: everyone reads them, recruiters/admins create,
+  // and only the creator or an admin edits/archives (mirrors the backend).
+  const canCreate = Boolean(session && session.user.role !== "viewer");
+  const canModify = (job: Job) =>
+    Boolean(
+      session &&
+      (session.user.role === "admin" ||
+        (session.user.role === "recruiter" &&
+          job.created_by === session.user.id)),
+    );
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -375,13 +387,15 @@ export function JobsManager() {
                 : t("{{count}} roles", { count: total })}
             </p>
           )}
-          <button
-            className="button button-primary"
-            type="button"
-            onClick={openCreateDialog}
-          >
-            <span className="button-plus">+</span> {t("New job")}
-          </button>
+          {canCreate && (
+            <button
+              className="button button-primary"
+              type="button"
+              onClick={openCreateDialog}
+            >
+              <span className="button-plus">+</span> {t("New job")}
+            </button>
+          )}
         </div>
       </div>
 
@@ -451,13 +465,15 @@ export function JobsManager() {
                 {t("Show all roles")}
               </button>
             ) : total === 0 ? (
-              <button
-                className="button button-primary"
-                type="button"
-                onClick={openCreateDialog}
-              >
-                {t("Create your first draft")}
-              </button>
+              canCreate && (
+                <button
+                  className="button button-primary"
+                  type="button"
+                  onClick={openCreateDialog}
+                >
+                  {t("Create your first draft")}
+                </button>
+              )
             ) : (
               <button
                 className="button button-secondary"
@@ -530,23 +546,27 @@ export function JobsManager() {
                       </td>
                       <td>
                         <div className="job-row-actions">
-                          <button
-                            className="icon-button"
-                            type="button"
-                            onClick={() => openEditDialog(job)}
-                            aria-label={`${t("Edit")} ${job.title}`}
-                          >
-                            {t("Edit")}
-                          </button>
-                          {job.status !== "archived" && (
-                            <button
-                              className="icon-button icon-button-danger"
-                              type="button"
-                              onClick={() => openArchiveDialog(job)}
-                              aria-label={`${t("Archive")} ${job.title}`}
-                            >
-                              {t("Archive")}
-                            </button>
+                          {canModify(job) && (
+                            <>
+                              <button
+                                className="icon-button"
+                                type="button"
+                                onClick={() => openEditDialog(job)}
+                                aria-label={`${t("Edit")} ${job.title}`}
+                              >
+                                {t("Edit")}
+                              </button>
+                              {job.status !== "archived" && (
+                                <button
+                                  className="icon-button icon-button-danger"
+                                  type="button"
+                                  onClick={() => openArchiveDialog(job)}
+                                  aria-label={`${t("Archive")} ${job.title}`}
+                                >
+                                  {t("Archive")}
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>

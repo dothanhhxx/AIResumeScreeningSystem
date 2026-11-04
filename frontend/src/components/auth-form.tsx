@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/messages";
+import { useRegistrationOpen } from "@/components/registration-gate";
 import { AuthApiError, loginAccount, registerAccount } from "@/lib/auth-api";
 import { useAuthSession } from "@/lib/auth-session";
 
@@ -260,11 +261,6 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           {t(notice.key, notice.values)}
         </p>
       )}
-      <p className="login-legal">
-        {t(
-          "By continuing, you agree to your organization's access and data handling policies.",
-        )}
-      </p>
     </form>
   );
 }
@@ -273,11 +269,21 @@ export function AuthSwitch({ mode }: { mode: "login" | "register" }) {
   const isRegistering = mode === "register";
   const { t } = useI18n();
   const { session } = useAuthSession();
+  const registrationOpen = useRegistrationOpen();
 
   if (session) {
     return (
       <p className="login-support">
         <Link href="/dashboard">{t("Back to workspace")}</Link>
+      </p>
+    );
+  }
+
+  // Sign-up is closed once an administrator exists; only initial setup links to it.
+  if (!isRegistering && !registrationOpen) {
+    return (
+      <p className="login-support">
+        {t("Need an account? Ask your workspace administrator.")}
       </p>
     );
   }

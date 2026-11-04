@@ -1,11 +1,17 @@
-"""Business operations for recruiter-owned job descriptions."""
+"""Business operations for job descriptions.
+
+Company-shared model: every signed-in user can read every JD. Only the
+creator or an admin may edit or archive one.
+"""
 
 import json
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import PermissionDeniedError
 from app.models.job import Job, JobStatus
+from app.models.user import User, UserRole
 from app.schemas.common import PaginatedResponse
 from app.schemas.job import JobCreate, JobRead, JobUpdate
 
@@ -35,15 +41,20 @@ async def create_job(
     return JobRead.model_validate(job)
 
 
+def ensure_can_modify(job: Job, user: User) -> None:
+    """Raise 403 unless *user* is an admin or created *job*."""
+    if user.role != UserRole.ADMIN and job.created_by != user.id:
+        raise PermissionDeniedError("Only the JD's creator or an admin can modify it")
+
+
 async def list_jobs(
     db: AsyncSession,
-    created_by: int,
     page: int,
     page_size: int,
     status: JobStatus | None = None,
 ) -> PaginatedResponse[JobRead]:
-    """Return one recruiter's jobs in stable, newest-first order."""
-    filters = [Job.created_by == created_by]
+    """Return the company's jobs in stable, newest-first order."""
+    filters = []
     if status is not None:
         filters.append(Job.status == status)
 
@@ -61,28 +72,23 @@ async def list_jobs(
     return PaginatedResponse[JobRead].create(items, total, page, page_size)
 
 
-async def get_job(
-    db: AsyncSession,
-    job_id: int,
-    created_by: int,
-) -> JobRead | None:
-    """Fetch a JD only when it belongs to the authenticated recruiter."""
-    statement = select(Job).where(Job.id == job_id, Job.created_by == created_by)
-    job = await db.scalar(statement)
+async def get_job(db: AsyncSession, job_id: int) -> JobRead | None:
+    """Fetch any JD by id."""
+    job = await db.get(Job, job_id)
     return JobRead.model_validate(job) if job is not None else None
 
 
 async def update_job(
     db: AsyncSession,
     job_id: int,
-    created_by: int,
+    user: User,
     payload: JobUpdate,
 ) -> JobRead | None:
-    """Apply only supplied fields to a recruiter-owned JD."""
-    statement = select(Job).where(Job.id == job_id, Job.created_by == created_by)
-    job = await db.scalar(statement)
+    """Apply only supplied fields to a JD the user may modify."""
+    job = await db.get(Job, job_id)
     if job is None:
         return None
+    ensure_can_modify(job, user)
 
     values = payload.model_dump(exclude_unset=True)
     if "required_skills" in values:
@@ -104,13 +110,13 @@ async def update_job(
 async def archive_job(
     db: AsyncSession,
     job_id: int,
-    created_by: int,
+    user: User,
 ) -> JobRead | None:
     """Archive instead of deleting so historical match results remain linked."""
-    statement = select(Job).where(Job.id == job_id, Job.created_by == created_by)
-    job = await db.scalar(statement)
+    job = await db.get(Job, job_id)
     if job is None:
         return None
+    ensure_can_modify(job, user)
     job.status = JobStatus.ARCHIVED
     try:
         await db.commit()

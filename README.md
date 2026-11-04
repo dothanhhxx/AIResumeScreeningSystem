@@ -44,6 +44,29 @@ on the `parse`, `extract` and `score` queues.
 
 Runs everything on SQLite + local files, with the pipeline as background tasks inside the API.
 
+### Daily run (after first-time setup)
+
+On Windows, run everything with one command (or double-click `start-dev.bat`):
+
+```powershell
+.\start-dev.ps1
+```
+
+Or run each service in its own terminal:
+
+```powershell
+# Terminal 1 — Backend
+cd backend
+.\.venv\Scripts\Activate.ps1        # Linux/macOS: source .venv/bin/activate
+uvicorn app.main:app --reload --port 8000
+
+# Terminal 2 — Frontend
+cd frontend
+pnpm dev
+```
+
+### First-time setup only
+
 ```bash
 # Backend
 cd backend
@@ -51,17 +74,16 @@ python -m venv .venv && .venv/Scripts/activate      # Linux/macOS: source .venv/
 pip install -e ".[dev]"
 cat > .env <<'EOF'
 DATABASE_URL=sqlite+aiosqlite:///./dev.db
+AUTO_CREATE_TABLES=true
 STORAGE_BACKEND=local
 PIPELINE_MODE=inline
 GEMINI_API_KEY=            # optional
 EOF
-uvicorn app.main:app --reload --port 8000
 
-# Frontend (second terminal)
+# Frontend
 cd frontend
-corepack enable && pnpm install
+pnpm install
 echo NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 > .env.local
-pnpm dev
 ```
 
 OCR of scanned PDFs needs the Tesseract binary installed locally (it is included in the Docker image).

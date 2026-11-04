@@ -49,6 +49,12 @@ class LoginRequest(BaseModel):
         return _normalize_email(v)
 
 
+class ChangePasswordRequest(BaseModel):
+    """PUT /api/v1/auth/password body."""
+    current_password: str = Field(min_length=1, max_length=72)
+    new_password: str = Field(min_length=8, max_length=72)
+
+
 # ── Responses ───────────────────────────────────────────────
 class UserRead(AppBaseModel):
     """Public user info — never exposes hashed_password."""

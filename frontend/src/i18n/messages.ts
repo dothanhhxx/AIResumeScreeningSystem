@@ -661,6 +661,333 @@ const vietnameseMessages = {
   "{{count}} scored": "{{count}} đã chấm",
   "{{count}} total": "{{count}} tổng cộng",
   "{{years}} years": "{{years}} năm",
+  "AI score {{ai}}, adjusted to {{score}}":
+    "Điểm AI {{ai}}, đã chỉnh thành {{score}}",
+  "Activity, last {{days}} days": "Hoạt động {{days}} ngày gần nhất",
+  Advanced: "Đi tiếp",
+  "All decisions": "Mọi quyết định",
+  Analytics: "Phân tích",
+  "Analytics appear after the first AI matching run. Upload CVs, then run matching for a job.":
+    "Số liệu phân tích xuất hiện sau lần so khớp AI đầu tiên. Hãy tải CV lên, rồi chạy so khớp cho một vị trí.",
+  "App version": "Phiên bản ứng dụng",
+  "Applies to every page in this browser.":
+    "Áp dụng cho mọi trang trên trình duyệt này.",
+  "Ask an administrator to change your name, email or role.":
+    "Liên hệ quản trị viên để đổi tên, email hoặc vai trò.",
+  Average: "Trung bình",
+  "Average match score": "Điểm phù hợp trung bình",
+  "By job description": "Theo mô tả công việc",
+  "CVs uploaded": "CV đã tải lên",
+  Candidate: "Ứng viên",
+  "Candidate or role": "Ứng viên hoặc vị trí",
+  "Candidate review opens with names and emails hidden to reduce bias.":
+    "Trang đánh giá ứng viên mở ra với tên và email được ẩn để giảm thiên kiến.",
+  Candidates: "Ứng viên",
+  "Candidates per 10-point score range": "Số ứng viên theo mỗi khoảng 10 điểm",
+  "Candidates scored per role and how far they progressed.":
+    "Số ứng viên đã chấm theo từng vị trí và mức độ họ đi tiếp.",
+  "Change password": "Đổi mật khẩu",
+  "Choose a password you have not used for this account.":
+    "Hãy chọn mật khẩu chưa dùng cho tài khoản này.",
+  "Clear filters": "Xóa bộ lọc",
+  "Confirm new password": "Nhập lại mật khẩu mới",
+  "Current password": "Mật khẩu hiện tại",
+  "Current password is incorrect.": "Mật khẩu hiện tại không đúng.",
+  "Daily counts. Hover or use the arrow keys to read a day.":
+    "Số liệu theo ngày. Rê chuột hoặc dùng phím mũi tên để xem từng ngày.",
+  Date: "Ngày",
+  "Decided by": "Người quyết định",
+  Decision: "Quyết định",
+  "Decision outcomes": "Kết quả quyết định",
+  "Decisions made": "Quyết định đã ghi",
+  "Decisions recorded": "Quyết định đã ghi nhận",
+  "Display language": "Ngôn ngữ hiển thị",
+  "Effective scores, including recruiter adjustments.":
+    "Điểm hiệu lực, đã tính cả điều chỉnh của nhà tuyển dụng.",
+  "Embedding model": "Mô hình embedding",
+  "Engine version": "Phiên bản engine",
+  "Every scored candidate, the AI score, and the decision your team recorded.":
+    "Mọi ứng viên đã được chấm, điểm AI và quyết định mà nhóm của bạn đã ghi nhận.",
+  "Fallback when the model is unavailable":
+    "Phương án dự phòng khi mô hình không khả dụng",
+  "File storage": "Lưu trữ tệp",
+  "Go to candidate review": "Đến trang đánh giá ứng viên",
+  "Hide candidate identity by default": "Mặc định ẩn danh tính ứng viên",
+  "How candidates score, where decisions land, and which skills are hardest to find.":
+    "Ứng viên đạt điểm ra sao, quyết định nghiêng về đâu và kỹ năng nào khó tìm nhất.",
+  "How much each signal counts toward the overall match score when it is available.":
+    "Mức đóng góp của từng tín hiệu vào điểm phù hợp tổng khi tín hiệu đó có sẵn.",
+  INSIGHTS: "PHÂN TÍCH",
+  "Language model on": "Đang dùng mô hình ngôn ngữ",
+  "Last activity": "Hoạt động gần nhất",
+  "Loading analytics…": "Đang tải số liệu phân tích…",
+  "Loading history…": "Đang tải lịch sử…",
+  "Match score distribution": "Phân bố điểm phù hợp",
+  "Matches scored": "Lượt chấm điểm",
+  "Member since": "Thành viên từ",
+  Model: "Mô hình",
+  "Most common skill gaps": "Kỹ năng thường thiếu nhất",
+  "New password": "Mật khẩu mới",
+  "No results for these filters": "Không có kết quả cho bộ lọc này",
+  "No scored candidates yet": "Chưa có ứng viên nào được chấm điểm",
+  "No screening history yet": "Chưa có lịch sử sàng lọc",
+  "No skill gaps recorded yet.": "Chưa ghi nhận kỹ năng còn thiếu nào.",
+  "Offline scoring": "Chấm điểm ngoại tuyến",
+  "Open review": "Mở đánh giá",
+  "Open review for {{name}}": "Mở đánh giá của {{name}}",
+  "Partial (50–74)": "Một phần (50–74)",
+  "Password updated. Use it the next time you sign in.":
+    "Đã cập nhật mật khẩu. Dùng mật khẩu mới ở lần đăng nhập sau.",
+  Preferences: "Tùy chọn",
+  "Processing pipeline": "Quy trình xử lý",
+  "Processing steps": "Các bước xử lý",
+  Profile: "Hồ sơ",
+  Provider: "Nhà cung cấp",
+  "Read-only. Administrators change these values in the backend configuration.":
+    "Chỉ xem. Quản trị viên thay đổi các giá trị này trong cấu hình backend.",
+  "Reduce motion": "Giảm chuyển động",
+  "Required skills with no evidence in the CV, by number of candidates.":
+    "Kỹ năng bắt buộc chưa có bằng chứng trong CV, theo số ứng viên.",
+  Role: "Vị trí",
+  "Rule-based scoring": "Chấm điểm theo quy tắc",
+  "Run AI matching for a job to start building the history.":
+    "Chạy so khớp AI cho một vị trí để bắt đầu tạo lịch sử.",
+  "Saved on this device": "Đã lưu trên thiết bị này",
+  Score: "Điểm",
+  "Score range": "Khoảng điểm",
+  "Score weights": "Trọng số điểm",
+  "Scored matches": "Lượt đã chấm",
+  "Scoring engine": "Engine chấm điểm",
+  "Screening history": "Lịch sử sàng lọc",
+  Search: "Tìm kiếm",
+  "Session length": "Thời lượng phiên",
+  Settings: "Cài đặt",
+  "Share of candidates by score band": "Tỷ lệ ứng viên theo mức điểm",
+  "Show data table": "Hiện bảng dữ liệu",
+  "Stored in this browser only.": "Chỉ lưu trên trình duyệt này.",
+  "Strong (75+)": "Phù hợp cao (75+)",
+  "The two passwords do not match.": "Hai mật khẩu không khớp.",
+  Top: "Cao nhất",
+  "Try another role, decision, or search term.":
+    "Thử vị trí, quyết định hoặc từ khóa khác.",
+  "Turns off interface animation, even if your system allows it.":
+    "Tắt hiệu ứng chuyển động của giao diện, kể cả khi hệ thống của bạn cho phép.",
+  "Update password": "Cập nhật mật khẩu",
+  "Weak (under 50)": "Thấp (dưới 50)",
+  "Where every scored candidate stands today.":
+    "Trạng thái hiện tại của mọi ứng viên đã được chấm.",
+  "Your account, how the workspace behaves for you, and how scores are produced.":
+    "Tài khoản của bạn, cách không gian làm việc hoạt động với bạn và cách điểm được tạo ra.",
+  done: "đã xong",
+  "in progress": "đang xử lý",
+  "not started": "chưa bắt đầu",
+  "out of 100": "trên thang 100",
+  "{{count}} awaiting review": "{{count}} đang chờ xem xét",
+  "{{count}} results": "{{count}} kết quả",
+  "{{minutes}} minutes": "{{minutes}} phút",
+  "{{range}}: {{count}} candidates": "{{range}}: {{count}} ứng viên",
+  "{{share}} of scored candidates have a recorded decision.":
+    "{{share}} ứng viên đã chấm có quyết định được ghi nhận.",
+  "AI engine": "AI engine",
+  "Text read": "Đã đọc văn bản",
+  "Details extracted": "Đã trích xuất thông tin",
+  "Skip to content": "Bỏ qua đến nội dung",
+  "How it works": "Cách hoạt động",
+  Principles: "Nguyên tắc",
+  Demo: "Bản demo",
+  "Open workspace": "Mở không gian làm việc",
+  "AI resume screening for hiring teams":
+    "Sàng lọc CV bằng AI cho đội tuyển dụng",
+  "Read every CV.": "Đọc kỹ mọi CV,",
+  "Decide with evidence.": "Quyết định có căn cứ.",
+  "TalentLens reads each resume, checks it against every requirement in your job description, and ranks candidates with quotes as proof. The decision always stays with your team.":
+    "TalentLens đọc từng CV, đối chiếu với mọi yêu cầu trong mô tả công việc và xếp hạng ứng viên kèm trích dẫn làm bằng chứng. Quyết định cuối cùng luôn thuộc về đội của bạn.",
+  "Explore the demo": "Khám phá bản demo",
+  "Evidence quoted from the CV": "Bằng chứng trích từ CV",
+  "Ranked by fit to the job": "Xếp hạng theo mức phù hợp",
+  "People make the final call": "Con người ra quyết định",
+  "From job description to shortlist":
+    "Từ mô tả công việc đến danh sách rút gọn",
+  "Three steps your recruiters already take, with the reading and cross-checking done for them.":
+    "Ba bước mà nhà tuyển dụng vẫn làm hằng ngày, nay phần đọc và đối chiếu đã được làm sẵn.",
+  "Describe the role": "Mô tả vị trí",
+  "Write or paste the job description. Required skills, years of experience and education become the checklist every CV is read against.":
+    "Viết hoặc dán mô tả công việc. Kỹ năng bắt buộc, số năm kinh nghiệm và học vấn trở thành danh sách tiêu chí để đối chiếu với từng CV.",
+  "Add the resumes": "Thêm CV ứng viên",
+  "Upload PDF or DOCX files. TalentLens reads the text, structures skills, experience and education, and flags files it could not read.":
+    "Tải lên tệp PDF hoặc DOCX. TalentLens đọc nội dung, cấu trúc hóa kỹ năng, kinh nghiệm, học vấn và đánh dấu những tệp không đọc được.",
+  "Review the evidence": "Xem xét bằng chứng",
+  "Candidates arrive ranked, each requirement marked found, unclear or missing with a quote from the CV. Your team shortlists, adjusts or rejects.":
+    "Ứng viên được xếp hạng sẵn, mỗi yêu cầu được đánh dấu có, chưa rõ hoặc thiếu kèm trích dẫn từ CV. Đội của bạn chọn vào danh sách, điều chỉnh hoặc loại.",
+  "Built so people stay in charge": "Thiết kế để con người luôn làm chủ",
+  "Explainable scores": "Điểm số giải thích được",
+  "Every score breaks down into skills, experience and education, and shows which engine produced it.":
+    "Mỗi điểm số được tách thành kỹ năng, kinh nghiệm và học vấn, đồng thời cho biết engine nào tạo ra nó.",
+  "Identity hidden by default": "Mặc định ẩn danh tính",
+  "Reviewers compare candidates by evidence first. Names and emails stay hidden until someone chooses to show them.":
+    "Người đánh giá so sánh ứng viên dựa trên bằng chứng trước. Tên và email được ẩn cho đến khi có người chủ động hiện ra.",
+  "Every action on record": "Mọi thao tác đều được ghi lại",
+  "Uploads, matching runs and decisions are written to an audit log administrators can review.":
+    "Việc tải CV, chạy so khớp và ra quyết định đều được ghi vào nhật ký kiểm toán để quản trị viên xem lại.",
+  "See a full review with sample data":
+    "Xem trọn một lượt đánh giá với dữ liệu mẫu",
+  "The demo uses invented candidates and makes no requests to your backend.":
+    "Bản demo dùng ứng viên giả lập và không gửi yêu cầu nào tới backend của bạn.",
+  "from {{count}} CVs": "từ {{count}} CV",
+  "Account created for {{name}}.": "Đã tạo tài khoản cho {{name}}.",
+  Accounts: "Tài khoản",
+  "Accounts are created by your workspace administrator. Ask them to add you, then sign in.":
+    "Tài khoản do quản trị viên cấp. Hãy nhờ họ thêm bạn, rồi đăng nhập.",
+  Activity: "Hoạt động",
+  "Add user": "Thêm người dùng",
+  "Any status": "Mọi trạng thái",
+  "Changes to {{name}} saved.": "Đã lưu thay đổi cho {{name}}.",
+  "Delete account": "Xóa tài khoản",
+  "Delete {{name}}?": "Xóa {{name}}?",
+  "Edit {{name}}": "Sửa {{name}}",
+  "Go to sign in": "Đến trang đăng nhập",
+  "Last sign-in": "Đăng nhập gần nhất",
+  "Leave empty to keep the current password.":
+    "Để trống nếu giữ nguyên mật khẩu hiện tại.",
+  Lock: "Khóa",
+  "Lock account": "Khóa tài khoản",
+  "Lock {{name}}?": "Khóa {{name}}?",
+  Locked: "Đã khóa",
+  "Name or email": "Tên hoặc email",
+  "Need an account? Ask your workspace administrator.":
+    "Cần tài khoản? Hãy liên hệ quản trị viên.",
+  "Never signed in": "Chưa đăng nhập lần nào",
+  "No accounts match these filters.": "Không có tài khoản nào khớp bộ lọc.",
+  "No activity yet": "Chưa có hoạt động",
+  "Only administrators can manage accounts. Contact your workspace administrator.":
+    "Chỉ quản trị viên mới quản lý được tài khoản. Hãy liên hệ quản trị viên.",
+  "Only administrators create accounts. Change roles, lock access or remove accounts here.":
+    "Chỉ quản trị viên được cấp tài khoản. Đổi vai trò, khóa quyền truy cập hoặc xóa tài khoản tại đây.",
+  "Reset password (optional)": "Đặt lại mật khẩu (không bắt buộc)",
+  "Share it privately. They can change it in Settings after signing in.":
+    "Gửi riêng cho người dùng. Họ có thể đổi trong Cài đặt sau khi đăng nhập.",
+  "Temporary password": "Mật khẩu tạm thời",
+  "The account is removed permanently. This cannot be undone.":
+    "Tài khoản sẽ bị xóa vĩnh viễn. Không thể hoàn tác.",
+  "They are signed out right away and cannot sign in until unlocked. Their history stays.":
+    "Người dùng bị đăng xuất ngay và không thể đăng nhập cho đến khi được mở khóa. Lịch sử của họ vẫn được giữ.",
+  "They can sign in again with their current password.":
+    "Người dùng có thể đăng nhập lại bằng mật khẩu hiện tại.",
+  "This account has hiring activity, so it cannot be deleted. Lock it instead.":
+    "Tài khoản này đã có hoạt động tuyển dụng nên không thể xóa. Hãy khóa tài khoản thay vì xóa.",
+  "This workspace has no accounts yet. The account you create now becomes the administrator.":
+    "Hệ thống chưa có tài khoản nào. Tài khoản bạn tạo bây giờ sẽ là quản trị viên.",
+  Unlock: "Mở khóa",
+  "Unlock account": "Mở khóa tài khoản",
+  "Unlock {{name}}?": "Mở khóa {{name}}?",
+  User: "Người dùng",
+  "What each role can do": "Quyền của từng vai trò",
+  You: "Bạn",
+  "You cannot change your own role.": "Bạn không thể tự đổi vai trò của mình.",
+  "You cannot delete your own account.":
+    "Bạn không thể tự xóa tài khoản của mình.",
+  "You cannot lock your own account.":
+    "Bạn không thể tự khóa tài khoản của mình.",
+  "You cannot remove your own administrator access.":
+    "Bạn không thể tự gỡ quyền quản trị của mình.",
+  "The workspace needs at least one active administrator.":
+    "Hệ thống cần ít nhất một quản trị viên đang hoạt động.",
+  "Full access, including user accounts and the audit log.":
+    "Toàn quyền, bao gồm quản lý tài khoản và nhật ký kiểm toán.",
+  "Creates job descriptions, uploads CVs, runs matching and records decisions.":
+    "Tạo mô tả công việc, tải CV, chạy so khớp và ghi quyết định.",
+  "Read-only: sees job descriptions, CVs, rankings and reports.":
+    "Chỉ xem: xem mô tả công việc, CV, bảng xếp hạng và báo cáo.",
+  "Admins {{admins}} · Recruiters {{recruiters}} · Viewers {{viewers}} · Locked {{locked}}":
+    "Quản trị {{admins}} · Nhà tuyển dụng {{recruiters}} · Người xem {{viewers}} · Đã khóa {{locked}}",
+  "{{jobs}} JDs · {{cvs}} CVs · {{decisions}} decisions":
+    "{{jobs}} JD · {{cvs}} CV · {{decisions}} quyết định",
+  "{{name}} can sign in again.": "{{name}} có thể đăng nhập lại.",
+  "{{name}} is locked and signed out.": "{{name}} đã bị khóa và đăng xuất.",
+  "{{name}} was deleted.": "Đã xóa {{name}}.",
+  "Workspace access": "Truy cập không gian làm việc",
+  "Accounts are issued by your workspace administrator.":
+    "Tài khoản do quản trị viên cấp.",
+  "From resume noise to explainable hiring clarity.":
+    "Từ nhiễu loạn hồ sơ đến quyết định tuyển dụng minh bạch.",
+  "Interactive preview": "Trải nghiệm trực tiếp",
+  "About us": "Về chúng tôi",
+  "Contact & access": "Liên hệ & kết nối",
+  "Home page": "Trang chủ",
+  "INTERACTIVE EVIDENCE PREVIEW": "TRẢI NGHIỆM ĐỐI CHIẾU BẰNG CHỨNG",
+  "Test-drive requirement matching right here":
+    "Trải nghiệm đối chiếu tiêu chí ngay tại đây",
+  "Switch roles, toggle blind review, and click any candidate to inspect how TalentLens quotes resume evidence without making hiring decisions for you.":
+    "Chọn vị trí tuyển dụng, bật/tắt ẩn danh tính và nhấn vào từng ứng viên để xem cách TalentLens trích dẫn bằng chứng từ CV mà không quyết định thay bạn.",
+  "Blind review (hide identity)": "Đánh giá ẩn danh (ẩn họ tên & email)",
+  "Identity hidden": "Đang ẩn danh tính",
+  "Identity visible": "Đang hiện danh tính",
+  "THE TALENTLENS STORY": "CÂU CHUYỆN TALENTLENS",
+  "From resume overload to transparent human decisions":
+    "Từ áp lực hàng trăm hồ sơ đến quyết định tuyển dụng minh bạch",
+  "TalentLens was born from a simple observation: recruiters spend hours scanning PDFs for keywords, while qualified candidates get overlooked or filtered out by opaque black-box scores.":
+    "TalentLens bắt đầu từ một thực tế quen thuộc: nhà tuyển dụng mất hàng giờ đọc lướt từng tệp PDF, trong khi nhiều ứng viên phù hợp lại bị bỏ sót bởi những điểm số hộp đen thiếu căn cứ.",
+  "Built as an explainable AI screening system at FPT University Hanoi, we combine deterministic rules, semantic retrieval, and verifiable CV quotes so hiring teams always see the evidence behind every rank.":
+    "Được phát triển bởi đội ngũ tại Đại học FPT Hà Nội, chúng tôi kết hợp chấm điểm theo quy tắc, ngữ nghĩa và trích dẫn trực tiếp từ CV để đội ngũ tuyển dụng luôn nắm rõ bằng chứng phía sau mỗi thứ hạng.",
+  "OUR VISION": "TẦM NHÌN",
+  "ELEVATING EXPLAINABLE HIRING": "NÂNG TẦM TUYỂN DỤNG MINH BẠCH",
+  "TalentLens aims to become the trusted standard for evidence-led recruitment—where AI accelerates reading and cross-checking, while fairness, context, and final judgment remain 100% human.":
+    "TalentLens hướng tới trở thành chuẩn mực tiêu biểu trong ứng dụng AI giải thích được cho tuyển dụng — nơi công nghệ tăng tốc khâu đọc hiểu và đối chiếu, còn sự công bằng và quyết định cuối cùng luôn thuộc về con người.",
+  "OUR MISSION": "SỨ MỆNH",
+  "CONNECTING TALENT THROUGH VERIFIABLE PROOF":
+    "KẾT NỐI BẰNG NHỮNG BẰNG CHỨNG CHÂN THỰC",
+  "TalentLens connects hiring teams and candidates by structuring every resume into clear, auditable requirement checks—reducing unconscious bias with default blind review and full auditability.":
+    "TalentLens mang sứ mệnh kết nối nhà tuyển dụng và ứng viên bằng cách số hóa hành trình đọc CV thành từng tiêu chí có trích dẫn xác thực — giảm định kiến nhờ chế độ ẩn danh mặc định và nhật ký kiểm toán minh bạch.",
+  "100% Quoted": "100% Có trích dẫn",
+  "Every matched requirement links to a CV excerpt":
+    "Mọi tiêu chí khớp đều gắn kèm câu trích dẫn từ CV",
+  "3-Signal Hybrid": "3 Tầng đối chiếu",
+  "Rule-based + Semantic + LLM verification":
+    "Kết hợp Quy tắc + Ngữ nghĩa + Mô hình ngôn ngữ",
+  "Blind by Default": "Ẩn danh mặc định",
+  "Names & emails masked during initial review":
+    "Tự động che họ tên & email ở bước xem xét đầu",
+  "Full Audit Trail": "Nhật ký kiểm toán",
+  "Every upload, run, and decision is logged":
+    "Mọi thao tác tải lên, chấm điểm, quyết định đều lưu vết",
+  "ARCHITECTURE & ACCESS": "KIẾN TRÚC & TRải NGHIỆM HỆ THỐNG",
+  "Explore the TalentLens ecosystem":
+    "Khám phá không gian làm việc TalentLens",
+  "Four transparent stages from raw PDF/DOCX upload to an auditable team shortlist. Try the read-only demo or sign in to your workspace.":
+    "Bốn bước minh bạch từ khi tải tệp PDF/DOCX đến danh sách rút gọn có kiểm toán. Khám phá ngay bản demo hoặc đăng nhập vào hệ thống.",
+  "01. Ingest & Parse": "01. Tiếp nhận & Đọc CV",
+  "PDF & DOCX extraction into structured sections":
+    "Trích xuất văn bản PDF & DOCX thành các mục rõ ràng",
+  "02. Hybrid Matching": "02. Đối chiếu đa tầng",
+  "Rule checklist + semantic similarity + LLM quotes":
+    "Đối chiếu tiêu chí + độ tương đồng ngữ nghĩa + trích dẫn",
+  "03. Blind Evidence Review": "03. Xem xét bằng chứng ẩn danh",
+  "Compare candidates by proof before revealing identity":
+    "So sánh ứng viên qua bằng chứng trước khi mở danh tính",
+  "04. Auditable Decision": "04. Quyết định có lưu vết",
+  "Shortlist, interview, or override with logged reasons":
+    "Chọn phỏng vấn, điều chỉnh điểm kèm lý do vào nhật ký",
+  "Research & Development Location": "Địa điểm nghiên cứu & phát triển",
+  "FPT University Hanoi, Hoa Lac Hi-Tech Park, Thach That, Hanoi":
+    "Đại học FPT Hà Nội, Khu Công nghệ cao Hòa Lạc, Thạch Thất, Hà Nội",
+  "Consultation & Demo Support": "Hotline tư vấn & hỗ trợ Demo",
+  "0839 865 104 · TalentLens Product Team":
+    "0839 865 104 · Đội ngũ phát triển TalentLens",
+  "Electronic Mail": "Thư điện tử",
+  "OPEN INTERACTIVE DEMO": "MỞ KHÔNG GIAN DEMO TRỰC TIẾP",
+  "ABOUT TALENTLENS": "VỀ TALENTLENS",
+  "WORKSPACE MODULES": "PHÂN HỆ HỆ THỐNG",
+  "CONTACT & GOVERNANCE": "LIÊN HỆ & QUẢN TRỊ",
+  "Preserving fairness and clarity in every hiring decision—from raw resume noise to structured, verifiable human shortlists.":
+    "Giữ trọn sự minh bạch và công bằng trong từng quyết định tuyển dụng — từ hàng trăm hồ sơ phức tạp đến những bằng chứng rõ ràng cho đội ngũ của bạn.",
+  "All modules": "Tất cả phân hệ",
+  "© 2026 TalentLens. All rights reserved.":
+    "© 2026 TalentLens. Tất cả quyền được bảo lưu.",
+  "EVIDENCE-LED": "BẰNG CHỨNG RÕ RÀNG",
+  "BLIND REVIEW": "ẨN DANH CÔNG BẰNG",
+  "AUDIT TRAIL": "KIỂM TOÁN MINH BẠCH",
+  "HUMAN-DECIDED": "CON NGƯỜI QUYẾT ĐỊNH",
+  "Back to top": "Lên đầu trang",
 } as const;
 
 export type TranslationKey = keyof typeof vietnameseMessages;

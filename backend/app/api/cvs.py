@@ -1,5 +1,7 @@
 """
 CV upload & management API router.
+Company-shared model: every signed-in user can read every CV; only
+admins/recruiters can upload or reprocess, and only an admin or the uploader can delete.
 Owner: Person B
 
 Endpoints:
@@ -7,7 +9,7 @@ Endpoints:
     POST   /api/v1/cvs/upload/batch  — Upload multiple CVs (multipart)
     GET    /api/v1/cvs               — List CVs (paginated, filterable)
     GET    /api/v1/cvs/{cv_id}       — Get a single CV by ID
-    DELETE /api/v1/cvs/{cv_id}       — Delete a CV (admin or recruiter)
+    DELETE /api/v1/cvs/{cv_id}       — Delete a CV (admin, or the recruiter who uploaded it)
     GET    /api/v1/cvs/{cv_id}/url   — Get a presigned download URL (MinIO only)
     GET    /api/v1/cvs/{cv_id}/file  — Download the original file (any storage backend)
     POST   /api/v1/cvs/{cv_id}/reprocess — Re-run parse → extract for a CV
@@ -52,9 +54,9 @@ def _enqueue_parse_task(cv_id: int) -> None:
         logger.warning("Failed to enqueue parse task for CV %d: %s", cv_id, exc)
 
 
-def _ensure_can_view(cv: CV, user: User) -> None:
-    if user.role not in (UserRole.ADMIN, UserRole.RECRUITER) and cv.uploaded_by != user.id:
-        raise PermissionDeniedError()
+def _ensure_can_delete(cv: CV, user: User) -> None:
+    if user.role != UserRole.ADMIN and cv.uploaded_by != user.id:
+        raise PermissionDeniedError("Only the uploader or an admin can delete this CV")
 
 
 _writer = require_roles(UserRole.ADMIN, UserRole.RECRUITER)
@@ -171,8 +173,8 @@ async def upload_cv_batch(
     response_model=ApiResponse[PaginatedResponse[CVSummaryResponse]],
     summary="List CVs",
     description=(
-        "Return a paginated list of CVs. Admins see all CVs; regular users "
-        "see only their own uploads. Optionally filter by status."
+        "Return a paginated list of the company's CVs (visible to every role). "
+        "Optionally filter by status."
     ),
 )
 async def list_cvs(
@@ -183,17 +185,11 @@ async def list_cvs(
     current_user: User = Depends(get_current_user),
 ) -> ApiResponse[PaginatedResponse[CVSummaryResponse]]:
     """List CVs with pagination and optional status filter."""
-    # Admins see all; regular users see only their own
-    uploader_filter: int | None = None
-    if current_user.role not in (UserRole.ADMIN, UserRole.RECRUITER):
-        uploader_filter = current_user.id
-
     cvs, total = await cv_service.list_cvs(
         db,
         page=page,
         page_size=page_size,
         status=status_filter,
-        uploaded_by=uploader_filter,
     )
 
     items = [CVSummaryResponse.model_validate(cv) for cv in cvs]
@@ -217,7 +213,6 @@ async def get_cv(
 ) -> ApiResponse[CVResponse]:
     """Retrieve detailed information about a specific CV."""
     cv = await cv_service.get_cv(db, cv_id)
-    _ensure_can_view(cv, current_user)
     return ApiResponse(data=CVResponse.model_validate(cv))
 
 
@@ -235,7 +230,8 @@ async def delete_cv(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(_writer),
 ) -> ApiResponse[None]:
-    """Delete a CV record and its associated file from storage (admin/recruiter only)."""
+    """Delete a CV record and its associated file from storage (admin or uploader only)."""
+    _ensure_can_delete(await cv_service.get_cv(db, cv_id), current_user)
     await cv_service.delete_cv(db, cv_id)
     await audit_service.record(
         db, AuditAction.CV_DELETE, user=current_user, resource_type="cv", resource_id=cv_id, request=request
@@ -259,7 +255,6 @@ async def get_cv_download_url(
 ) -> ApiResponse[dict]:
     """Return a presigned GET URL for the CV's stored file."""
     cv = await cv_service.get_cv(db, cv_id)
-    _ensure_can_view(cv, current_user)
     url = await asyncio.to_thread(storage_service.get_presigned_url, cv.file_url, expires_in)
     return ApiResponse(
         message="Presigned URL generated.",
@@ -280,7 +275,6 @@ async def download_cv_file(
     current_user: User = Depends(get_current_user),
 ) -> Response:
     cv = await cv_service.get_cv(db, cv_id)
-    _ensure_can_view(cv, current_user)
     content = await asyncio.to_thread(storage_service.download_file, cv.file_url)
     await audit_service.record(
         db, AuditAction.CV_VIEW, user=current_user, resource_type="cv", resource_id=cv.id, request=request

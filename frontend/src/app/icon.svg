@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <rect width="128" height="128" rx="26" fill="#082219"/>
+  <rect x="3" y="3" width="122" height="122" rx="23" stroke="#e8c467" stroke-opacity="0.35" stroke-width="2"/>
+  <defs>
+    <linearGradient id="brow" x1="12" y1="48" x2="88" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#d6ad4a"/>
+      <stop offset="55%" stop-color="#f3da8b"/>
+      <stop offset="100%" stop-color="#e8c467"/>
+    </linearGradient>
+    <linearGradient id="leftPillar" x1="44" y1="30" x2="44" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2d8a66"/>
+      <stop offset="100%" stop-color="#134232"/>
+    </linearGradient>
+    <linearGradient id="rightPillar" x1="71" y1="26" x2="71" y2="110" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1f684d"/>
+      <stop offset="100%" stop-color="#0d3326"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="63" y1="110" x2="118" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#134232"/>
+      <stop offset="45%" stop-color="#287a5b"/>
+      <stop offset="100%" stop-color="#e8c467"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(2, 8)">
+    <path d="M10 33L61 6L86 21V58L78 52V25L61 15L10 43V33Z" fill="url(#brow)"/>
+    <path d="M35 28L50 20V98L35 88V28Z" fill="url(#leftPillar)" stroke="#e8c467" stroke-opacity="0.3" stroke-width="0.75"/>
+    <path d="M63 22L78 24V76L63 106V22Z" fill="url(#rightPillar)" stroke="#e8c467" stroke-opacity="0.28" stroke-width="0.75"/>
+    <path d="M63 106L78 76L118 52V66L63 106Z" fill="url(#wing)"/>
+    <path d="M109 10C111.5 18.5 114.5 21.5 123 24C114.5 26.5 111.5 29.5 109 38C106.5 29.5 103.5 26.5 95 24C103.5 21.5 106.5 18.5 109 10Z" fill="#f3da8b"/>
+  </g>
+</svg>
+

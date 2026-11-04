@@ -19,6 +19,9 @@ class AuditAction(str, enum.Enum):
     LOGIN = "login"
     LOGOUT = "logout"
     REGISTER = "register"
+    PASSWORD_CHANGE = "password_change"
+    USER_UPDATE = "user_update"
+    USER_DELETE = "user_delete"
     # CV
     CV_UPLOAD = "cv_upload"
     CV_DELETE = "cv_delete"

@@ -1,0 +1,156 @@
+.filters {
+  display: grid;
+  grid-template-columns:
+    minmax(160px, 1fr) minmax(150px, 0.8fr) minmax(200px, 1.2fr)
+    auto;
+  align-items: end;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.filters :global(.form-field) {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.searchInput {
+  position: relative;
+  display: block;
+}
+
+.searchInput svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  color: var(--muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.searchInput input {
+  width: 100%;
+  padding-left: 36px;
+}
+
+.count {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A refetch keeps the previous rows on screen, dimmed, instead of flashing a skeleton. */
+.tableWrap {
+  transition: opacity 200ms var(--ease-out);
+}
+
+.tableWrap[data-refreshing] {
+  opacity: 0.55;
+}
+
+.table {
+  min-width: 880px;
+}
+
+.table td,
+.table th {
+  vertical-align: middle;
+}
+
+.role {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score {
+  display: inline-flex;
+  min-width: 40px;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--tone-bg);
+  color: var(--tone-fg);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.adjusted {
+  margin-left: 1px;
+}
+
+.reason {
+  display: block;
+  max-width: 220px;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skeletonRows {
+  display: grid;
+  padding: 8px 20px 16px;
+}
+
+.skeletonRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1.4fr 60px 120px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 40px 20px 44px;
+  text-align: center;
+}
+
+.empty h2 {
+  margin: 6px 0 0;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.empty p {
+  max-width: 420px;
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .filters {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .skeletonRow {
+    grid-template-columns: 1fr 60px;
+  }
+
+  .skeletonRow > :nth-child(n + 3) {
+    display: none;
+  }
+}

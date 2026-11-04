@@ -400,6 +400,16 @@ export function CvUpload({
               )}
             </span>
           </div>
+          {uploading && (
+            <div
+              className="upload-progress"
+              role="progressbar"
+              aria-label={t("Uploading…")}
+              aria-busy="true"
+            >
+              <span />
+            </div>
+          )}
           <div className="cv-upload-footer">
             <span>
               {t(

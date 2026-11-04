@@ -96,16 +96,3 @@ async def test_decision_override_reorders_ranking_and_feeds_dashboard(client, ad
 
     audit = (await client.get("/api/v1/audit?resource_type=match_result", headers=admin_headers)).json()["data"]
     assert "decision_create" in {i["action"] for i in audit["items"]}
-
-
-async def test_matching_requires_job_ownership(client, admin_headers):
-    recruiter = {"email": "rec@example.com", "password": "Password1", "full_name": "Rec", "role": "recruiter"}
-    await client.post("/api/v1/auth/register", json=recruiter, headers=admin_headers)
-    login = await client.post("/api/v1/auth/login", json={"email": recruiter["email"], "password": "Password1"})
-    rec_headers = {"Authorization": f"Bearer {login.json()['data']['access_token']}"}
-    job = (await client.post("/api/v1/jobs", json=JOB, headers=admin_headers)).json()["data"]
-
-    run = await client.post("/api/v1/matching/run", json={"job_id": job["id"]}, headers=rec_headers)
-    assert run.status_code == 404
-    ranking = await client.get(f"/api/v1/matching/jobs/{job['id']}/results", headers=rec_headers)
-    assert ranking.status_code == 404

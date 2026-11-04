@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { BrandLogo, BrandMark } from "@/components/brand-logo";
 import { Icon } from "@/components/icon";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/i18n/provider";
@@ -19,18 +20,21 @@ const navigation = [
   { href: "/jobs", label: "Job descriptions", icon: "jobs" as const },
   { href: "/cvs", label: "CV library", icon: "cvs" as const },
   { href: "/rankings", label: "Candidate review", icon: "rankings" as const },
+  { href: "/history", label: "Screening history", icon: "history" as const },
+  { href: "/analytics", label: "Analytics", icon: "analytics" as const },
   {
     href: "/audit",
     label: "Audit log",
-    icon: "dashboard" as const,
+    icon: "shield" as const,
     adminOnly: true,
   },
   {
     href: "/users",
     label: "User management",
-    icon: "settings" as const,
+    icon: "users" as const,
     adminOnly: true,
   },
+  { href: "/settings", label: "Settings", icon: "settings" as const },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -169,13 +173,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="sidebar-header">
           <Link
             className="brand"
-            href="/dashboard"
+            href="/"
             aria-label={t("TalentLens home")}
           >
-            <span className="brand-mark">T</span>
-            <span className="brand-name">
-              Talent<span>Lens</span>
-            </span>
+            <BrandLogo
+              variant="dark"
+              size="md"
+              markOnly={isSidebarCollapsed}
+            />
           </Link>
           <button
             ref={mobileCloseButtonRef}
@@ -206,7 +211,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
         </button>
         <div className="workspace-picker">
-          <span className="workspace-avatar">T</span>
+          <span className="workspace-avatar">
+            <BrandMark size={20} variant="dark" />
+          </span>
           <span className="workspace-copy">
             <strong>{t("Team workspace")}</strong>
             <small>{t("Recruiting team")}</small>
@@ -277,6 +284,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Icon name="menu" size={19} />
             </button>
             <div className="breadcrumb">
+              <Link
+                href="/"
+                className="topbar-brand-pill"
+                aria-label={t("TalentLens home")}
+              >
+                <BrandMark size={20} variant="light" />
+                <span>TalentLens</span>
+              </Link>
+              <span className="breadcrumb-separator">/</span>
               <span>{t("Workspace")}</span>
               <span className="breadcrumb-separator">/</span>
               <strong>
@@ -288,6 +304,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="topbar-actions">
+            <Link href="/demo" className="topbar-quick-link">
+              <Icon name="sparkle" size={14} />
+              <span>{t("Demo")}</span>
+            </Link>
             <LanguageSwitcher />
             {session ? (
               <div className="account-menu-wrap" ref={accountMenuRef}>
@@ -335,13 +355,36 @@ export function AppShell({ children }: { children: ReactNode }) {
             ) : null}
           </div>
         </header>
-        <main className="page-content">{children}</main>
+        <main className="page-content" key={activePath}>
+          {children}
+        </main>
         <footer className="page-footer">
-          <span>
-            TalentLens <span className="footer-separator">·</span> AI Resume
-            Screening
-          </span>
-          <span>{t("Human review stays in control")}</span>
+          <div className="page-footer-brand">
+            <Link href="/" aria-label={t("TalentLens home")}>
+              <BrandLogo
+                variant="light"
+                size="sm"
+                showTagline
+                tagline={t(
+                  "From resume noise to explainable hiring clarity.",
+                )}
+              />
+            </Link>
+          </div>
+          <div className="page-footer-links">
+            <Link href="/">{t("Home page")}</Link>
+            <span className="footer-separator">·</span>
+            <Link href="/demo">{t("Demo")}</Link>
+            <span className="footer-separator">·</span>
+            <Link href="/rankings">{t("Candidate review")}</Link>
+            <span className="footer-separator">·</span>
+            <Link href="/settings">{t("Settings")}</Link>
+          </div>
+          <div className="page-footer-meta">
+            <span>{t("Human review stays in control")}</span>
+            <span className="footer-separator">·</span>
+            <span>{t("© 2026 TalentLens")}</span>
+          </div>
         </footer>
       </div>
     </div>

@@ -9,6 +9,7 @@ async def _login(client, email: str, password: str) -> dict[str, str]:
 
 
 async def test_first_account_becomes_admin_and_can_login(client):
+    assert (await client.get("/api/v1/auth/registration")).json()["data"] == {"open": True}
     response = await client.post("/api/v1/auth/register", json={**ADMIN, "role": "viewer"})
     assert response.status_code == 201
     assert response.json()["data"]["role"] == "admin"
@@ -35,8 +36,13 @@ async def test_wrong_password_and_missing_token_are_rejected(client, admin_heade
 
 
 async def test_only_admin_can_create_accounts(client, admin_headers):
-    new_user = {"email": "x@example.com", "password": "Password1", "full_name": "X"}
-    assert (await client.post("/api/v1/auth/register", json=new_user)).status_code == 403
+    # Self-registration is closed once the first (admin) account exists.
+    assert (await client.get("/api/v1/auth/registration")).json()["data"] == {"open": False}
+    new_user = {"email": "x@example.com", "password": "Password1", "full_name": "X", "role": "admin"}
+    self_reg = await client.post("/api/v1/auth/register", json=new_user)
+    assert self_reg.status_code == 403
+    login = await client.post("/api/v1/auth/login", json={"email": "x@example.com", "password": "Password1"})
+    assert login.status_code == 401
 
     recruiter = {"email": "rec@example.com", "password": "Password1", "full_name": "Rec", "role": "recruiter"}
     created = await client.post("/api/v1/auth/register", json=recruiter, headers=admin_headers)
@@ -46,7 +52,8 @@ async def test_only_admin_can_create_accounts(client, admin_headers):
     assert duplicate.status_code == 409
 
     rec_headers = await _login(client, "rec@example.com", "Password1")
-    forbidden = await client.post("/api/v1/auth/register", json=new_user, headers=rec_headers)
+    other_user = {"email": "y@example.com", "password": "Password1", "full_name": "Y"}
+    forbidden = await client.post("/api/v1/auth/register", json=other_user, headers=rec_headers)
     assert forbidden.status_code == 403
     assert (await client.get("/api/v1/audit", headers=rec_headers)).status_code == 403
 

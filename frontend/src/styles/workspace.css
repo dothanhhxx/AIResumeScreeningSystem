@@ -1,20 +1,24 @@
-/* Live recruiter workspace: ranking review, decisions, CV details, audit log. */
+/* Live recruiter workspace: ranking review, decisions, CV details, audit log.
+   Theme: TalentLens Unified Design System (Deep Forest, Warm Brass & Cream) */
 
 /* ── Score tones ─────────────────────────────────────────── */
 .score-high {
-  --tone-bg: #e7f5ec;
-  --tone-fg: #1f6141;
-  --tone-bar: #2f8a5c;
+  --tone-bg: #ecfdf5;
+  --tone-fg: #047857;
+  --tone-bar: #10b981;
+  --tone-ring-glow: rgb(16 185 129 / 0.16);
 }
 .score-mid {
-  --tone-bg: #fff6df;
-  --tone-fg: #7a5a0c;
-  --tone-bar: #c9971f;
+  --tone-bg: #fffbeb;
+  --tone-fg: #b45309;
+  --tone-bar: #f59e0b;
+  --tone-ring-glow: rgb(245 158 11 / 0.16);
 }
 .score-low {
-  --tone-bg: #fdeeec;
-  --tone-fg: #8b3028;
-  --tone-bar: #c8574b;
+  --tone-bg: #fef2f2;
+  --tone-fg: #b91c1c;
+  --tone-bar: #ef4444;
+  --tone-ring-glow: rgb(239 68 68 / 0.16);
 }
 
 /* ── Toolbar ─────────────────────────────────────────────── */
@@ -22,6 +26,7 @@
   grid-template-columns:
     minmax(180px, 1.2fr) minmax(150px, 0.8fr) minmax(160px, 1fr)
     auto;
+  background: linear-gradient(180deg, #fffdf8 0%, #f5efe0 100%);
 }
 .ranking-toolbar-live .form-field {
   margin: 0;
@@ -36,10 +41,24 @@
 .identity-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
   color: var(--muted);
   font-size: 12px;
+  font-weight: 500;
   white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--ease-out),
+    border-color 160ms var(--ease-out),
+    color 160ms var(--ease-out);
+}
+.identity-toggle:hover {
+  border-color: var(--line);
+  background: #f2ebdc;
+  color: var(--ink);
 }
 .identity-toggle input {
   accent-color: var(--green);
@@ -51,21 +70,32 @@
 .ranking-progress {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 9px 12px;
-  border: 1px solid #ead9ad;
-  border-radius: 8px;
-  background: #fff9e9;
-  color: #72540b;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--green-border);
+  border-radius: 10px;
+  background: linear-gradient(90deg, #e9f0ec 0%, #f7efda 50%, #e9f0ec 100%);
+  background-size: 200% 100%;
+  color: var(--green);
   font-size: 12px;
+  font-weight: 500;
+  animation: ai-shimmer 2.4s ease-in-out infinite;
+}
+@keyframes ai-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 .ranking-spinner {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   border: 2px solid currentColor;
   border-right-color: transparent;
   border-radius: 50%;
-  animation: ranking-spin 0.8s linear infinite;
+  animation: ranking-spin 0.75s linear infinite;
 }
 @keyframes ranking-spin {
   to {
@@ -73,7 +103,8 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ranking-spinner {
+  .ranking-spinner,
+  .ranking-progress {
     animation: none;
   }
 }
@@ -92,29 +123,48 @@
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 12px;
-  padding: 11px 12px;
-  border: 1px solid #e2eae4;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface);
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition:
+    transform 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    background-color 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out);
 }
 .ranking-row:hover {
+  transform: translateY(-1px);
   border-color: var(--green-border);
-  background: #fbfdfc;
+  background: #fbf7ed;
+  box-shadow: 0 4px 12px -2px rgb(8 34 25 / 0.06);
+}
+.ranking-row:active {
+  transform: translateY(0) scale(0.995);
 }
 .ranking-row-active {
   border-color: var(--green);
   background: var(--green-soft);
-  box-shadow: inset 3px 0 0 var(--green);
+  box-shadow:
+    inset 3px 0 0 var(--green),
+    0 4px 14px -3px rgb(13 51 38 / 0.12);
+}
+.ranking-row-active:hover {
+  background: #dce8e0;
 }
 .ranking-rank {
   min-width: 30px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ranking-row-active .ranking-rank {
+  color: var(--green);
 }
 .ranking-row-copy {
   display: grid;
@@ -125,6 +175,7 @@
   overflow: hidden;
   color: var(--ink);
   font-size: 14px;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -137,46 +188,74 @@
 }
 .ranking-score {
   display: inline-grid;
-  min-width: 42px;
+  min-width: 44px;
   height: 32px;
   place-items: center;
+  padding: 0 8px;
   border-radius: 8px;
   background: var(--tone-bg);
   color: var(--tone-fg);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transition: transform 180ms var(--ease-spring);
+}
+.ranking-row:hover .ranking-score {
+  transform: scale(1.05);
 }
 
 /* ── Decision chips ──────────────────────────────────────── */
 .decision-chip {
-  padding: 4px 8px;
+  padding: 4px 9px;
+  border: 1px solid #dfd6c3;
   border-radius: 999px;
-  background: #f1f4f2;
-  color: #5d6c63;
+  background: #f3ede0;
+  color: #4a6157;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
 }
 .decision-shortlisted,
 .decision-interview {
-  background: #e7f0fb;
-  color: #285585;
+  border-color: #c7d9ce;
+  background: #e9f0ec;
+  color: #0d3326;
 }
 .decision-hired {
-  background: #e7f5ec;
-  color: #1f6141;
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
 }
 .decision-rejected {
-  background: #fdeeec;
-  color: #8b3028;
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 /* ── Detail panel ────────────────────────────────────────── */
+.ranking-detail-panel {
+  animation: panel-fade-in 220ms var(--ease-out);
+}
+@keyframes panel-fade-in {
+  from {
+    opacity: 0.7;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .ranking-detail-panel .ranking-detail-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
+  border-bottom: 1px solid var(--line);
 }
 .detail-identity {
   display: flex;
@@ -186,36 +265,50 @@
 }
 .detail-identity h2 {
   font-size: 17px !important;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 .detail-identity p:last-child {
   font-size: 12px !important;
 }
 .score-ring {
   display: grid;
-  min-width: 74px;
-  height: 74px;
+  min-width: 76px;
+  height: 76px;
   place-content: center;
-  border: 4px solid var(--tone-bar);
+  border: 3.5px solid var(--tone-bar);
   border-radius: 50%;
   background: var(--tone-bg);
   color: var(--tone-fg);
+  box-shadow: 0 0 0 5px var(--tone-ring-glow);
   text-align: center;
+  font-variant-numeric: tabular-nums;
+  transition:
+    transform 240ms var(--ease-spring),
+    box-shadow 240ms var(--ease-out);
+}
+.score-ring:hover {
+  transform: scale(1.04);
 }
 .score-ring strong {
   font-size: 22px;
+  font-weight: 750;
   line-height: 1;
 }
 .score-ring span {
-  font-size: 10px;
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 .detail-override-note {
   margin: 0;
-  padding: 9px 11px;
+  padding: 10px 12px;
+  border: 1px solid var(--green-border);
   border-radius: 8px;
-  background: #e7f0fb;
-  color: #285585;
+  background: var(--green-soft);
+  color: var(--green);
   font-size: 12px;
 }
 .detail-section {
@@ -226,6 +319,8 @@
   margin: 0;
   color: var(--ink);
   font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 .detail-hint {
   margin: 0;
@@ -234,35 +329,39 @@
 }
 .detail-explanation {
   margin: 0;
-  color: #3b4b42;
+  color: #1f352b;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 .score-bars {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 .score-bar-label {
   display: flex;
   justify-content: space-between;
   color: var(--muted);
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 .score-bar-label strong {
   color: var(--ink);
+  font-weight: 650;
 }
 .score-bar-track {
-  height: 7px;
-  margin-top: 4px;
+  height: 8px;
+  margin-top: 5px;
   overflow: hidden;
   border-radius: 999px;
-  background: #edf1ee;
+  background: #ede5d2;
+  box-shadow: inset 0 1px 2px rgb(8 34 25 / 0.05);
 }
 .score-bar-fill {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--tone-bar);
+  background: linear-gradient(90deg, var(--green) 0%, var(--tone-bar) 100%);
+  transition: width 550ms var(--ease-out);
 }
 .engine-scores,
 .cv-facts {
@@ -276,26 +375,38 @@
 }
 .engine-scores div,
 .cv-facts div {
-  padding: 8px 10px;
-  border: 1px solid #e7ece9;
-  border-radius: 8px;
-  background: #fafcfb;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fbf7ed;
+  transition:
+    border-color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+.engine-scores div:hover,
+.cv-facts div:hover {
+  transform: translateY(-1px);
+  border-color: var(--green-border);
+  background: var(--surface);
 }
 .engine-scores dt,
 .cv-facts dt {
   color: var(--muted);
   font-size: 11px;
+  font-weight: 500;
 }
 .engine-scores dd,
 .cv-facts dd {
-  margin: 2px 0 0;
+  margin: 3px 0 0;
   color: var(--ink);
   font-size: 15px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 .evidence-list {
   display: grid;
-  gap: 7px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -303,9 +414,19 @@
 .evidence-row {
   display: grid;
   gap: 6px;
-  padding: 9px 11px;
-  border: 1px solid #e7ece9;
-  border-radius: 8px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  transition:
+    transform 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out);
+}
+.evidence-row:hover {
+  transform: translateY(-1px);
+  border-color: var(--green-border);
+  box-shadow: 0 4px 12px -2px rgb(8 34 25 / 0.06);
 }
 .evidence-requirement {
   display: flex;
@@ -316,34 +437,44 @@
 .evidence-requirement strong {
   color: var(--ink);
   font-size: 13px;
+  font-weight: 600;
 }
 .evidence-status {
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 650;
   white-space: nowrap;
 }
 .evidence-found {
-  background: #e7f5ec;
-  color: #1f6141;
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
 }
 .evidence-unclear {
-  background: #fff6df;
-  color: #7a5a0c;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #b45309;
 }
 .evidence-not_found {
-  background: #f1f4f2;
-  color: #5d6c63;
+  border: 1px solid #dfd6c3;
+  background: #f3ede0;
+  color: #4a6157;
 }
 .evidence-quote {
   margin: 0;
-  padding-left: 10px;
+  padding: 6px 10px;
   border-left: 3px solid var(--green-border);
-  color: #4a5a51;
+  border-radius: 0 6px 6px 0;
+  background: #fbf7ed;
+  color: #1f352b;
   font-size: 12px;
   font-style: italic;
-  line-height: 1.5;
+  line-height: 1.55;
+  transition: border-color 160ms var(--ease-out);
+}
+.evidence-row:hover .evidence-quote {
+  border-left-color: var(--green);
 }
 .detail-columns {
   display: grid;
@@ -353,25 +484,25 @@
 .detail-bullets,
 .detail-questions {
   display: grid;
-  gap: 5px;
+  gap: 6px;
   margin: 0;
   padding-left: 18px;
-  color: #3b4b42;
+  color: #1f352b;
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 .detail-bullets-gap li::marker {
-  color: #c9971f;
+  color: #f59e0b;
 }
 .detail-provenance {
   margin: 0;
-  color: #7f8c85;
+  color: var(--muted);
   font-size: 11px;
 }
 .decision-panel-live .form-field select,
 .decision-panel-live .form-field input,
 .decision-panel-live .form-field textarea {
-  background: #fff;
+  background: var(--surface);
 }
 .decision-grid {
   display: grid;
@@ -389,19 +520,28 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition:
+    transform 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    background-color 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out);
 }
 .cv-library-row-button:hover {
+  transform: translateY(-1px);
   border-color: var(--green-border);
+  box-shadow: 0 4px 12px -2px rgb(8 34 25 / 0.06);
 }
 .cv-library-row-active {
   border-color: var(--green);
   background: var(--green-soft);
+  box-shadow: inset 3px 0 0 var(--green);
 }
 .cv-detail-panel {
   display: grid;
   align-content: start;
   gap: 14px;
-  padding: 18px;
+  padding: 20px;
+  animation: panel-fade-in 220ms var(--ease-out);
 }
 .cv-detail-heading {
   display: flex;
@@ -413,6 +553,8 @@
   margin: 4px 0;
   color: var(--ink);
   font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 .cv-detail-heading p {
   margin: 0;
@@ -433,20 +575,28 @@
   gap: 6px;
 }
 .skill-chip {
-  padding: 4px 9px;
+  padding: 4px 10px;
+  border: 1px solid var(--green-border);
   border-radius: 999px;
   background: var(--green-soft);
   color: var(--green);
   font-size: 12px;
   font-weight: 600;
+  transition:
+    transform 150ms var(--ease-out),
+    background-color 150ms var(--ease-out);
+}
+.skill-chip:hover {
+  transform: translateY(-1px);
 }
 .skill-chip-muted {
-  background: #f1f4f2;
-  color: #4d5c53;
+  border-color: #dfd6c3;
+  background: #f3ede0;
+  color: #4a6157;
 }
 .cv-timeline {
   display: grid;
-  gap: 9px;
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -454,8 +604,12 @@
 .cv-timeline li {
   display: grid;
   gap: 2px;
-  padding-left: 11px;
+  padding-left: 12px;
   border-left: 2px solid var(--green-border);
+  transition: border-color 160ms var(--ease-out);
+}
+.cv-timeline li:hover {
+  border-left-color: var(--green);
 }
 .cv-timeline strong {
   color: var(--ink);
@@ -472,7 +626,7 @@
   flex-wrap: wrap;
   gap: 8px;
   padding-top: 4px;
-  border-top: 1px solid #eef1f0;
+  border-top: 1px solid var(--line);
 }
 .cv-detail-actions .button {
   margin-top: 10px;
@@ -494,16 +648,21 @@ a.queue-item {
   vertical-align: top;
 }
 .audit-action {
+  display: inline-block;
   padding: 3px 8px;
+  border: 1px solid var(--green-border);
   border-radius: 6px;
   background: var(--green-soft);
   color: var(--green);
-  font-family: ui-monospace, Consolas, monospace;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   font-size: 11px;
+  font-weight: 600;
 }
 .audit-detail {
   max-width: 420px;
   color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
   overflow-wrap: anywhere;
 }
 .audit-pager {
@@ -540,4 +699,371 @@ a.queue-item {
   .engine-scores {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+/* ── Brief refinements ─────────────────────────────────────
+   Lives here, not in globals.css: this file loads last (see app/layout.tsx),
+   so these rules win over equal-specificity rules in both stylesheets. */
+
+/* 10. Typography scale (brief §2) — one rule per level so later sections can't drift. */
+.page-heading h1 {
+  font-size: clamp(28px, 2.4vw, 34px);
+  font-weight: 680;
+  letter-spacing: -0.03em;
+}
+
+.login-visual h1,
+html[lang="vi"] .login-visual h1 {
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.login-quote p,
+html[lang="vi"] .login-quote p {
+  font-family: var(--font-family-sans);
+}
+
+.panel-heading h2,
+.ranking-list-heading h2,
+.ranking-detail-header h2,
+.cv-library-heading h3,
+.cv-privacy-panel h2,
+.decision-panel h3,
+.user-management-card-heading h2 {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.ranking-detail-header h2 {
+  font-size: 18px;
+}
+
+.detail-section h3,
+.ranking-provenance-heading h3 {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+/* Nothing that carries meaning drops below 11px. */
+.nav-label,
+.profile-avatar,
+.score-ring span,
+.engine-scores dt,
+.cv-facts dt {
+  font-size: 11px;
+}
+
+/* Every count, score and rank lines up in columns. */
+.applicant-count,
+.fit-score strong,
+.queue-count,
+.nav-count,
+.jobs-total,
+.ranking-rank,
+.ranking-score,
+.score-ring strong,
+.score-bar-label strong,
+.engine-scores dd,
+.cv-library-size,
+.cv-library-row time,
+.ranking-result-count,
+.jobs-pagination,
+td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Row headers (<th scope="row">) are content, not column labels: no caps, no tint. */
+tbody th {
+  border-color: #ece4d2;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Eyebrows share the brand accent everywhere, including auth and side panels. */
+.login-card .eyebrow,
+.cv-privacy-panel .eyebrow {
+  color: var(--green);
+}
+
+/* 11. Layout fixes */
+/* Absolutely positioned children (e.g. .sr-only header labels) must stay inside
+   the horizontal scroller, or they widen the whole page on phones. */
+.table-wrap {
+  position: relative;
+}
+
+/* The upload panel already has padding; its heading should align with the form. */
+.cv-upload-panel > .panel-heading {
+  padding: 0 0 18px;
+  border-bottom: 0;
+}
+
+/* 12. Semantic score tones (brief §1): >= 75 emerald, 50–74 amber, < 50 red. */
+.score-bar-fill {
+  background: var(--tone-bar);
+}
+
+.fit-score.score-high strong,
+.fit-score.score-mid strong,
+.fit-score.score-low strong {
+  color: var(--tone-fg);
+}
+
+.score-ring {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Queued files wait (amber); AI pipeline steps are warm brass; finished steps are emerald. */
+.cv-status-uploaded {
+  border-color: var(--warning-border);
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+}
+
+.cv-status-parsed {
+  border-color: var(--green-border);
+  background: var(--green-soft);
+  color: var(--green-hover);
+}
+
+.cv-status-error {
+  color: var(--danger-fg);
+}
+
+/* 13. Live AI pipeline: a shimmering progress rail under rows that are still processing. */
+.cv-library-row {
+  position: relative;
+  overflow: hidden;
+}
+
+.cv-library-row:has(
+    .cv-status-parsing,
+    .cv-status-extracting,
+    .cv-status-scoring
+  )::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(214 173 74 / 0.18) 20%,
+    #d6ad4a 50%,
+    rgb(214 173 74 / 0.18) 80%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  content: "";
+  animation: ai-shimmer 1.6s linear infinite;
+}
+
+/* Rows and cards answer the pointer the same way across pages. */
+.cv-library-row-button:hover {
+  background: var(--canvas);
+}
+
+.cv-library-row-active,
+.cv-library-row-active:hover {
+  border-color: var(--green-border);
+  background: var(--green-soft);
+  box-shadow: inset 3px 0 0 var(--green);
+}
+
+.evidence-row:hover .evidence-quote {
+  background: var(--green-soft);
+}
+
+/* 14. Reduced motion: one switch for every animation and transform above. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .metric-card:hover,
+  .ranking-row:hover,
+  .evidence-row:hover,
+  .cv-library-row-button:hover,
+  .queue-item:hover,
+  .nav-link:hover,
+  .button:active:not(:disabled),
+  .cv-dropzone:hover,
+  .cv-dropzone-active,
+  .cv-dropzone:hover .cv-upload-icon,
+  .cv-dropzone-active .cv-upload-icon,
+  .metric-card:hover .metric-icon {
+    transform: none;
+  }
+}
+
+/* 15. Motion system (brief: micro 150–250ms, components 200–300ms, pages 200–350ms, charts 400–700ms).
+   Entering elements ease out; nothing bounces. */
+
+/* Page transition: each route's content fades up once when it mounts. */
+.page-content {
+  animation: page-enter 300ms var(--ease-out);
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Active navigation indicator grows in instead of appearing. */
+.nav-link {
+  position: relative;
+}
+
+.nav-link::before {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #e8c467;
+  content: "";
+  transform: scaleY(0);
+  transition: transform 220ms var(--ease-out);
+}
+
+.nav-link-active {
+  box-shadow: inset 0 0 0 1px rgb(232 196 103 / 0.25);
+}
+
+.nav-link-active::before {
+  transform: scaleY(1);
+}
+
+/* Loading skeletons for first loads (refetches keep the previous content instead). */
+.skeleton {
+  display: block;
+  max-width: 100%;
+  background: linear-gradient(90deg, #f3ede0 0%, #e6ddca 50%, #f3ede0 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-panel {
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius);
+  background: var(--surface);
+  box-shadow: var(--panel-shadow);
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Success and error feedback slides in where it appears. */
+.jobs-alert,
+.cv-upload-message,
+.ranking-notice,
+.user-account-notice,
+.login-notice {
+  animation: feedback-in 220ms var(--ease-out);
+}
+
+@keyframes feedback-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Score bars grow from zero on first render, then animate width on updates. */
+.score-bar-fill {
+  transform-origin: left;
+  animation: bar-in 600ms var(--ease-out) both;
+}
+
+@keyframes bar-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Settings → Preferences → Reduce motion: same switch as the OS setting. */
+html[data-motion="reduce"] *,
+html[data-motion="reduce"] *::before,
+html[data-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+html[data-motion="reduce"] .metric-card:hover,
+html[data-motion="reduce"] .ranking-row:hover,
+html[data-motion="reduce"] .evidence-row:hover,
+html[data-motion="reduce"] .cv-library-row-button:hover,
+html[data-motion="reduce"] .queue-item:hover,
+html[data-motion="reduce"] .nav-link:hover,
+html[data-motion="reduce"] .button:active:not(:disabled) {
+  transform: none;
+}
+
+/* Upload in flight: fetch exposes no byte progress, so this is an honest indeterminate bar. */
+.upload-progress {
+  position: relative;
+  height: 4px;
+  margin: 4px 0 -4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--green-soft);
+  animation: feedback-in 200ms var(--ease-out);
+}
+
+.upload-progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #e8c467, var(--green));
+  animation: upload-slide 1.1s ease-in-out infinite;
+}
+
+@keyframes upload-slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upload-progress span {
+    width: 100%;
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* Account locked by an administrator. */
+.status-locked {
+  border: 1px solid var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-fg);
 }

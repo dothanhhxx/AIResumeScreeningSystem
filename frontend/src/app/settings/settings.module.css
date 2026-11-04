@@ -1,0 +1,389 @@
+/* ── Tabs with a sliding indicator ───────────────────────── */
+.tabs {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: none;
+}
+
+.tab {
+  padding: 10px 14px 12px;
+  border: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out);
+}
+
+.tab:hover {
+  background: #f1f5f9;
+  color: var(--ink);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--green);
+  font-weight: 650;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--green);
+  transition:
+    transform 240ms var(--ease-out),
+    width 240ms var(--ease-out);
+}
+
+.panel {
+  animation: panel-in 220ms var(--ease-out);
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+
+.card {
+  padding: 22px 24px 24px;
+}
+
+.narrow {
+  max-width: 720px;
+}
+
+.card h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lead {
+  margin: 6px 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.facts {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.facts > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 42%) 1fr;
+  gap: 12px;
+  padding: 11px 0;
+  border-top: 1px solid #f1f5f9;
+}
+
+.facts dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.factsCompact {
+  margin-top: 18px;
+}
+
+/* ── Password form ───────────────────────────────────────── */
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.form :global(.form-field) {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.fieldError {
+  color: var(--danger-fg);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.success,
+.error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 13px;
+  animation: panel-in 200ms var(--ease-out);
+}
+
+.success {
+  border-color: var(--success-border);
+  background: var(--success-bg);
+  color: var(--success-fg);
+}
+
+.error {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Preferences ─────────────────────────────────────────── */
+.savedNote {
+  color: var(--success-fg);
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 200ms var(--ease-out);
+}
+
+.savedNote[data-visible] {
+  opacity: 1;
+}
+
+.settingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 0;
+  border-top: 1px solid #f1f5f9;
+  cursor: default;
+}
+
+label.settingRow {
+  cursor: pointer;
+}
+
+.settingRow strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.description {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.segmentedControl {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.segmentedControl button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out);
+}
+
+.segmentedControl button[aria-checked="true"] {
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
+  color: var(--green);
+}
+
+.segmentedControl button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+/* Switch: a real checkbox underneath, so keyboard and screen readers just work. */
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 24px;
+}
+
+.switch input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switch span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background-color 200ms var(--ease-out);
+}
+
+.switch span::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.2);
+  content: "";
+  transition: transform 200ms var(--ease-out);
+}
+
+.switch input:checked + span {
+  background: var(--green);
+}
+
+.switch input:checked + span::after {
+  transform: translateX(16px);
+}
+
+.switch input:focus-visible + span {
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.3);
+}
+
+/* ── Weights ─────────────────────────────────────────────── */
+.weights {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.weights li {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.weights strong {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.weightTrack {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--green-soft);
+}
+
+.weightTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+  transform-origin: left;
+  animation: grow 550ms var(--ease-out) both;
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .card {
+    padding: 18px 16px;
+  }
+
+  .settingRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  label.settingRow {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .facts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator,
+  .panel,
+  .weightTrack span,
+  .success,
+  .error {
+    animation: none;
+    transition: none;
+  }
+}

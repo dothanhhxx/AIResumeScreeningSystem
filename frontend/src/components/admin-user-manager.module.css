@@ -1,0 +1,314 @@
+/* ── Toolbar ─────────────────────────────────────────────── */
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 280px) 150px 150px;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.toolbar :global(.form-field) {
+  margin: 0;
+}
+
+.titleBlock h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.titleBlock p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.searchInput {
+  position: relative;
+  display: block;
+}
+
+.searchInput svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  color: var(--muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.searchInput input {
+  width: 100%;
+  padding-left: 36px;
+}
+
+/* ── Table ───────────────────────────────────────────────── */
+.table {
+  min-width: 860px;
+}
+
+.table td,
+.table th {
+  vertical-align: middle;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--green-soft);
+  color: var(--green-hover);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.personCopy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.personCopy strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.personCopy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+}
+
+.youBadge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f3ede0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.role {
+  display: inline-flex;
+  padding: 3px 10px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin {
+  border-color: #e2cc91;
+  background: #f9f1dc;
+  color: #785a14;
+}
+
+.recruiter {
+  border-color: var(--green-border);
+  background: var(--green-soft);
+  color: var(--green-hover);
+}
+
+.viewer {
+  border-color: var(--line);
+  background: #f5efe0;
+  color: #4a6157;
+}
+
+.activity {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Locked accounts read as inactive without hiding them. */
+.lockedRow .person,
+.lockedRow .activity {
+  opacity: 0.6;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.actions :global(.icon-button:disabled) {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.skeleton {
+  display: grid;
+  padding: 8px 20px 16px;
+}
+
+.skeleton > div {
+  display: grid;
+  grid-template-columns: 36px 1fr 100px 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* ── Role guide ──────────────────────────────────────────── */
+.guide {
+  margin-top: 16px;
+  padding: 20px 22px;
+}
+
+.guide h2 {
+  margin: 0 0 14px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.guide ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── Dialog forms ────────────────────────────────────────── */
+.dialogForm {
+  display: grid;
+  max-width: none;
+  gap: 14px;
+  padding: 18px 24px 24px;
+}
+
+.dialogForm :global(.form-field) {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.rolePicker {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rolePicker legend {
+  margin-bottom: 6px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.roleOption {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    border-color 150ms var(--ease-out),
+    background-color 150ms var(--ease-out);
+}
+
+.roleOption:hover {
+  background: var(--canvas);
+}
+
+.roleOption:has(input:checked) {
+  border-color: var(--green-border);
+  background: var(--green-soft);
+}
+
+.roleOption input {
+  margin: 3px 0 0;
+  accent-color: var(--green);
+}
+
+.roleOption strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.roleOption small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.rolePicker:disabled .roleOption {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.roleNote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 960px) {
+  .toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .titleBlock,
+  .search {
+    grid-column: 1 / -1;
+  }
+
+  .guide ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .toolbar {
+    padding: 16px;
+  }
+
+  .skeleton > div {
+    grid-template-columns: 36px 1fr;
+  }
+
+  .skeleton > div > :nth-child(n + 3) {
+    display: none;
+  }
+}

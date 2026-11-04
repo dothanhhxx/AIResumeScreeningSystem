@@ -1,31 +1,46 @@
 .switcher {
   display: inline-flex;
-  min-height: 44px;
+  min-height: 40px;
   align-items: center;
   gap: 5px;
-  padding: 0 10px;
+  padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   color: var(--muted);
   cursor: pointer;
   font-size: 12px;
-  font-weight: 650;
-  letter-spacing: 0.2px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 2px rgb(8 34 25 / 0.04);
+  transition:
+    transform 160ms var(--ease-out),
+    border-color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out);
 }
 
 .switcher:hover {
+  transform: translateY(-1px);
   border-color: var(--green-border);
+  background: var(--green-soft);
   color: var(--green);
+  box-shadow: 0 4px 10px -2px rgb(8 34 25 / 0.12);
+}
+
+.switcher:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .switcher:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 3px solid rgb(214 173 74 / 0.45);
   outline-offset: 2px;
 }
 
 .active {
   color: var(--green);
+  font-weight: 700;
 }
 
 .auth {
@@ -40,4 +55,23 @@
     top: 14px;
     right: 14px;
   }
+}
+
+/* Dark brand header on the public landing page and demo header. */
+.landing {
+  border-color: rgb(232 196 103 / 0.4);
+  background: rgb(8 34 25 / 0.35);
+  color: rgb(247 241 227 / 0.78);
+  box-shadow: none;
+}
+
+.landing:hover {
+  border-color: #e8c467;
+  background: rgb(232 196 103 / 0.12);
+  color: #f7f1e3;
+  box-shadow: none;
+}
+
+.landing .active {
+  color: #e8c467;
 }

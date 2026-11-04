@@ -18,6 +18,8 @@ export type RegisterInput = {
   email: string;
   password: string;
   full_name: string;
+  /** Only honoured when an administrator creates the account. */
+  role?: "admin" | "recruiter" | "viewer";
 };
 
 type AuthApiErrorKind = "configuration" | "network" | "response";

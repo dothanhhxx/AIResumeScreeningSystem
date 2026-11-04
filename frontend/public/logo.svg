@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" fill="none">
+  <defs>
+    <linearGradient id="brow" x1="10" y1="44" x2="86" y2="14" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#d6ad4a"/>
+      <stop offset="55%" stop-color="#f3da8b"/>
+      <stop offset="100%" stop-color="#e8c467"/>
+    </linearGradient>
+    <linearGradient id="leftPillar" x1="44" y1="26" x2="44" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2d8a66"/>
+      <stop offset="100%" stop-color="#134232"/>
+    </linearGradient>
+    <linearGradient id="rightPillar" x1="71" y1="22" x2="71" y2="106" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1f684d"/>
+      <stop offset="100%" stop-color="#0d3326"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="64" y1="104" x2="118" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#134232"/>
+      <stop offset="45%" stop-color="#287a5b"/>
+      <stop offset="100%" stop-color="#e8c467"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(8, 4)">
+    <path d="M10 33L61 6L86 21V58L78 52V25L61 15L10 43V33Z" fill="url(#brow)"/>
+    <path d="M35 28L50 20V98L35 88V28Z" fill="url(#leftPillar)"/>
+    <path d="M63 22L78 24V76L63 106V22Z" fill="url(#rightPillar)"/>
+    <path d="M63 106L78 76L118 52V66L63 106Z" fill="url(#wing)"/>
+    <path d="M109 10C111.5 18.5 114.5 21.5 123 24C114.5 26.5 111.5 29.5 109 38C106.5 29.5 103.5 26.5 95 24C103.5 21.5 106.5 18.5 109 10Z" fill="#e8c467"/>
+  </g>
+  <text x="152" y="68" font-family="Inter, system-ui, sans-serif" font-size="54" font-weight="800" letter-spacing="-1.5" fill="#082219">
+    Talent<tspan fill="#b88928" font-weight="700">Lens</tspan>
+  </text>
+  <text x="154" y="96" font-family="Inter, system-ui, sans-serif" font-size="15.5" font-weight="500" fill="#4b5f56">
+    From resume noise to explainable hiring clarity.
+  </text>
+</svg>
+

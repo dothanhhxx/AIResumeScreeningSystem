@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
@@ -13,6 +14,9 @@ import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/messages";
 import { ApiError } from "@/lib/api";
 import { useAuthSession } from "@/lib/auth-session";
+import { usePreferences } from "@/lib/preferences";
+import { useFlip } from "@/lib/use-flip";
+import { scoreTone } from "@/lib/score-tone";
 import { listJobs, type Job } from "@/lib/jobs-api";
 import {
   DECISION_STATUSES,
@@ -42,12 +46,6 @@ const evidenceLabels: Record<EvidenceStatus, TranslationKey> = {
 };
 
 type Notice = { kind: "error" | "info"; text: string };
-
-function scoreTone(score: number): "high" | "mid" | "low" {
-  if (score >= 70) return "high";
-  if (score >= 45) return "mid";
-  return "low";
-}
 
 function formatScore(score: number | null | undefined): string {
   return score === null || score === undefined
@@ -551,7 +549,12 @@ export function RankingReview() {
     "all",
   );
   const [search, setSearch] = useState("");
-  const [hideIdentity, setHideIdentity] = useState(true);
+  // Starts from the viewer's saved default (Settings → Preferences) until they toggle it here.
+  const preferences = usePreferences();
+  const [identityOverride, setIdentityOverride] = useState<boolean | null>(
+    null,
+  );
+  const hideIdentity = identityOverride ?? preferences.hideIdentity;
   const [ranking, setRanking] = useState<JobRanking | null>(null);
   const [rankingError, setRankingError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -658,6 +661,9 @@ export function RankingReview() {
         .includes(query),
     );
   }, [ranking, search, hideIdentity]);
+  const rankingListRef = useRef<HTMLOListElement>(null);
+  // Rows glide to their new rank when a decision or score override reorders them.
+  useFlip(rankingListRef, visible.map((item) => item.id).join(","));
 
   const selected =
     visible.find((item) => item.id === selectedId) ?? visible[0] ?? null;
@@ -730,7 +736,7 @@ export function RankingReview() {
                 checked={hideIdentity}
                 aria-describedby="identity-scope-note"
                 onChange={(event) =>
-                  setHideIdentity(event.currentTarget.checked)
+                  setIdentityOverride(event.currentTarget.checked)
                 }
               />
               <span
@@ -879,12 +885,12 @@ export function RankingReview() {
                 </button>
               </div>
             )}
-            <ol className="ranking-list">
+            <ol className="ranking-list" ref={rankingListRef}>
               {visible.map((item) => {
                 const isActive = selected?.id === item.id;
                 const decision = item.decision?.status ?? "pending";
                 return (
-                  <li key={item.id}>
+                  <li key={item.id} data-flip-key={item.id}>
                     <button
                       type="button"
                       className={`ranking-row${isActive ? " ranking-row-active" : ""}`}

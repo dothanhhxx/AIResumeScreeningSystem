@@ -5,6 +5,11 @@
   border-radius: var(--panel-radius);
   background: var(--surface);
   box-shadow: var(--panel-shadow);
+  transition: box-shadow 220ms var(--ease-out);
+}
+
+.preview:hover {
+  box-shadow: var(--panel-shadow-hover);
 }
 
 .header {
@@ -14,6 +19,7 @@
   gap: 20px;
   padding: 21px 23px 18px;
   border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #fffdf8 0%, #f5efe0 100%);
 }
 
 .eyebrow {
@@ -21,7 +27,8 @@
   color: var(--green);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 1.2px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .header h2,
@@ -30,23 +37,23 @@
   color: var(--ink);
   font-size: 16px;
   font-weight: 650;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .demoBadge {
   flex: 0 0 auto;
-  padding: 7px 11px;
-  border: 1px solid #ead9ad;
+  padding: 6px 12px;
+  border: 1px solid #fde68a;
   border-radius: 999px;
-  background: #fff9e9;
-  color: #775b19;
+  background: #fffbeb;
+  color: #b45309;
   font-size: 11px;
   font-weight: 650;
 }
@@ -63,7 +70,7 @@
   padding: 13px 15px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #f8faf8;
+  background: #fbf7ed;
 }
 
 .candidateIdentity {
@@ -79,6 +86,7 @@
   height: 38px;
   flex: 0 0 38px;
   place-items: center;
+  border: 1px solid var(--green-border);
   border-radius: 50%;
   background: var(--green-soft);
   color: var(--green);
@@ -96,6 +104,7 @@
   overflow: hidden;
   color: var(--ink);
   font-size: 13px;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -111,24 +120,31 @@
 .identityToggle {
   display: inline-flex;
   flex: 0 0 auto;
-  min-height: 44px;
+  min-height: 38px;
   align-items: center;
   gap: 8px;
+  padding: 0 10px;
+  border-radius: 8px;
   color: var(--ink);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
+  transition: background-color 150ms var(--ease-out);
+}
+
+.identityToggle:hover {
+  background: #f2ebdc;
 }
 
 .identityToggle input {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   margin: 0;
   accent-color: var(--green);
 }
 
 .identityToggle input:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 3px solid rgb(214 173 74 / 0.32);
   outline-offset: 2px;
 }
 
@@ -171,7 +187,18 @@
   gap: 20px;
   padding: 15px 16px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: 10px;
+  background: var(--surface);
+  transition:
+    transform 180ms var(--ease-out),
+    border-color 180ms var(--ease-out),
+    box-shadow 180ms var(--ease-out);
+}
+
+.evidenceItem:hover {
+  transform: translateY(-1px);
+  border-color: var(--green-border);
+  box-shadow: 0 4px 12px -2px rgb(8 34 25 / 0.06);
 }
 
 .requirement {
@@ -187,7 +214,7 @@
   color: var(--muted);
   font-size: 11px;
   font-weight: 650;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -200,7 +227,7 @@
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
-  padding: 5px 9px;
+  padding: 4px 9px;
   gap: 6px;
   border-radius: 999px;
   font-size: 11px;
@@ -209,18 +236,21 @@
 }
 
 .status_found {
-  background: #eaf4ed;
-  color: #245b3e;
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
 }
 
 .status_unclear {
-  background: #fff5dc;
-  color: #674b0d;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #b45309;
 }
 
 .status_not-found {
-  background: #f0f2f1;
-  color: #4a5b50;
+  border: 1px solid #dfd6c3;
+  background: #f3ede0;
+  color: #4a6157;
 }
 
 .evidence {
@@ -230,10 +260,10 @@
 .evidence blockquote {
   margin: 0;
   padding: 12px 14px;
-  border-left: 3px solid #79a989;
+  border-left: 3px solid var(--green);
   border-radius: 0 8px 8px 0;
-  background: #f6faf7;
-  color: #2c4033;
+  background: #fbf7ed;
+  color: var(--ink);
   font-size: 13px;
   line-height: 1.65;
 }
@@ -242,7 +272,7 @@
 .reviewHint {
   display: block;
   margin-top: 6px;
-  color: #465c4d;
+  color: var(--muted);
   font-size: 11px;
   line-height: 1.5;
 }
@@ -250,21 +280,21 @@
 .source {
   width: fit-content;
   padding: 4px 8px;
-  border: 1px solid #dce9df;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: #f5f9f6;
+  background: #fbf7ed;
 }
 
 .reviewHint {
   padding-left: 9px;
-  border-left: 2px solid #d3ad5b;
-  color: #674b0d;
+  border-left: 2px solid #f59e0b;
+  color: #b45309;
   font-size: 12px;
 }
 
 .noEvidence {
   margin: 0;
-  color: #465c4d;
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.6;
 }
