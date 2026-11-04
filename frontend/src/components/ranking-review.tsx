@@ -8,12 +8,14 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type FormEvent,
 } from "react";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/messages";
 import { ApiError } from "@/lib/api";
 import { useAuthSession } from "@/lib/auth-session";
+import { CvsApiError, uploadCv } from "@/lib/cvs-api";
 import { usePreferences } from "@/lib/preferences";
 import { useFlip } from "@/lib/use-flip";
 import { scoreTone } from "@/lib/score-tone";
@@ -548,7 +550,10 @@ export function RankingReview() {
   const [decisionFilter, setDecisionFilter] = useState<DecisionStatus | "all">(
     "all",
   );
+  const [minScore, setMinScore] = useState<number>(0);
   const [search, setSearch] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingCv, setUploadingCv] = useState(false);
   // Starts from the viewer's saved default (Settings → Preferences) until they toggle it here.
   const preferences = usePreferences();
   const [identityOverride, setIdentityOverride] = useState<boolean | null>(
@@ -644,10 +649,47 @@ export function RankingReview() {
     }
   }
 
+  async function handleQuickUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file || jobId === null) return;
+
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith(".pdf") && !lower.endsWith(".docx")) {
+      setNotice({ kind: "error", text: t("Choose a PDF or DOCX resume.") });
+      return;
+    }
+
+    setUploadingCv(true);
+    setNotice(null);
+    try {
+      const uploaded = await uploadCv({ file, jobId });
+      setNotice({
+        kind: "info",
+        text: t("Uploaded {{name}} and queued auto-scoring for this job.", {
+          name: uploaded.candidate_name,
+        }),
+      });
+      refresh();
+      window.setTimeout(refresh, 1500);
+      window.setTimeout(refresh, 3500);
+    } catch (error) {
+      setNotice({
+        kind: "error",
+        text:
+          error instanceof CvsApiError ? error.message : errorText(error, t),
+      });
+    } finally {
+      setUploadingCv(false);
+    }
+  }
+
   const loading = jobId !== null && ranking === null && rankingError === null;
 
   const visible = useMemo(() => {
-    const items = ranking?.items ?? [];
+    const items = (ranking?.items ?? []).filter(
+      (item) => item.effective_score >= minScore,
+    );
     const query = search.trim().toLowerCase();
     if (!query) return items;
     return items.filter((item) =>
@@ -660,7 +702,7 @@ export function RankingReview() {
         .toLowerCase()
         .includes(query),
     );
-  }, [ranking, search, hideIdentity]);
+  }, [ranking, minScore, search, hideIdentity]);
   const rankingListRef = useRef<HTMLOListElement>(null);
   // Rows glide to their new rank when a decision or score override reorders them.
   useFlip(rankingListRef, visible.map((item) => item.id).join(","));
@@ -721,6 +763,21 @@ export function RankingReview() {
             </select>
           </label>
           <label className="form-field">
+            <span>{t("Minimum score")}</span>
+            <select
+              value={minScore}
+              onChange={(event) => {
+                setMinScore(Number(event.target.value) || 0);
+                setSelectedId(null);
+              }}
+            >
+              <option value={0}>{t("All scores")}</option>
+              <option value={50}>{t("50+ (Pass)")}</option>
+              <option value={65}>{t("65+ (Good fit)")}</option>
+              <option value={80}>{t("80+ (Strong fit)")}</option>
+            </select>
+          </label>
+          <label className="form-field">
             <span>{t("Search candidates")}</span>
             <input
               type="search"
@@ -730,6 +787,14 @@ export function RankingReview() {
             />
           </label>
           <div className="ranking-actions">
+            <input
+              ref={fileInputRef}
+              className="sr-only"
+              type="file"
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleQuickUpload}
+              aria-label={t("Upload CV to this job")}
+            />
             <label className="identity-toggle">
               <input
                 type="checkbox"
@@ -752,6 +817,17 @@ export function RankingReview() {
                 "This hides the name and email fields, but resume text may still identify a candidate.",
               )}
             </span>
+            {canDecide && (
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={jobId === null || uploadingCv}
+              >
+                +{" "}
+                {uploadingCv ? t("Uploading…") : t("Upload CV to this job")}
+              </button>
+            )}
             <button
               className="button button-primary"
               type="button"
@@ -867,9 +943,24 @@ export function RankingReview() {
                     "Upload CVs in the CV library, then choose Run AI matching to score them against this job.",
                   )}
                 </p>
-                <Link className="button button-secondary" href="/cvs">
-                  {t("Open CV library")}
-                </Link>
+                <div className="job-row-actions">
+                  {canDecide && (
+                    <button
+                      className="button button-primary"
+                      type="button"
+                      disabled={jobId === null || uploadingCv}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      + {t("Upload CV to this job")}
+                    </button>
+                  )}
+                  <Link
+                    className="button button-secondary"
+                    href={jobId ? `/cvs?job=${jobId}` : "/cvs"}
+                  >
+                    {t("Open CV library")}
+                  </Link>
+                </div>
               </div>
             )}
             {ranking && ranking.items.length > 0 && visible.length === 0 && (
@@ -879,7 +970,10 @@ export function RankingReview() {
                 <button
                   className="button button-secondary"
                   type="button"
-                  onClick={() => setSearch("")}
+                  onClick={() => {
+                    setSearch("");
+                    setMinScore(0);
+                  }}
                 >
                   {t("Clear search")}
                 </button>

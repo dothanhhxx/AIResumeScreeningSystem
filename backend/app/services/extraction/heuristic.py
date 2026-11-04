@@ -223,3 +223,98 @@ def heuristic_extract(text: str, today: date | None = None) -> CVExtraction:
         certifications=certifications,
         languages=_parse_languages(text),
     )
+
+
+_EMAIL_EXTRACT_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+_LABELLED_NAME_RE = re.compile(
+    r"^(?:full\s*name|candidate\s*name|candidate|name|họ\s*và\s*tên|họ\s*tên|ứng\s*viên)\s*[:\-–]\s*(.+)$",
+    re.IGNORECASE,
+)
+_IGNORE_HEADER_WORDS = {
+    "curriculum vitae",
+    "resume",
+    "cv",
+    "sơ yếu lý lịch",
+    "so yeu ly lich",
+    "hồ sơ ứng tuyển",
+    "ho so ung tuyen",
+    "personal information",
+    "thông tin cá nhân",
+    "contact",
+    "liên hệ",
+}
+_ROLE_KEYWORDS_RE = re.compile(
+    r"\b(engineer|developer|analyst|designer|manager|architect|specialist|intern|consultant|"
+    r"director|lead|officer|administrator|programmer|scientist|tester|qa|devops|fullstack|"
+    r"frontend|backend|data|product|project|marketing|sales|hr|recruiter|kỹ sư|lập trình viên|"
+    r"chuyên viên|nhân viên| thực tập sinh|quản lý)\b",
+    re.IGNORECASE,
+)
+
+
+def _normalize_person_name(raw: str) -> str:
+    cleaned = re.sub(r"\s+", " ", raw.strip(" |,-–—:•*#()[]{}")).strip()
+    if cleaned.isupper():
+        return " ".join(word.capitalize() for word in cleaned.split())
+    return cleaned
+
+
+def infer_name_from_filename(file_name: str | None) -> str:
+    """Derive a readable fallback candidate name from a resume filename."""
+    if not file_name:
+        return "Candidate"
+    stem = re.sub(r"\.(pdf|docx)$", "", file_name.strip(), flags=re.IGNORECASE)
+    stem = re.sub(r"^(?:cv|resume|ho[\s_-]*so|ung[\s_-]*vien)[\s_.\-0-9]*", "", stem, flags=re.IGNORECASE)
+    stem = re.sub(r"[\s_.\-]+(?:cv|resume|senior|junior|mid|intern|final|v\d+)$", "", stem, flags=re.IGNORECASE)
+    stem = re.sub(r"[_\-.]+", " ", stem)
+    stem = re.sub(r"\b\d+\b", " ", stem)
+    stem = re.sub(r"\s+", " ", stem).strip()
+    if not stem:
+        return "Candidate"
+    return _normalize_person_name(stem)[:255]
+
+
+def extract_candidate_identity(raw_text: str | None) -> tuple[str | None, str | None]:
+    """
+    Scan raw CV text locally to extract (candidate_name, candidate_email).
+    Runs before PII stripping so contact metadata can be recorded on the CV record.
+    """
+    if not raw_text or not raw_text.strip():
+        return None, None
+
+    email_match = _EMAIL_EXTRACT_RE.search(raw_text)
+    detected_email = email_match.group(0).strip().lower() if email_match else None
+
+    lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+    detected_name: str | None = None
+
+    # 1. Check explicit "Name: ..." / "Họ và tên: ..." labels in the first 25 lines
+    for line in lines[:25]:
+        label_match = _LABELLED_NAME_RE.match(line)
+        if label_match:
+            candidate = re.split(r"[|•,;]", label_match.group(1))[0].strip()
+            if 2 <= len(candidate) <= 80 and not any(ch.isdigit() for ch in candidate):
+                detected_name = _normalize_person_name(candidate)
+                break
+
+    # 2. Otherwise inspect the top header lines of the CV
+    if not detected_name:
+        for line in lines[:10]:
+            first_segment = re.split(r"\s+[|•–—]\s+", line)[0].strip()
+            lower = first_segment.lower()
+            if lower in _IGNORE_HEADER_WORDS:
+                continue
+            if any( pattern.match(lower) for pattern in _SECTION_PATTERNS.values() ):
+                continue
+            if "@" in first_segment or "http" in lower or "www." in lower:
+                continue
+            if any(ch.isdigit() for ch in first_segment):
+                continue
+            if _ROLE_KEYWORDS_RE.search(first_segment):
+                continue
+            words = [w for w in first_segment.split() if w.isalpha() or "-" in w or "'" in w]
+            if 2 <= len(words) <= 6 and 3 <= len(first_segment) <= 65:
+                detected_name = _normalize_person_name(first_segment)
+                break
+
+    return detected_name, detected_email

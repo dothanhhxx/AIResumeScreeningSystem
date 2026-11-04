@@ -28,10 +28,10 @@ vi.mock("@/lib/auth-session", () => ({
   }),
 }));
 
-function ok(data: unknown): Response {
+function ok(data: unknown, status = 200): Response {
   return {
-    ok: true,
-    status: 200,
+    ok: status >= 200 && status < 300,
+    status,
     json: async () => ({ success: true, message: "OK", data }),
   } as Response;
 }
@@ -133,6 +133,21 @@ beforeEach(() => {
         page_size: 100,
         total_pages: 1,
       });
+    if (url.endsWith("/cvs/upload"))
+      return ok(
+        {
+          id: 99,
+          candidate_name: "Minh Pham",
+          candidate_email: "minh@example.test",
+          file_name: "minh-cv.pdf",
+          file_type: "pdf",
+          file_size: 512,
+          status: "uploaded",
+          uploaded_by: 1,
+          created_at: "2026-11-01T00:00:00Z",
+        },
+        201,
+      );
     if (url.endsWith("/matching/run"))
       return ok({ job_id: 3, queued: 2, cv_ids: [10, 20], skipped: [] });
     if (url.includes("/decision")) {
@@ -229,6 +244,36 @@ describe("RankingReview", () => {
       job_id: 3,
       cv_ids: null,
     });
+  });
+
+  it("filters candidates by minimum score and supports direct CV upload into the selected job", async () => {
+    renderReview();
+    await screen.findAllByText("Candidate #10");
+    expect(screen.getByText("Candidate #20")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Minimum score"), {
+      target: { value: "65" },
+    });
+    expect(screen.queryByText("Candidate #20")).toBeNull();
+    expect(screen.getAllByText("Candidate #10").length).toBeGreaterThan(0);
+
+    const file = new File(["synthetic pdf"], "minh-cv.pdf", {
+      type: "application/pdf",
+    });
+    fireEvent.change(screen.getByLabelText("Upload CV to this job"), {
+      target: { files: [file] },
+    });
+
+    expect(
+      await screen.findByText(
+        "Uploaded Minh Pham and queued auto-scoring for this job.",
+      ),
+    ).toBeTruthy();
+    const uploadCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).endsWith("/cvs/upload"),
+    );
+    const formData = (uploadCall?.[1] as RequestInit).body as FormData;
+    expect(formData.get("job_id")).toBe("3");
   });
 
   it("requires a reason before saving a score override", async () => {

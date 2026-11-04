@@ -79,7 +79,25 @@ async def _process_cv_parsing(
                 enable_ocr=True,
             )
 
-            # 5. Save parsed text and update status to PARSED
+            # 5. Scan candidate identity (name & email) from raw text and save parsed text
+            from app.services.extraction.heuristic import (  # noqa: PLC0415
+                extract_candidate_identity,
+                infer_name_from_filename,
+            )
+
+            detected_name, detected_email = extract_candidate_identity(extracted_text)
+            current_name = getattr(cv, "candidate_name", None)
+            file_name = getattr(cv, "file_name", None)
+            if detected_name and (
+                not isinstance(current_name, str)
+                or not current_name.strip()
+                or current_name == infer_name_from_filename(file_name if isinstance(file_name, str) else None)
+            ):
+                cv.candidate_name = detected_name
+            current_email = getattr(cv, "candidate_email", None)
+            if detected_email and (not isinstance(current_email, str) or not current_email.strip()):
+                cv.candidate_email = detected_email
+
             cv.raw_text = extracted_text
             cv.status = CVStatus.PARSED
             await db.commit()

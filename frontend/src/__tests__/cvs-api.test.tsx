@@ -122,6 +122,96 @@ describe("CV upload and library integration", () => {
     expect((body.get("file") as File).name).toBe("sample-resume.pdf");
   });
 
+  it("uploads a PDF/DOCX without manual name entry and auto-opens the scanned CV detail panel", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.example.test");
+
+    const emptyPage = {
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+      total_pages: 0,
+    };
+    const cvSummary = {
+      id: 88,
+      candidate_name: "Le Minh Khoi",
+      candidate_email: "minh.khoi@talentlens.test",
+      file_name: "CV_Le_Minh_Khoi_2026.docx",
+      file_type: "docx",
+      file_size: 1024,
+      status: "extracted",
+      uploaded_by: 7,
+      created_at: "2026-10-30T10:00:00Z",
+    };
+    const cvDetail = {
+      ...cvSummary,
+      error_message: null,
+      file_url: "resumes/88.docx",
+      raw_text: "Le Minh Khoi\nEmail: minh.khoi@talentlens.test\nSkills: Python, FastAPI",
+      structured_data: JSON.stringify({
+        summary: "Senior Python backend engineer",
+        skills: ["Python", "FastAPI", "PostgreSQL"],
+        years_of_experience: 6,
+        experiences: [],
+        education: [],
+        certifications: [],
+        languages: ["English"],
+        extraction_source: "heuristic",
+      }),
+      updated_at: "2026-10-30T10:00:05Z",
+    };
+
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/cvs/upload") && init?.method === "POST") {
+        return Promise.resolve(
+          mockResponse({ success: true, message: "Uploaded", data: cvSummary }, 201),
+        );
+      }
+      if (url.endsWith("/cvs/88")) {
+        return Promise.resolve(
+          mockResponse({ success: true, message: "OK", data: cvDetail }),
+        );
+      }
+      return Promise.resolve(
+        mockResponse({ success: true, message: "OK", data: emptyPage }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderCvUpload();
+    await screen.findByText("No resumes have been uploaded yet.");
+
+    const file = new File(
+      ["synthetic docx"],
+      "CV_Le_Minh_Khoi_2026.docx",
+      {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      },
+    );
+    fireEvent.change(screen.getByLabelText("Choose resume file"), {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Upload resume" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Le Minh Khoi" }),
+    ).toBeTruthy();
+    expect(await screen.findByText("Python")).toBeTruthy();
+    expect(await screen.findByText("FastAPI")).toBeTruthy();
+    expect(
+      await screen.findByRole("link", { name: "Score & review against jobs" }),
+    ).toBeTruthy();
+
+    const uploadCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).endsWith("/cvs/upload"),
+    );
+    const body = (uploadCall?.[1] as RequestInit).body as FormData;
+    expect(body.get("candidate_name")).toBeNull();
+    expect(body.get("candidate_email")).toBeNull();
+    expect((body.get("file") as File).name).toBe("CV_Le_Minh_Khoi_2026.docx");
+  });
+
   it("rejects unsupported files in the UI without sending them", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.example.test");
     const page = {

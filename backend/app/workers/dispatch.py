@@ -8,7 +8,7 @@ Pipeline dispatcher — one entry point for queueing parse / extract / score wor
 All functions here are synchronous and thread-safe, so they can be called from
 the API (via asyncio.to_thread), from Celery tasks or from inline coroutines.
 
-Task chain:  upload → parse_cv_task → extract_info_task
+Task chain:  upload → parse_cv_task → extract_info_task (→ score_match_task if job_id is attached)
              POST /matching/run → score_match_task (one per CV)
 """
 
@@ -26,6 +26,19 @@ EXTRACT_TASK = "app.workers.extract_task.extract_info_task"
 SCORE_TASK = "app.workers.score_task.score_match_task"
 
 QUEUES = {PARSE_TASK: "parse", EXTRACT_TASK: "extract", SCORE_TASK: "score"}
+
+# Optional target job IDs registered when a CV is uploaded directly into a specific JD.
+_TARGET_JOBS: dict[int, int] = {}
+
+
+def register_target_job(cv_id: int, job_id: int) -> None:
+    """Associate an uploaded CV with a target JD so extraction automatically triggers scoring."""
+    _TARGET_JOBS[cv_id] = job_id
+
+
+def pop_target_job(cv_id: int) -> int | None:
+    """Retrieve and clear any target JD registered for *cv_id*."""
+    return _TARGET_JOBS.pop(cv_id, None)
 
 
 # ── Inline runner ───────────────────────────────────────────
@@ -123,7 +136,9 @@ def _dispatch(task_name: str, *args: Any) -> None:
     logger.info("Sent %s%s to Celery queue '%s'.", task_name, args, QUEUES[task_name])
 
 
-def enqueue_parse(cv_id: int) -> None:
+def enqueue_parse(cv_id: int, job_id: int | None = None) -> None:
+    if job_id is not None:
+        register_target_job(cv_id, job_id)
     _dispatch(PARSE_TASK, cv_id)
 
 

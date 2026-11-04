@@ -128,9 +128,14 @@ export default function DashboardPage() {
             {t("Here's what's happening across your hiring pipeline.")}
           </p>
         </div>
-        <Link className="button button-primary" href="/jobs">
-          <span className="button-plus">+</span> {t("Create a job")}
-        </Link>
+        <div className="job-row-actions">
+          <Link className="button button-secondary" href="/cvs">
+            {t("Upload resumes")}
+          </Link>
+          <Link className="button button-primary" href="/jobs">
+            <span className="button-plus">+</span> {t("Create a job")}
+          </Link>
+        </div>
       </div>
 
       {error && (
@@ -242,13 +247,26 @@ export default function DashboardPage() {
                         {relativeTime(role.updated_at, language)}
                       </td>
                       <td>
-                        <Link
-                          className="row-arrow"
-                          href={`/rankings?job=${role.id}`}
-                          aria-label={t("View {{role}}", { role: role.title })}
-                        >
-                          <Icon name="arrow" size={17} />
-                        </Link>
+                        <div className="job-row-actions">
+                          {role.status !== "archived" && (
+                            <Link
+                              className="icon-button"
+                              href={`/cvs?job=${role.id}`}
+                              aria-label={`${t("Upload CVs")} ${role.title}`}
+                            >
+                              {t("Upload CVs")}
+                            </Link>
+                          )}
+                          <Link
+                            className="row-arrow"
+                            href={`/rankings?job=${role.id}`}
+                            aria-label={t("View {{role}}", {
+                              role: role.title,
+                            })}
+                          >
+                            <Icon name="arrow" size={17} />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}

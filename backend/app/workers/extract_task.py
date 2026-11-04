@@ -3,7 +3,7 @@ Celery extract task — raw_text → structured CVExtraction + CV embedding.
 Owner: Person C
 
 Triggered by parse_cv_task (Person B) once a CV is PARSED.
-Status flow: PARSED → EXTRACTING → EXTRACTED (or ERROR).
+Status flow: PARSED → EXTRACTING → EXTRACTED (or SCORING → SCORED when linked to a target JD).
 """
 
 import asyncio
@@ -21,8 +21,21 @@ from app.services.extraction import extract_cv
 from app.services.matching.embeddings import dump_embedding, embed_text
 from app.services.matching.semantic_scorer import cv_profile_text
 from app.workers.celery_app import celery_app
+from app.workers.dispatch import enqueue_score, pop_target_job
 
 logger = logging.getLogger(__name__)
+
+
+def _existing_target_job_id(structured_data: str | None) -> int | None:
+    if not structured_data:
+        return None
+    try:
+        parsed = json.loads(structured_data)
+        if isinstance(parsed, dict) and isinstance(parsed.get("target_job_id"), int):
+            return parsed["target_job_id"]
+    except json.JSONDecodeError:
+        return None
+    return None
 
 
 async def process_extraction(
@@ -40,6 +53,8 @@ async def process_extraction(
             await db.commit()
             return {"cv_id": cv_id, "status": "error", "error": cv.error_message}
 
+        target_job_id = pop_target_job(cv_id) or _existing_target_job_id(cv.structured_data)
+
         cv.status = CVStatus.EXTRACTING
         cv.error_message = None
         await db.commit()
@@ -51,8 +66,30 @@ async def process_extraction(
 
             data = extraction.model_dump()
             data["extraction_source"] = source
+            if target_job_id is not None:
+                data["target_job_id"] = target_job_id
+
             cv.structured_data = json.dumps(data, ensure_ascii=False)
             cv.embedding = dump_embedding(vector, model)
+
+            if target_job_id is not None:
+                cv.status = CVStatus.SCORING
+                await db.commit()
+                enqueue_score(target_job_id, cv_id)
+                logger.info(
+                    "[extract] CV %d extracted with %s (%d skills) and auto-queued for job %d.",
+                    cv_id,
+                    source,
+                    len(extraction.skills),
+                    target_job_id,
+                )
+                return {
+                    "cv_id": cv_id,
+                    "status": "scoring",
+                    "source": source,
+                    "job_id": target_job_id,
+                }
+
             cv.status = CVStatus.EXTRACTED
             await db.commit()
             logger.info("[extract] CV %d extracted with %s (%d skills).", cv_id, source, len(extraction.skills))

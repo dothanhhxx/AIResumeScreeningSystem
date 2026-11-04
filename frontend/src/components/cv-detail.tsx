@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PipelineSteps } from "@/components/pipeline-steps";
 import { useI18n } from "@/i18n/provider";
@@ -13,15 +14,20 @@ import {
   parseExtraction,
   reprocessCv,
   type CvDetail,
+  type CvSummary,
 } from "@/lib/cvs-api";
 
 export function CvDetailPanel({
   cvId,
+  initialSummary = null,
+  targetJobId = null,
   refreshKey,
   onClose,
   onChanged,
 }: {
   cvId: number;
+  initialSummary?: CvSummary | null;
+  targetJobId?: number | null;
   refreshKey: number;
   onClose: () => void;
   onChanged: () => void;
@@ -38,11 +44,16 @@ export function CvDetailPanel({
     const controller = new AbortController();
     getCv(cvId, controller.signal)
       .then((value) => {
-        setDetail(value);
-        setError(null);
+        if (value && typeof value.file_type === "string") {
+          setDetail(value);
+          setError(null);
+        }
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return;
+        if (reason instanceof ApiError && reason.status === 0 && initialSummary) {
+          return;
+        }
         setError(
           reason instanceof ApiError
             ? reason.message
@@ -50,7 +61,7 @@ export function CvDetailPanel({
         );
       });
     return () => controller.abort();
-  }, [cvId, refreshKey, t]);
+  }, [cvId, initialSummary, refreshKey, t]);
 
   async function run(action: () => Promise<unknown>, after?: () => void) {
     setBusy(true);
@@ -70,9 +81,11 @@ export function CvDetailPanel({
     }
   }
 
+  const current = detail ?? initialSummary;
   const extraction = detail ? parseExtraction(detail) : null;
-  const processing = detail
-    ? PROCESSING_STATUSES.includes(detail.status)
+  const effectiveJobId = extraction?.target_job_id ?? targetJobId ?? null;
+  const processing = current
+    ? PROCESSING_STATUSES.includes(current.status)
     : false;
 
   return (
@@ -81,9 +94,15 @@ export function CvDetailPanel({
         <div>
           <p className="eyebrow">{t("CV DETAILS")}</p>
           <h2 id="cv-detail-title">
-            {detail?.candidate_name ?? t("Loading…")}
+            {current?.candidate_name ?? t("Loading…")}
           </h2>
-          {detail && <p>{detail.file_name}</p>}
+          {current && (
+            <p>
+              {current.candidate_email
+                ? `${current.candidate_email} · ${current.file_name}`
+                : `${current.file_type.toUpperCase()} · ${current.file_name}`}
+            </p>
+          )}
         </div>
         <button className="text-link" type="button" onClick={onClose}>
           {t("Close")}
@@ -96,12 +115,12 @@ export function CvDetailPanel({
         </p>
       )}
 
-      {detail?.status === "error" && detail.error_message && (
+      {current?.status === "error" && current.error_message && (
         <p className="cv-upload-message cv-upload-message-error">
-          {detail.error_message}
+          {current.error_message}
         </p>
       )}
-      {detail && <PipelineSteps status={detail.status} />}
+      {current && <PipelineSteps status={current.status} />}
       {processing && (
         <p className="ranking-progress" role="status">
           <span className="ranking-spinner" aria-hidden="true" />
@@ -206,13 +225,25 @@ export function CvDetailPanel({
         </div>
       )}
 
-      {detail && (
+      {current && (
         <div className="cv-detail-actions">
+          {(current.status === "extracted" || current.status === "scored") && (
+            <Link
+              className="button button-primary"
+              href={
+                effectiveJobId
+                  ? `/rankings?job=${effectiveJobId}`
+                  : "/rankings"
+              }
+            >
+              {t("Score & review against jobs")}
+            </Link>
+          )}
           <button
             className="button button-secondary"
             type="button"
             disabled={busy}
-            onClick={() => run(() => downloadCv(detail.id, detail.file_name))}
+            onClick={() => run(() => downloadCv(current.id, current.file_name))}
           >
             {t("Download file")}
           </button>
@@ -221,20 +252,20 @@ export function CvDetailPanel({
               className="button button-secondary"
               type="button"
               disabled={busy || processing}
-              onClick={() => run(() => reprocessCv(detail.id))}
+              onClick={() => run(() => reprocessCv(current.id))}
             >
               {t("Reprocess")}
             </button>
           )}
           {session &&
             (session.user.role === "admin" ||
-              (canWrite && detail.uploaded_by === session.user.id)) &&
+              (canWrite && current.uploaded_by === session.user.id)) &&
             (confirmDelete ? (
               <button
                 className="button button-danger"
                 type="button"
                 disabled={busy}
-                onClick={() => run(() => deleteCv(detail.id), onClose)}
+                onClick={() => run(() => deleteCv(current.id), onClose)}
               >
                 {t("Confirm delete")}
               </button>

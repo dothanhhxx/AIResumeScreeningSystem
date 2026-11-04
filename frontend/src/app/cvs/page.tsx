@@ -12,9 +12,18 @@ function CvLibrary() {
     Number.isSafeInteger(requestedCvId) && requestedCvId > 0
       ? requestedCvId
       : null;
+  const requestedJob = Number(searchParams.get("job"));
+  const selectedJobId =
+    Number.isSafeInteger(requestedJob) && requestedJob > 0
+      ? requestedJob
+      : null;
 
   return (
-    <CvUpload key={selectedCvId ?? "library"} requestedCvId={selectedCvId} />
+    <CvUpload
+      key={`${selectedCvId ?? "library"}-${selectedJobId ?? "pool"}`}
+      requestedCvId={selectedCvId}
+      requestedJobId={selectedJobId}
+    />
   );
 }
 

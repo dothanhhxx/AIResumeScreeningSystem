@@ -4,7 +4,13 @@ from datetime import date
 
 from app.core.exceptions import AIServiceError
 from app.llm import BaseLLM
-from app.services.extraction import extract_cv, heuristic_extract, strip_pii
+from app.services.extraction import (
+    extract_candidate_identity,
+    extract_cv,
+    heuristic_extract,
+    infer_name_from_filename,
+    strip_pii,
+)
 from app.services.extraction.pii_stripper import ADDRESS_TOKEN
 
 CV_VI = """NGUYỄN VĂN A
@@ -52,6 +58,23 @@ def test_labelled_addresses_are_masked():
     assert "Nguyễn Trãi" not in text and "Main St" not in text
     assert text.count(ADDRESS_TOKEN) == 2
     assert "Skills: Python" in text
+
+
+def test_extract_candidate_identity_and_filename_fallback():
+    name, email = extract_candidate_identity(
+        "CURRICULUM VITAE\nNguyen Van Strong\nEmail: strong@example.com | Phone: 0912345678\nSUMMARY\nBackend engineer"
+    )
+    assert name == "Nguyen Van Strong"
+    assert email == "strong@example.com"
+
+    labeled_name, labeled_email = extract_candidate_identity(
+        "Họ và tên: Trần Thị Minh Anh\nEmail: minh.anh@company.vn\nKỸ NĂNG\nPython, SQL"
+    )
+    assert labeled_name == "Trần Thị Minh Anh"
+    assert labeled_email == "minh.anh@company.vn"
+
+    assert infer_name_from_filename("CV_Le_Minh_Khoi_2026_Final.pdf") == "Le Minh Khoi"
+    assert infer_name_from_filename("resume-2026.docx") == "Candidate"
 
 
 class BrokenLLM(BaseLLM):

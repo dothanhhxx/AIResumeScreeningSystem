@@ -79,6 +79,12 @@ export async function apiRequest<T>(
   signal?: AbortSignal,
 ): Promise<T> {
   const response = await send(path, init, signal);
+  if (!response) {
+    throw new ApiError(
+      "Could not reach the backend. Check that it is running.",
+      0,
+    );
+  }
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     throw new ApiError(errorMessage(body, response.status), response.status);

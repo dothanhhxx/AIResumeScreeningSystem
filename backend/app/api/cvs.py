@@ -5,8 +5,8 @@ admins/recruiters can upload or reprocess, and only an admin or the uploader can
 Owner: Person B
 
 Endpoints:
-    POST   /api/v1/cvs/upload        — Upload a single CV (multipart)
-    POST   /api/v1/cvs/upload/batch  — Upload multiple CVs (multipart)
+    POST   /api/v1/cvs/upload        — Upload a single CV (multipart, optional job_id for auto-scoring)
+    POST   /api/v1/cvs/upload/batch  — Upload multiple CVs (multipart, optional job_id for auto-scoring)
     GET    /api/v1/cvs               — List CVs (paginated, filterable)
     GET    /api/v1/cvs/{cv_id}       — Get a single CV by ID
     DELETE /api/v1/cvs/{cv_id}       — Delete a CV (admin, or the recruiter who uploaded it)
@@ -23,7 +23,7 @@ from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db, require_roles
-from app.core.exceptions import AppError, PermissionDeniedError
+from app.core.exceptions import AppError, DuplicateError, PermissionDeniedError
 from app.models.audit_log import AuditAction
 from app.models.cv import CV, CVStatus
 from app.models.user import User, UserRole
@@ -33,9 +33,9 @@ from app.schemas.cv import (
     CVResponse,
     CVSummaryResponse,
 )
-from app.services import audit_service, cv_service
+from app.services import audit_service, cv_service, matching_service
 from app.services.storage_service import ALLOWED_CONTENT_TYPES, storage_service
-from app.workers.dispatch import enqueue_parse
+from app.workers.dispatch import enqueue_parse, enqueue_score, register_target_job
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +44,11 @@ router = APIRouter(prefix="/cvs", tags=["CVs"])
 
 # ── Helper ───────────────────────────────────────────────────────────────────
 
-def _enqueue_parse_task(cv_id: int) -> None:
+def _enqueue_parse_task(cv_id: int, job_id: int | None = None) -> None:
     """Queue parsing (Celery or inline, see app/workers/dispatch.py). Non-fatal on failure."""
     try:
-        enqueue_parse(cv_id)
-        logger.info("Enqueued parse task for CV %d.", cv_id)
+        enqueue_parse(cv_id, job_id=job_id)
+        logger.info("Enqueued parse task for CV %d (job_id=%s).", cv_id, job_id)
     except Exception as exc:  # noqa: BLE001
         # Non-fatal: status remains UPLOADED and the CV can be reprocessed later
         logger.warning("Failed to enqueue parse task for CV %d: %s", cv_id, exc)
@@ -71,18 +71,32 @@ _writer = require_roles(UserRole.ADMIN, UserRole.RECRUITER)
     summary="Upload a single CV",
     description=(
         "Upload one PDF or DOCX resume. The file is stored in MinIO and a "
-        "background Celery task is enqueued to extract the text."
+        "background task is enqueued to extract the text, scan candidate details, "
+        "and optionally score against a target Job Description (job_id)."
     ),
 )
 async def upload_cv(
     request: Request,
-    candidate_name: str = Form(..., description="Candidate's full name"),
-    candidate_email: str | None = Form(default=None, description="Candidate's email (optional)"),
+    candidate_name: str | None = Form(
+        default=None,
+        description="Candidate's full name (optional — automatically scanned from the CV if omitted)",
+    ),
+    candidate_email: str | None = Form(
+        default=None,
+        description="Candidate's email (optional — automatically scanned from the CV if omitted)",
+    ),
+    job_id: int | None = Form(
+        default=None,
+        description="Optional Job Description ID to automatically score this CV against once extracted",
+    ),
     file: UploadFile = File(..., description="CV file (PDF or DOCX, max 10 MB)"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(_writer),
 ) -> ApiResponse[CVResponse]:
-    """Upload a single CV file and enqueue it for parsing."""
+    """Upload a single CV file and enqueue it for parsing, extraction, and optional job scoring."""
+    if job_id is not None:
+        await matching_service.get_job_or_404(db, job_id)
+
     try:
         cv = await cv_service.create_cv(
             db,
@@ -91,6 +105,28 @@ async def upload_cv(
             candidate_email=candidate_email or None,
             uploader_id=current_user.id,
         )
+    except DuplicateError as dup_exc:
+        if job_id is None:
+            raise
+        existing_id = dup_exc.details.get("existing_id") if isinstance(dup_exc.details, dict) else None
+        if not isinstance(existing_id, int):
+            raise
+        existing = await cv_service.get_cv(db, existing_id)
+        if existing.status in matching_service.READY_STATUSES and existing.structured_data:
+            existing.status = CVStatus.SCORING
+            await db.commit()
+            await db.refresh(existing)
+            await asyncio.to_thread(enqueue_score, job_id, existing.id)
+            return ApiResponse(
+                message="Existing CV queued for scoring against the selected job.",
+                data=CVResponse.model_validate(existing),
+            )
+        register_target_job(existing.id, job_id)
+        await asyncio.to_thread(_enqueue_parse_task, existing.id, job_id)
+        return ApiResponse(
+            message="Existing CV queued for parsing and scoring against the selected job.",
+            data=CVResponse.model_validate(existing),
+        )
     except AppError:
         raise
     except Exception as exc:
@@ -98,11 +134,18 @@ async def upload_cv(
         raise HTTPException(status_code=500, detail="CV upload failed.") from exc
 
     await audit_service.record(
-        db, AuditAction.CV_UPLOAD, user=current_user, resource_type="cv", resource_id=cv.id,
-        detail={"file_name": cv.file_name, "file_size": cv.file_size}, request=request,
+        db,
+        AuditAction.CV_UPLOAD,
+        user=current_user,
+        resource_type="cv",
+        resource_id=cv.id,
+        detail={"file_name": cv.file_name, "file_size": cv.file_size, "job_id": job_id},
+        request=request,
     )
+    if job_id is not None:
+        register_target_job(cv.id, job_id)
     # Enqueue parsing task (fire-and-forget, non-blocking)
-    await asyncio.to_thread(_enqueue_parse_task, cv.id)
+    await asyncio.to_thread(_enqueue_parse_task, cv.id, job_id)
 
     return ApiResponse(
         message="CV uploaded and queued for parsing.",
@@ -123,8 +166,12 @@ async def upload_cv(
     ),
 )
 async def upload_cv_batch(
-    candidate_name: str = Form(..., description="Candidate's full name (applies to all files)"),
+    candidate_name: str | None = Form(
+        default=None,
+        description="Candidate's full name (optional — auto-detected per CV if omitted)",
+    ),
     candidate_email: str | None = Form(default=None),
+    job_id: int | None = Form(default=None),
     files: list[UploadFile] = File(..., description="List of CV files (PDF/DOCX, max 10 MB each)"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(_writer),
@@ -135,6 +182,8 @@ async def upload_cv_batch(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Maximum 20 files per batch upload.",
         )
+    if job_id is not None:
+        await matching_service.get_job_or_404(db, job_id)
 
     results = await cv_service.create_cv_batch(
         db,
@@ -148,10 +197,16 @@ async def upload_cv_batch(
     for item in results:
         if item.success and item.cv_id is not None:
             await audit_service.record(
-                db, AuditAction.CV_UPLOAD, user=current_user, resource_type="cv", resource_id=item.cv_id,
-                detail={"file_name": item.file_name, "batch": True},
+                db,
+                AuditAction.CV_UPLOAD,
+                user=current_user,
+                resource_type="cv",
+                resource_id=item.cv_id,
+                detail={"file_name": item.file_name, "batch": True, "job_id": job_id},
             )
-            await asyncio.to_thread(_enqueue_parse_task, item.cv_id)
+            if job_id is not None:
+                register_target_job(item.cv_id, job_id)
+            await asyncio.to_thread(_enqueue_parse_task, item.cv_id, job_id)
 
     succeeded = sum(1 for r in results if r.success)
     response_data = CVBatchUploadResponse(

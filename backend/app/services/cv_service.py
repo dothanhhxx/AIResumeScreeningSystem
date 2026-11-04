@@ -30,6 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import DuplicateError, NotFoundError, UnsupportedFileTypeError
 from app.models.cv import CV, CVStatus
 from app.schemas.cv import CVBatchItemResult, CVStatusUpdate
+from app.services.extraction.heuristic import infer_name_from_filename
 from app.services.storage_service import ALLOWED_CONTENT_TYPES, storage_service
 
 logger = logging.getLogger(__name__)
@@ -103,7 +104,7 @@ async def create_cv(
     db: AsyncSession,
     file: UploadFile,
     *,
-    candidate_name: str,
+    candidate_name: str | None = None,
     candidate_email: str | None = None,
     uploader_id: int | None = None,
     check_duplicate: bool = True,
@@ -121,19 +122,13 @@ async def create_cv(
     Args:
         db:              Async SQLAlchemy session.
         file:            FastAPI UploadFile from multipart form.
-        candidate_name:  Candidate's full name.
-        candidate_email: Optional email address.
+        candidate_name:  Candidate's full name (optional; falls back to filename and is refined during parsing).
+        candidate_email: Optional email address (refined during parsing if omitted).
         uploader_id:     ID of the authenticated user performing the upload.
         check_duplicate: If True, reject identical uploads with DuplicateError.
 
     Returns:
         The newly created CV ORM instance.
-
-    Raises:
-        UnsupportedFileTypeError: For non-PDF/DOCX uploads.
-        BadRequestError:          If the file exceeds MAX_FILE_SIZE_BYTES.
-        DuplicateError:           If an identical CV was already uploaded.
-        StorageServiceError:      If MinIO upload fails.
     """
     from app.core.exceptions import BadRequestError  # local import to avoid circular
 
@@ -155,7 +150,9 @@ async def create_cv(
             logger.info("Duplicate CV detected: id=%d matching hash=%s", existing.id, file_hash[:16])
             raise DuplicateError("CV file with identical content", existing.id)
 
-    object_key = _build_object_key(content_type, candidate_name, file_hash=file_hash)
+    resolved_name = (candidate_name or "").strip() or infer_name_from_filename(file.filename)
+    resolved_email = (candidate_email or "").strip() or None
+    object_key = _build_object_key(content_type, resolved_name, file_hash=file_hash)
 
     # Upload to MinIO (sync call — small files, acceptable in async context)
     storage_service.upload_file(
@@ -166,8 +163,8 @@ async def create_cv(
 
     # Persist CV record
     cv = CV(
-        candidate_name=candidate_name,
-        candidate_email=candidate_email,
+        candidate_name=resolved_name,
+        candidate_email=resolved_email,
         file_name=file.filename or f"upload.{file_ext}",
         file_url=object_key,
         file_size=len(file_bytes),
@@ -192,7 +189,7 @@ async def create_cv_batch(
     db: AsyncSession,
     files: list[UploadFile],
     *,
-    candidate_name: str,
+    candidate_name: str | None = None,
     candidate_email: str | None = None,
     uploader_id: int | None = None,
 ) -> list[CVBatchItemResult]:

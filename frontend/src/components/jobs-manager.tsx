@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   archiveJob,
@@ -192,20 +193,18 @@ function JobForm({
             placeholder={t("e.g. Bachelor's degree")}
           />
         </label>
-        {job && (
-          <label className="form-field">
-            <span>{t("Status")}</span>
-            <select name="status" defaultValue={job.status}>
-              {filters
-                .filter((filter) => filter.value !== "all")
-                .map((filter) => (
-                  <option key={filter.value} value={filter.value}>
-                    {t(filter.label)}
-                  </option>
-                ))}
-            </select>
-          </label>
-        )}
+        <label className="form-field">
+          <span>{t("Status")}</span>
+          <select name="status" defaultValue={job?.status ?? "active"}>
+            {filters
+              .filter((filter) => filter.value !== "all")
+              .map((filter) => (
+                <option key={filter.value} value={filter.value}>
+                  {t(filter.label)}
+                </option>
+              ))}
+          </select>
+        </label>
       </div>
       <div className="job-form-footer">
         <span>
@@ -229,7 +228,7 @@ function JobForm({
               ? t("Saving…")
               : job
                 ? t("Save changes")
-                : t("Create draft")}
+                : t("Save job")}
           </button>
         </div>
       </div>
@@ -306,7 +305,10 @@ export function JobsManager() {
         });
         setNotice("Job description updated.");
       } else {
-        await createJob(input);
+        const created = await createJob(input);
+        if (nextStatus && nextStatus !== "draft") {
+          await updateJob(created.id, { ...input, status: nextStatus });
+        }
         setNotice("Draft job description created.");
         setPage(1);
       }
@@ -546,6 +548,26 @@ export function JobsManager() {
                       </td>
                       <td>
                         <div className="job-row-actions">
+                          {job.status !== "archived" && (
+                            <>
+                              {canCreate && (
+                                <Link
+                                  className="icon-button"
+                                  href={`/cvs?job=${job.id}`}
+                                  aria-label={`${t("Upload CVs")} ${job.title}`}
+                                >
+                                  {t("Upload CVs")}
+                                </Link>
+                              )}
+                              <Link
+                                className="icon-button"
+                                href={`/rankings?job=${job.id}`}
+                                aria-label={`${t("Rankings")} ${job.title}`}
+                              >
+                                {t("Rankings")}
+                              </Link>
+                            </>
+                          )}
                           {canModify(job) && (
                             <>
                               <button

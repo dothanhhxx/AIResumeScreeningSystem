@@ -1,8 +1,8 @@
-"""CV upload → parse → extract pipeline through the API. Owner: Person B"""
+"""CV upload → parse → extract (→ optional auto-score) pipeline through the API. Owner: Person B"""
 
 import json
 
-from conftest import STRONG_CV, drain_pipeline, upload
+from conftest import DOCX_MIME, STRONG_CV, drain_pipeline, make_docx, upload
 
 
 async def test_upload_runs_parse_and_extract_pipeline(client, admin_headers):
@@ -24,6 +24,61 @@ async def test_upload_runs_parse_and_extract_pipeline(client, admin_headers):
 
     listing = (await client.get("/api/v1/cvs?status=extracted", headers=admin_headers)).json()["data"]
     assert listing["total"] == 1 and listing["items"][0]["id"] == cv["id"]
+
+
+async def test_upload_without_candidate_name_auto_scans_identity_and_profile(client, admin_headers):
+    files = {"file": ("resume_2026_backend.docx", make_docx(STRONG_CV), DOCX_MIME)}
+    response = await client.post("/api/v1/cvs/upload", files=files, headers=admin_headers)
+    assert response.status_code == 201, response.text
+
+    await drain_pipeline()
+
+    cv_id = response.json()["data"]["id"]
+    detail = (await client.get(f"/api/v1/cvs/{cv_id}", headers=admin_headers)).json()["data"]
+    assert detail["status"] == "extracted", detail.get("error_message")
+    assert detail["candidate_name"] == "Nguyen Van Strong"
+    assert detail["candidate_email"] == "strong@example.com"
+    data = json.loads(detail["structured_data"])
+    assert {"Python", "FastAPI", "PostgreSQL", "Docker"} <= set(data["skills"])
+
+
+async def test_upload_with_job_id_auto_scores_and_ranks_against_job(client, admin_headers):
+    job = (
+        await client.post(
+            "/api/v1/jobs",
+            json={
+                "title": "Senior Python Backend Engineer",
+                "description": "Build and scale FastAPI services.",
+                "required_skills": ["Python", "FastAPI", "PostgreSQL", "Docker"],
+                "experience_years": 4,
+            },
+            headers=admin_headers,
+        )
+    ).json()["data"]
+
+    files = {"file": ("CV_Strong_Backend.docx", make_docx(STRONG_CV), DOCX_MIME)}
+    response = await client.post(
+        "/api/v1/cvs/upload",
+        data={"job_id": str(job["id"])},
+        files=files,
+        headers=admin_headers,
+    )
+    assert response.status_code == 201, response.text
+
+    await drain_pipeline()
+
+    cv_id = response.json()["data"]["id"]
+    detail = (await client.get(f"/api/v1/cvs/{cv_id}", headers=admin_headers)).json()["data"]
+    assert detail["status"] == "scored", detail.get("error_message")
+    assert detail["candidate_name"] == "Nguyen Van Strong"
+
+    ranking = (
+        await client.get(f"/api/v1/matching/jobs/{job['id']}/results", headers=admin_headers)
+    ).json()["data"]
+    assert ranking["total"] == 1
+    assert ranking["items"][0]["cv_id"] == cv_id
+    assert ranking["items"][0]["rank"] == 1
+    assert ranking["items"][0]["overall_score"] > 60
 
 
 async def test_duplicate_and_unsupported_uploads_are_rejected(client, admin_headers):

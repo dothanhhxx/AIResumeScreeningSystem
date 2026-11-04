@@ -162,16 +162,26 @@ async function requestData(
 
 export async function uploadCv(
   input: {
-    candidateName: string;
+    candidateName?: string;
     candidateEmail?: string;
+    jobId?: number | null;
     file: File;
   },
   signal?: AbortSignal,
 ): Promise<CvSummary> {
   const formData = new FormData();
-  formData.set("candidate_name", input.candidateName.trim());
+  if (input.candidateName?.trim()) {
+    formData.set("candidate_name", input.candidateName.trim());
+  }
   if (input.candidateEmail?.trim()) {
     formData.set("candidate_email", input.candidateEmail.trim());
+  }
+  if (
+    typeof input.jobId === "number" &&
+    Number.isInteger(input.jobId) &&
+    input.jobId > 0
+  ) {
+    formData.set("job_id", String(input.jobId));
   }
   formData.set("file", input.file);
 
@@ -245,6 +255,7 @@ export type CvExtraction = {
   certifications: string[];
   languages: string[];
   extraction_source?: string;
+  target_job_id?: number;
 };
 
 export type CvDetail = CvSummary & {
@@ -283,6 +294,10 @@ export function parseExtraction(detail: CvDetail): CvExtraction | null {
       extraction_source:
         typeof value.extraction_source === "string"
           ? value.extraction_source
+          : undefined,
+      target_job_id:
+        typeof value.target_job_id === "number"
+          ? value.target_job_id
           : undefined,
     };
   } catch {

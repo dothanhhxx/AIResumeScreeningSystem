@@ -988,6 +988,33 @@ const vietnameseMessages = {
   "AUDIT TRAIL": "KIỂM TOÁN MINH BẠCH",
   "HUMAN-DECIDED": "CON NGƯỜI QUYẾT ĐỊNH",
   "Back to top": "Lên đầu trang",
+  "Drop a PDF or DOCX resume — TalentLens scans and records candidate details automatically.":
+    "Thả tệp CV PDF hoặc DOCX — TalentLens sẽ tự động quét và ghi nhận thông tin ứng viên.",
+  "Leave blank to auto-detect from CV": "Để trống để tự động quét từ CV",
+  "Auto-scan & extract pipeline": "Quy trình tự động quét & trích xuất CV",
+  "When you upload a PDF or DOCX file, TalentLens automatically parses the document, detects the candidate's name and email, extracts skills, work history, and education, and prepares the profile for job scoring.":
+    "Khi bạn tải lên tệp PDF hoặc DOCX, TalentLens sẽ tự động đọc tài liệu, nhận diện họ tên và email ứng viên, trích xuất kỹ năng, kinh nghiệm làm việc, học vấn và sẵn sàng cho bước chấm điểm với JD.",
+  "Score & review against jobs": "Chấm điểm & so khớp với JD",
+  "Upload CVs": "Tải CV",
+  Rankings: "Xếp hạng",
+  "Target job description (optional)": "Vị trí ứng tuyển — JD (tùy chọn)",
+  "General CV library — or choose a job to auto-score":
+    "Kho CV chung — hoặc chọn JD để chấm điểm tự động",
+  "Auto-scoring enabled: uploaded CVs are scanned, extracted, and scored directly against this job.":
+    "Đã bật chấm điểm tự động: CV tải lên sẽ được quét thông tin và chấm điểm trực tiếp vào JD này.",
+  "Open job rankings": "Xem bảng xếp hạng JD",
+  "Upload CV to this job": "Tải CV vào JD này",
+  "Drop or choose a PDF/DOCX resume to scan and score directly for this job.":
+    "Chọn tệp PDF/DOCX để tự động quét thông tin và chấm điểm trực tiếp cho vị trí này.",
+  "Uploaded {{name}} and queued auto-scoring for this job.":
+    "Đã tải CV của {{name}} và tự động đưa vào hàng đợi chấm điểm cho vị trí này.",
+  "Minimum score": "Điểm phù hợp tối thiểu",
+  "All scores": "Tất cả mức điểm",
+  "50+ (Pass)": "≥ 50 điểm (Đạt chuẩn)",
+  "65+ (Good fit)": "≥ 65 điểm (Khá phù hợp)",
+  "80+ (Strong fit)": "≥ 80 điểm (Rất phù hợp)",
+  "Upload resumes": "Tải CV ứng viên",
+  "Save job": "Lưu vị trí",
 } as const;
 
 export type TranslationKey = keyof typeof vietnameseMessages;
