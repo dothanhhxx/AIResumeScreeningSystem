@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CvUpload } from "@/components/cv-upload";
 import { I18nProvider } from "@/i18n/provider";
@@ -105,7 +111,10 @@ describe("CV upload and library integration", () => {
         "Uploaded Sample Candidate as CV #42. Current status: Uploaded.",
       ),
     ).toBeTruthy();
-    expect(await screen.findByText("sample-resume.pdf")).toBeTruthy();
+    // Shown both in the upload queue row and in the refreshed library list.
+    await waitFor(() =>
+      expect(screen.getAllByText("sample-resume.pdf").length).toBe(2),
+    );
 
     const uploadCall = fetchMock.mock.calls[1];
     expect(uploadCall?.[0]).toBe("https://api.example.test/api/v1/cvs/upload");
@@ -371,5 +380,146 @@ describe("CV upload and library integration", () => {
       CvsApiError,
     );
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("CV batch upload queue", () => {
+  const emptyPage = {
+    items: [],
+    total: 0,
+    page: 1,
+    page_size: 10,
+    total_pages: 0,
+  };
+
+  function summary(id: number, fileName: string) {
+    return {
+      id,
+      candidate_name: `Candidate ${id}`,
+      candidate_email: null,
+      file_name: fileName,
+      file_type: fileName.endsWith(".pdf") ? "pdf" : "docx",
+      file_size: 9,
+      status: "uploaded",
+      uploaded_by: 7,
+      created_at: "2026-10-30T10:00:00Z",
+    };
+  }
+
+  function pdf(name: string) {
+    return new File(["synthetic"], name, { type: "application/pdf" });
+  }
+
+  it("uploads several files in one go, one request per file, without name overrides", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.example.test");
+    let nextId = 100;
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/cvs/upload") && init?.method === "POST") {
+        const file = (init.body as FormData).get("file") as File;
+        nextId += 1;
+        return Promise.resolve(
+          mockResponse(
+            { success: true, message: "OK", data: summary(nextId, file.name) },
+            201,
+          ),
+        );
+      }
+      return Promise.resolve(
+        mockResponse({ success: true, message: "OK", data: emptyPage }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderCvUpload();
+    await screen.findByText("No resumes have been uploaded yet.");
+
+    fireEvent.change(screen.getByLabelText("Choose resume file"), {
+      target: {
+        files: [pdf("a.pdf"), pdf("b.pdf"), pdf("c.pdf"), pdf("d.pdf")],
+      },
+    });
+
+    // Manual name/email fields are replaced by the batch-mode note.
+    expect(screen.queryByLabelText(/Candidate full name/)).toBeNull();
+    expect(screen.getByText("Batch mode")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Upload 4 resumes" }));
+
+    expect(
+      await screen.findByText(
+        "All 4 resumes were uploaded and queued for scanning.",
+      ),
+    ).toBeTruthy();
+
+    const uploadCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).endsWith("/cvs/upload"),
+    );
+    expect(uploadCalls).toHaveLength(4);
+    const names = uploadCalls.map(
+      ([, init]) => ((init!.body as FormData).get("file") as File).name,
+    );
+    expect(names.sort()).toEqual(["a.pdf", "b.pdf", "c.pdf", "d.pdf"]);
+    for (const [, init] of uploadCalls) {
+      expect((init!.body as FormData).get("candidate_name")).toBeNull();
+    }
+    expect(screen.getAllByRole("button", { name: /^View / })).toHaveLength(4);
+  });
+
+  it("keeps valid files, reports skipped ones, and lets failed files be retried", async () => {
+    vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.example.test");
+    let failOnce = true;
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).endsWith("/cvs/upload") && init?.method === "POST") {
+        const file = (init.body as FormData).get("file") as File;
+        if (file.name === "broken.pdf" && failOnce) {
+          failOnce = false;
+          return Promise.resolve(
+            mockResponse({ detail: "Could not read this PDF." }, 400),
+          );
+        }
+        return Promise.resolve(
+          mockResponse(
+            {
+              success: true,
+              message: "OK",
+              data: summary(file.name === "ok.pdf" ? 1 : 2, file.name),
+            },
+            201,
+          ),
+        );
+      }
+      return Promise.resolve(
+        mockResponse({ success: true, message: "OK", data: emptyPage }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderCvUpload();
+    await screen.findByText("No resumes have been uploaded yet.");
+
+    fireEvent.change(screen.getByLabelText("Choose resume file"), {
+      target: {
+        files: [pdf("ok.pdf"), pdf("broken.pdf"), new File(["x"], "notes.txt")],
+      },
+    });
+    expect(
+      screen.getByText(
+        "Skipped 1 files (only PDF or DOCX up to 10 MB): notes.txt",
+      ),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Upload 2 resumes" }));
+    expect(
+      await screen.findByText(
+        "1 resumes uploaded, 1 failed. Check the highlighted files and retry.",
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("Could not read this PDF.")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry failed (1)" }));
+    expect(
+      await screen.findByText(/Uploaded Candidate 2 as CV #2/),
+    ).toBeTruthy();
+    expect(screen.queryByText("Could not read this PDF.")).toBeNull();
   });
 });

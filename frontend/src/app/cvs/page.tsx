@@ -38,7 +38,7 @@ export default function CvsPage() {
           <h1>{t("CV library")}</h1>
           <p className="page-subtitle">
             {t(
-              "Upload one resume at a time and track its current processing status.",
+              "Upload one or many resumes at once and track each one's processing status.",
             )}
           </p>
         </div>

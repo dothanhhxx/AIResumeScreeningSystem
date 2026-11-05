@@ -480,6 +480,56 @@ const vietnameseMessages = {
   "Request failed ({{status}}).": "Yêu cầu thất bại ({{status}}).",
   "Upload one resume at a time and track its current processing status.":
     "Tải từng CV lên và theo dõi trạng thái xử lý hiện tại.",
+  "Upload one or many resumes at once and track each one's processing status.":
+    "Tải lên một hoặc nhiều CV cùng lúc và theo dõi trạng thái xử lý của từng CV.",
+  "Drop one or many PDF/DOCX resumes — TalentLens scans and records each candidate's details automatically.":
+    "Thả một hoặc nhiều CV PDF/DOCX — TalentLens tự động quét và ghi nhận thông tin từng ứng viên.",
+  "Your role is read-only. Ask an admin or recruiter to upload resumes.":
+    "Vai trò của bạn chỉ có quyền xem. Hãy nhờ quản trị viên hoặc nhà tuyển dụng tải CV lên.",
+  "Your role cannot upload resumes. Ask an admin for recruiter access.":
+    "Vai trò của bạn không thể tải CV lên. Hãy liên hệ quản trị viên để được cấp quyền nhà tuyển dụng.",
+  "Drop resumes here — select as many as you need":
+    "Thả CV vào đây — chọn bao nhiêu tệp tùy ý",
+  "PDF or DOCX · up to 10 MB each · {{max}} files per batch":
+    "PDF hoặc DOCX · tối đa 10 MB mỗi tệp · {{max}} tệp mỗi lượt",
+  "Add more files": "Thêm tệp",
+  "Upload queue": "Hàng đợi tải lên",
+  "{{count}} files · {{size}}": "{{count}} tệp · {{size}}",
+  "Retry failed ({{count}})": "Thử lại tệp lỗi ({{count}})",
+  "Clear uploaded": "Ẩn tệp đã tải",
+  "Upload progress": "Tiến độ tải lên",
+  "{{done}} of {{total}} processed": "Đã xử lý {{done}}/{{total}}",
+  "{{count}} uploaded": "{{count}} đã tải lên",
+  "{{count}} re-synced": "{{count}} đã đồng bộ lại",
+  "{{count}} failed": "{{count}} lỗi",
+  Queued: "Đang chờ",
+  "Re-synced": "Đã đồng bộ lại",
+  "Upload failed": "Tải lên lỗi",
+  "View CV": "Xem CV",
+  "View {{name}}": "Xem {{name}}",
+  "{{name}} was already in the library, so CV #{{id}} was re-scanned.":
+    "{{name}} đã có trong thư viện nên CV #{{id}} được quét lại.",
+  "All {{count}} resumes were uploaded and queued for scanning.":
+    "Đã tải lên cả {{count}} CV và đưa vào hàng đợi quét.",
+  "{{ok}} resumes uploaded, {{failed}} failed. Check the highlighted files and retry.":
+    "{{ok}} CV đã tải lên, {{failed}} CV lỗi. Hãy kiểm tra các tệp được đánh dấu và thử lại.",
+  "Skipped {{count}} files (only PDF or DOCX up to 10 MB): {{names}}":
+    "Đã bỏ qua {{count}} tệp (chỉ nhận PDF hoặc DOCX tối đa 10 MB): {{names}}",
+  "The queue holds up to {{max}} files. {{count}} files were not added.":
+    "Hàng đợi chứa tối đa {{max}} tệp. {{count}} tệp chưa được thêm.",
+  "These files are already in the queue.": "Các tệp này đã có trong hàng đợi.",
+  "Added {{count}} resumes to the queue. Files stay in this browser until you upload them.":
+    "Đã thêm {{count}} CV vào hàng đợi. Tệp vẫn ở trong trình duyệt cho đến khi bạn tải lên.",
+  "Uploading {{done}}/{{total}}…": "Đang tải {{done}}/{{total}}…",
+  "Upload {{count}} resumes": "Tải lên {{count}} CV",
+  "Batch mode": "Chế độ tải hàng loạt",
+  "Each candidate's name and email are detected from their own CV. Upload a single file if you want to enter them manually.":
+    "Họ tên và email của từng ứng viên được tự nhận diện từ CV. Hãy tải lên một tệp nếu muốn nhập thủ công.",
+  "Uploading 3 files at a time. You can keep adding files to the queue.":
+    "Đang tải 3 tệp cùng lúc. Bạn vẫn có thể thêm tệp vào hàng đợi.",
+  "Files are sent only after you choose Upload. Use synthetic data while developing.":
+    "Tệp chỉ được gửi khi bạn bấm Tải lên. Hãy dùng dữ liệu giả lập trong quá trình phát triển.",
+  "Stop after current": "Dừng sau tệp hiện tại",
   "Upload one resume at a time and link it to its candidate.":
     "Tải từng CV lên và liên kết với ứng viên tương ứng.",
   "The CV API route is not available yet.": "API CV hiện chưa khả dụng.",

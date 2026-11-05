@@ -5556,3 +5556,20 @@ tbody tr:hover .row-arrow,
   background: var(--green-soft);
   color: var(--green);
 }
+/* Multi-file upload: footer action group */
+.cv-upload-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .cv-upload-actions {
+    width: 100%;
+  }
+
+  .cv-upload-actions .button {
+    flex: 1 1 auto;
+  }
+}

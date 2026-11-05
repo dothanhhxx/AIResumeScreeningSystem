@@ -119,6 +119,14 @@ async function requestData(
   init: RequestInit = {},
   signal?: AbortSignal,
 ): Promise<unknown> {
+  return (await requestEnvelope(path, init, signal)).data;
+}
+
+async function requestEnvelope(
+  path: string,
+  init: RequestInit = {},
+  signal?: AbortSignal,
+): Promise<{ message: string; data: Record<string, unknown> }> {
   const url = apiUrl(path);
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
@@ -157,8 +165,17 @@ async function requestData(
       response.status,
     );
   }
-  return body.data;
+  return {
+    message: typeof body.message === "string" ? body.message : "",
+    data: body.data,
+  };
 }
+
+export type CvUploadResult = {
+  cv: CvSummary;
+  /** True when the backend matched an identical file and re-scanned that record. */
+  resynced: boolean;
+};
 
 export async function uploadCv(
   input: {
@@ -169,6 +186,19 @@ export async function uploadCv(
   },
   signal?: AbortSignal,
 ): Promise<CvSummary> {
+  return (await uploadCvFile(input, signal)).cv;
+}
+
+/** Upload one file and report whether it created a new CV or re-synced an existing one. */
+export async function uploadCvFile(
+  input: {
+    candidateName?: string;
+    candidateEmail?: string;
+    jobId?: number | null;
+    file: File;
+  },
+  signal?: AbortSignal,
+): Promise<CvUploadResult> {
   const formData = new FormData();
   if (input.candidateName?.trim()) {
     formData.set("candidate_name", input.candidateName.trim());
@@ -185,13 +215,19 @@ export async function uploadCv(
   }
   formData.set("file", input.file);
 
-  const uploaded = parseCvSummary(
-    await requestData("/upload", { method: "POST", body: formData }, signal),
+  const envelope = await requestEnvelope(
+    "/upload",
+    { method: "POST", body: formData },
+    signal,
   );
+  const uploaded = parseCvSummary(envelope.data);
   if (!uploaded) {
     throw new CvsApiError("The backend returned an invalid CV record.", 200);
   }
-  return uploaded;
+  return {
+    cv: uploaded,
+    resynced: /already uploaded/i.test(envelope.message),
+  };
 }
 
 export async function listCvs({

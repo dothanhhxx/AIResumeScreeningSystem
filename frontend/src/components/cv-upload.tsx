@@ -11,28 +11,28 @@ import {
   type FormEvent,
 } from "react";
 import { CvDetailPanel } from "@/components/cv-detail";
+import { CvUploadQueue, formatFileSize } from "@/components/cv-upload-queue";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/messages";
+import { useAuthSession } from "@/lib/auth-session";
 import { listJobs, type Job } from "@/lib/jobs-api";
 import {
-  CvsApiError,
   listCvs,
   PROCESSING_STATUSES,
-  uploadCv,
   type CvPage,
   type CvStatus,
 } from "@/lib/cvs-api";
+import {
+  getApiErrorFeedback,
+  MAX_QUEUE_FILES,
+  useCvUploadQueue,
+  type AddFilesReport,
+  type Feedback,
+  type RunSummary,
+} from "@/lib/use-cv-upload-queue";
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const CV_PAGE_SIZE = 10;
 const POLL_MS = 3000;
-
-type Feedback = {
-  kind: "error" | "info";
-  key?: TranslationKey;
-  values?: Record<string, string | number>;
-  text?: string;
-};
 
 const statusLabels: Record<CvStatus, TranslationKey> = {
   uploaded: "Uploaded",
@@ -45,53 +45,12 @@ const statusLabels: Record<CvStatus, TranslationKey> = {
   error: "Error",
 };
 
-function isSupportedFile(file: File): boolean {
-  const name = file.name.toLowerCase();
-  return name.endsWith(".pdf") || name.endsWith(".docx");
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function formatDate(value: string, language: "en" | "vi"): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : "en-US", {
     dateStyle: "medium",
   }).format(date);
-}
-
-function getApiErrorFeedback(error: unknown): Feedback {
-  if (error instanceof CvsApiError) {
-    if (
-      error.message === "Set NEXT_PUBLIC_API_BASE_URL to connect the backend."
-    ) {
-      return {
-        kind: "error",
-        key: "Backend connection is not configured. Set NEXT_PUBLIC_API_BASE_URL in the frontend environment.",
-      };
-    }
-    if (error.status === 404) {
-      return {
-        kind: "error",
-        key: "The CV API route is not available yet.",
-      };
-    }
-    if (error.status === 401) {
-      return { kind: "error", key: "Sign in to access the CV library." };
-    }
-    if (error.status === 0) {
-      return {
-        kind: "error",
-        key: "Could not reach the backend. Check that it is running.",
-      };
-    }
-    return { kind: "error", text: error.message };
-  }
-
-  return { kind: "error", key: "Something went wrong. Please try again." };
 }
 
 function renderFeedback(
@@ -102,6 +61,42 @@ function renderFeedback(
   return feedback.text ?? t("Something went wrong. Please try again.");
 }
 
+function describeAddReport(report: AddFilesReport): Feedback | null {
+  const skipped = [...report.unsupported, ...report.oversized];
+  if (report.added === 0 && skipped.length === 1) {
+    return {
+      kind: "error",
+      key:
+        report.unsupported.length === 1
+          ? "Choose a PDF or DOCX resume."
+          : "The selected file exceeds the 10 MB limit.",
+    };
+  }
+  if (skipped.length > 0) {
+    return {
+      kind: "error",
+      key: "Skipped {{count}} files (only PDF or DOCX up to 10 MB): {{names}}",
+      values: { count: skipped.length, names: skipped.join(", ") },
+    };
+  }
+  if (report.overflow > 0) {
+    return {
+      kind: "error",
+      key: "The queue holds up to {{max}} files. {{count}} files were not added.",
+      values: { max: MAX_QUEUE_FILES, count: report.overflow },
+    };
+  }
+  if (report.added === 0 && report.duplicates > 0) {
+    return { kind: "info", key: "These files are already in the queue." };
+  }
+  if (report.added <= 1) return null;
+  return {
+    kind: "info",
+    key: "Added {{count}} resumes to the queue. Files stay in this browser until you upload them.",
+    values: { count: report.added },
+  };
+}
+
 export function CvUpload({
   requestedCvId = null,
   requestedJobId = null,
@@ -110,16 +105,15 @@ export function CvUpload({
   requestedJobId?: number | null;
 }) {
   const { t, language } = useI18n();
+  const { session } = useAuthSession();
+  const canUpload = session?.user.role !== "viewer";
   const inputRef = useRef<HTMLInputElement>(null);
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
   const [targetJobId, setTargetJobId] = useState<number | null>(requestedJobId);
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
-  const [jobsLoaded, setJobsLoaded] = useState(false);
-  const jobsLoadInProgressRef = useRef(false);
-  const [file, setFile] = useState<File | null>(null);
+  const jobsRequestedRef = useRef(false);
   const [dragging, setDragging] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [uploadFeedback, setUploadFeedback] = useState<Feedback | null>(null);
   const [cvPage, setCvPage] = useState<CvPage | null>(null);
   const [listFeedback, setListFeedback] = useState<Feedback | null>(null);
@@ -133,6 +127,69 @@ export function CvUpload({
     CvPage["items"][number] | null
   >(null);
   const pendingSelectCvIdRef = useRef<number | null>(null);
+
+  const handleRunComplete = useCallback(
+    ({ succeeded, failed, fatal }: RunSummary) => {
+      const first = succeeded[0]?.cv;
+      if (fatal) {
+        setUploadFeedback(fatal);
+      } else if (succeeded.length === 1 && failed === 0 && first) {
+        setUploadFeedback(
+          succeeded[0].status === "resynced"
+            ? {
+                kind: "info",
+                key: "{{name}} was already in the library, so CV #{{id}} was re-scanned.",
+                values: { name: first.candidate_name, id: first.id },
+              }
+            : {
+                kind: "info",
+                key: "Uploaded {{name}} as CV #{{id}}. Current status: {{status}}.",
+                values: {
+                  name: first.candidate_name,
+                  id: first.id,
+                  status: t(statusLabels[first.status]),
+                },
+              },
+        );
+      } else if (failed === 0) {
+        setUploadFeedback({
+          kind: "info",
+          key: "All {{count}} resumes were uploaded and queued for scanning.",
+          values: { count: succeeded.length },
+        });
+      } else {
+        setUploadFeedback({
+          kind: "error",
+          key: "{{ok}} resumes uploaded, {{failed}} failed. Check the highlighted files and retry.",
+          values: { ok: succeeded.length, failed },
+        });
+      }
+
+      if (succeeded.length === 0) return;
+      setCandidateName("");
+      setCandidateEmail("");
+      if (succeeded.length === 1 && first) {
+        setLastUploadedCv(first);
+        pendingSelectCvIdRef.current = first.id;
+      }
+      setLoadingCvs(true);
+      setRefreshVersion((version) => version + 1);
+    },
+    [t],
+  );
+
+  const queue = useCvUploadQueue(handleRunComplete);
+  const pendingCount = queue.items.filter(
+    (item) => item.status === "queued",
+  ).length;
+  const doneCount = queue.items.filter(
+    (item) =>
+      item.status === "uploaded" ||
+      item.status === "resynced" ||
+      item.status === "failed",
+  ).length;
+  // Name/email overrides only make sense when exactly one file is going up.
+  const singleFileMode = pendingCount <= 1 && !queue.running;
 
   const hasProcessing =
     cvPage?.items.some((cv) => PROCESSING_STATUSES.includes(cv.status)) ??
@@ -159,6 +216,7 @@ export function CvUpload({
           signal: controller.signal,
         });
         setCvPage(result);
+        setListFeedback(null);
         if (pendingSelectCvIdRef.current !== null) {
           setSelectedCvId(pendingSelectCvIdRef.current);
           pendingSelectCvIdRef.current = null;
@@ -175,68 +233,29 @@ export function CvUpload({
     return () => controller.abort();
   }, [refreshVersion]);
 
-  const ensureJobsLoaded = useCallback(async () => {
-    if (jobsLoaded || jobsLoadInProgressRef.current) return;
-    jobsLoadInProgressRef.current = true;
-    try {
-      const page = await listJobs({ page: 1, pageSize: 100 });
-      setAvailableJobs(page.items.filter((job) => job.status !== "archived"));
-      setJobsLoaded(true);
-    } catch {
-      // Non-fatal: job selector remains optional if jobs cannot be loaded.
-    } finally {
-      jobsLoadInProgressRef.current = false;
-    }
-  }, [jobsLoaded]);
+  function ensureJobsLoaded() {
+    if (jobsRequestedRef.current) return;
+    jobsRequestedRef.current = true;
+    listJobs({ page: 1, pageSize: 100 })
+      .then((page) => {
+        setAvailableJobs(
+          page.items.filter((job) => job.status !== "archived"),
+        );
+      })
+      .catch(() => {
+        // Non-fatal: job selector remains optional if jobs cannot be loaded
+      });
+  }
 
   useEffect(() => {
-    if (requestedJobId === null || jobsLoaded) return;
-    let cancelled = false;
-    // Kick off this route-driven fetch after the synchronous effect phase.
-    void Promise.resolve().then(() => {
-      if (!cancelled) void ensureJobsLoaded();
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [ensureJobsLoaded, jobsLoaded, requestedJobId]);
+    if (requestedJobId !== null) {
+      ensureJobsLoaded();
+    }
+  }, [requestedJobId]);
 
   function addFiles(incoming: FileList | File[]) {
-    const selected = Array.from(incoming);
-    if (selected.length === 0) return;
-    if (selected.length > 1) {
-      setFile(null);
-      setUploadFeedback({
-        kind: "error",
-        key: "Upload one CV per candidate. Select one file at a time.",
-      });
-      return;
-    }
-
-    const nextFile = selected[0];
-    if (!isSupportedFile(nextFile)) {
-      setFile(null);
-      setUploadFeedback({
-        kind: "error",
-        key: "Choose a PDF or DOCX resume.",
-      });
-      return;
-    }
-    if (nextFile.size > MAX_FILE_SIZE_BYTES) {
-      setFile(null);
-      setUploadFeedback({
-        kind: "error",
-        key: "The selected file exceeds the 10 MB limit.",
-      });
-      return;
-    }
-
-    setFile(nextFile);
-    setUploadFeedback({
-      kind: "info",
-      key: "Selected {{name}}. It stays in this browser until you upload it.",
-      values: { name: nextFile.name },
-    });
+    if (Array.from(incoming).length === 0) return;
+    setUploadFeedback(describeAddReport(queue.addFiles(incoming)));
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -250,40 +269,21 @@ export function CvUpload({
     addFiles(event.dataTransfer.files);
   }
 
-  async function handleUpload(event: FormEvent<HTMLFormElement>) {
+  function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!file) return;
-
-    setUploading(true);
+    if (pendingCount === 0 || queue.running) return;
     setUploadFeedback(null);
-    try {
-      const uploaded = await uploadCv({
-        candidateName,
-        candidateEmail,
-        jobId: targetJobId,
-        file,
-      });
-      setUploadFeedback({
-        kind: "info",
-        key: "Uploaded {{name}} as CV #{{id}}. Current status: {{status}}.",
-        values: {
-          name: uploaded.candidate_name,
-          id: uploaded.id,
-          status: t(statusLabels[uploaded.status]),
-        },
-      });
-      setLastUploadedCv(uploaded);
-      pendingSelectCvIdRef.current = uploaded.id;
-      setFile(null);
-      setCandidateName("");
-      setCandidateEmail("");
-      setLoadingCvs(true);
-      setRefreshVersion((version) => version + 1);
-    } catch (error) {
-      setUploadFeedback(getApiErrorFeedback(error));
-    } finally {
-      setUploading(false);
-    }
+    void queue.start({
+      jobId: targetJobId,
+      candidateName: singleFileMode ? candidateName : undefined,
+      candidateEmail: singleFileMode ? candidateEmail : undefined,
+    });
+  }
+
+  function handleRetryFailed() {
+    queue.requeueFailed();
+    setUploadFeedback(null);
+    void queue.start({ jobId: targetJobId });
   }
 
   async function handleLoadMore() {
@@ -313,6 +313,15 @@ export function CvUpload({
     setRefreshVersion((version) => version + 1);
   }
 
+  const submitLabel = queue.running
+    ? t("Uploading {{done}}/{{total}}…", {
+        done: doneCount,
+        total: queue.items.length,
+      })
+    : pendingCount > 1
+      ? t("Upload {{count}} resumes", { count: pendingCount })
+      : t("Upload resume");
+
   return (
     <div className="cv-upload-layout">
       <section
@@ -324,202 +333,219 @@ export function CvUpload({
             <h2 id="cv-upload-title">{t("Add candidate resumes")}</h2>
             <p>
               {t(
-                "Drop a PDF or DOCX resume — TalentLens scans and records candidate details automatically.",
+                "Drop one or many PDF/DOCX resumes — TalentLens scans and records each candidate's details automatically.",
               )}
             </p>
           </div>
         </div>
 
-        <form className="cv-upload-form" onSubmit={handleUpload}>
-          <label className="form-field">
-            <span>{t("Target job description (optional)")}</span>
-            <select
-              name="job_id"
-              value={targetJobId ?? ""}
-              onFocus={ensureJobsLoaded}
-              onMouseDown={ensureJobsLoaded}
-              onChange={(event) =>
-                setTargetJobId(Number(event.target.value) || null)
-              }
-            >
-              <option value="">
-                {t("General CV library — or choose a job to auto-score")}
-              </option>
-              {targetJobId !== null &&
-                !availableJobs.some((job) => job.id === targetJobId) && (
-                  <option value={targetJobId}>
-                    {`${t("Job")} #${targetJobId}`}
-                  </option>
-                )}
-              {availableJobs.map((job) => (
-                <option key={job.id} value={job.id}>
-                  {job.title}
-                  {job.status !== "active" ? ` (${job.status})` : ""}
+        {!canUpload ? (
+          <p className="cv-integration-note" role="note">
+            {t(
+              "Your role is read-only. Ask an admin or recruiter to upload resumes.",
+            )}
+          </p>
+        ) : (
+          <form className="cv-upload-form" onSubmit={handleUpload}>
+            <label className="form-field">
+              <span>{t("Target job description (optional)")}</span>
+              <select
+                name="job_id"
+                value={targetJobId ?? ""}
+                disabled={queue.running}
+                onFocus={ensureJobsLoaded}
+                onMouseDown={ensureJobsLoaded}
+                onChange={(event) =>
+                  setTargetJobId(Number(event.target.value) || null)
+                }
+              >
+                <option value="">
+                  {t("General CV library — or choose a job to auto-score")}
                 </option>
-              ))}
-            </select>
-          </label>
-          {targetJobId !== null && (
-            <div className="cv-integration-note" role="status">
-              <strong>
-                {availableJobs.find((job) => job.id === targetJobId)?.title ??
-                  `${t("Job")} #${targetJobId}`}
-              </strong>
-              <span>
-                {t(
-                  "Auto-scoring enabled: uploaded CVs are scanned, extracted, and scored directly against this job.",
-                )}{" "}
-                <Link
-                  className="text-link"
-                  href={`/rankings?job=${targetJobId}`}
-                >
-                  {t("Open job rankings")} →
-                </Link>
-              </span>
-            </div>
-          )}
-
-          <div className="cv-candidate-fields">
-            <label className="form-field">
-              <span>{t("Candidate full name")}</span>
-              <input
-                name="candidate_name"
-                type="text"
-                autoComplete="name"
-                maxLength={255}
-                value={candidateName}
-                onChange={(event) => setCandidateName(event.target.value)}
-                placeholder={t("Leave blank to auto-detect from CV")}
-              />
+                {targetJobId !== null &&
+                  !availableJobs.some((job) => job.id === targetJobId) && (
+                    <option value={targetJobId}>
+                      {`${t("Job")} #${targetJobId}`}
+                    </option>
+                  )}
+                {availableJobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.title}
+                    {job.status !== "active" ? ` (${job.status})` : ""}
+                  </option>
+                ))}
+              </select>
             </label>
-            <label className="form-field">
-              <span>{t("Candidate email (optional)")}</span>
-              <input
-                name="candidate_email"
-                type="email"
-                autoComplete="email"
-                maxLength={255}
-                value={candidateEmail}
-                onChange={(event) => setCandidateEmail(event.target.value)}
-                placeholder={t("Leave blank to auto-detect from CV")}
-              />
-            </label>
-          </div>
+            {targetJobId !== null && (
+              <div className="cv-integration-note" role="status">
+                <strong>
+                  {availableJobs.find((job) => job.id === targetJobId)
+                    ?.title ?? `${t("Job")} #${targetJobId}`}
+                </strong>
+                <span>
+                  {t(
+                    "Auto-scoring enabled: uploaded CVs are scanned, extracted, and scored directly against this job.",
+                  )}{" "}
+                  <Link
+                    className="text-link"
+                    href={`/rankings?job=${targetJobId}`}
+                  >
+                    {t("Open job rankings")} →
+                  </Link>
+                </span>
+              </div>
+            )}
 
-          <input
-            ref={inputRef}
-            className="sr-only"
-            type="file"
-            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            onChange={handleFileChange}
-            aria-label={t("Choose resume file")}
-          />
-          <div
-            className={`cv-dropzone${dragging ? " cv-dropzone-active" : ""}`}
-            onDragEnter={(event) => {
-              event.preventDefault();
-              setDragging(true);
-            }}
-            onDragOver={(event) => event.preventDefault()}
-            onDragLeave={(event) => {
-              const nextTarget = event.relatedTarget;
-              if (
-                !(nextTarget instanceof Node) ||
-                !event.currentTarget.contains(nextTarget)
-              ) {
-                setDragging(false);
-              }
-            }}
-            onDrop={handleDrop}
-          >
-            <span className="cv-upload-icon" aria-hidden="true">
-              ↑
-            </span>
-            <strong>{t("Drop one resume here")}</strong>
-            <span>{t("PDF or DOCX · maximum 10 MB")}</span>
-            <button
-              className="button button-secondary"
-              type="button"
-              onClick={() => inputRef.current?.click()}
-            >
-              {t("Browse files")}
-            </button>
-          </div>
-
-          {file && (
+            <input
+              ref={inputRef}
+              className="sr-only"
+              type="file"
+              multiple
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleFileChange}
+              aria-label={t("Choose resume file")}
+            />
             <div
-              className="cv-file-list"
-              role="group"
-              aria-label={t("Selected resume file")}
+              className={`cv-dropzone${dragging ? " cv-dropzone-active" : ""}`}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setDragging(true);
+              }}
+              onDragOver={(event) => event.preventDefault()}
+              onDragLeave={(event) => {
+                const nextTarget = event.relatedTarget;
+                if (
+                  !(nextTarget instanceof Node) ||
+                  !event.currentTarget.contains(nextTarget)
+                ) {
+                  setDragging(false);
+                }
+              }}
+              onDrop={handleDrop}
             >
-              <div className="cv-file-list-heading">
-                <strong>{t("Selected resume file")}</strong>
+              <span className="cv-upload-icon" aria-hidden="true">
+                ↑
+              </span>
+              <strong>{t("Drop resumes here — select as many as you need")}</strong>
+              <span>
+                {t("PDF or DOCX · up to 10 MB each · {{max}} files per batch", {
+                  max: MAX_QUEUE_FILES,
+                })}
+              </span>
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={() => inputRef.current?.click()}
+              >
+                {queue.items.length > 0 ? t("Add more files") : t("Browse files")}
+              </button>
+            </div>
+
+            <CvUploadQueue
+              items={queue.items}
+              running={queue.running}
+              onRemove={queue.remove}
+              onClearFinished={queue.clearFinished}
+              onClearAll={() => {
+                queue.clearAll();
+                setUploadFeedback(null);
+              }}
+              onRetryFailed={handleRetryFailed}
+              onView={setSelectedCvId}
+              renderFeedback={(feedback) => renderFeedback(feedback, t)}
+            />
+
+            {singleFileMode ? (
+              <div className="cv-candidate-fields">
+                <label className="form-field">
+                  <span>{t("Candidate full name")}</span>
+                  <input
+                    name="candidate_name"
+                    type="text"
+                    autoComplete="name"
+                    maxLength={255}
+                    value={candidateName}
+                    onChange={(event) => setCandidateName(event.target.value)}
+                    placeholder={t("Leave blank to auto-detect from CV")}
+                  />
+                </label>
+                <label className="form-field">
+                  <span>{t("Candidate email (optional)")}</span>
+                  <input
+                    name="candidate_email"
+                    type="email"
+                    autoComplete="email"
+                    maxLength={255}
+                    value={candidateEmail}
+                    onChange={(event) => setCandidateEmail(event.target.value)}
+                    placeholder={t("Leave blank to auto-detect from CV")}
+                  />
+                </label>
+              </div>
+            ) : (
+              <p className="cv-integration-note" role="note">
+                <strong>{t("Batch mode")}</strong>
+                <span>
+                  {t(
+                    "Each candidate's name and email are detected from their own CV. Upload a single file if you want to enter them manually.",
+                  )}
+                </span>
+              </p>
+            )}
+
+            {uploadFeedback && (
+              <p
+                className={`cv-upload-message cv-upload-message-${uploadFeedback.kind}`}
+                role={uploadFeedback.kind === "error" ? "alert" : "status"}
+                aria-live={
+                  uploadFeedback.kind === "error" ? "assertive" : "polite"
+                }
+              >
+                {renderFeedback(uploadFeedback, t)}
+              </p>
+            )}
+
+            <div className="cv-upload-footer">
+              <span>
+                {queue.running
+                  ? t(
+                      "Uploading 3 files at a time. You can keep adding files to the queue.",
+                    )
+                  : t(
+                      "Files are sent only after you choose Upload. Use synthetic data while developing.",
+                    )}
+              </span>
+              <div className="cv-upload-actions">
+                {queue.running && (
+                  <button
+                    className="button button-secondary"
+                    type="button"
+                    onClick={queue.stop}
+                  >
+                    {t("Stop after current")}
+                  </button>
+                )}
                 <button
-                  type="button"
-                  className="text-link"
-                  onClick={() => setFile(null)}
-                  disabled={uploading}
+                  className="button button-primary"
+                  type="submit"
+                  disabled={pendingCount === 0 || queue.running}
+                  aria-busy={queue.running}
                 >
-                  {t("Remove")}
+                  {submitLabel}
                 </button>
               </div>
-              <div className="cv-file-row">
-                <span className="cv-file-type">
-                  {file.name.toLowerCase().endsWith(".pdf") ? "PDF" : "DOCX"}
-                </span>
-                <span className="cv-file-name" title={file.name}>
-                  {file.name}
-                </span>
-                <span className="muted-cell">{formatFileSize(file.size)}</span>
-              </div>
             </div>
-          )}
 
-          {uploadFeedback && (
-            <p
-              className={`cv-upload-message cv-upload-message-${uploadFeedback.kind}`}
-              role={uploadFeedback.kind === "error" ? "alert" : "status"}
-              aria-live={
-                uploadFeedback.kind === "error" ? "assertive" : "polite"
-              }
-            >
-              {renderFeedback(uploadFeedback, t)}
-            </p>
-          )}
-
-          <div className="cv-integration-note" role="note">
-            <strong>{t("Auto-scan & extract pipeline")}</strong>
-            <span>
-              {t(
-                "When you upload a PDF or DOCX file, TalentLens automatically parses the document, detects the candidate's name and email, extracts skills, work history, and education, and prepares the profile for job scoring.",
-              )}
-            </span>
-          </div>
-          {uploading && (
-            <div
-              className="upload-progress"
-              role="progressbar"
-              aria-label={t("Uploading…")}
-              aria-busy="true"
-            >
-              <span />
+            <div className="cv-integration-note" role="note">
+              <strong>{t("Auto-scan & extract pipeline")}</strong>
+              <span>
+                {t(
+                  "When you upload a PDF or DOCX file, TalentLens automatically parses the document, detects the candidate's name and email, extracts skills, work history, and education, and prepares the profile for job scoring.",
+                )}
+              </span>
             </div>
-          )}
-          <div className="cv-upload-footer">
-            <span>
-              {t(
-                "Files are sent only after you choose Upload resume. Use synthetic data while developing.",
-              )}
-            </span>
-            <button
-              className="button button-primary"
-              type="submit"
-              disabled={!file || uploading}
-            >
-              {uploading ? t("Uploading…") : t("Upload resume")}
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
 
         <section className="cv-library" aria-labelledby="cv-library-title">
           <div className="cv-library-heading">
@@ -608,7 +634,9 @@ export function CvUpload({
           cvId={selectedCvId}
           initialSummary={
             cvPage?.items.find((item) => item.id === selectedCvId) ??
-            (lastUploadedCv?.id === selectedCvId ? lastUploadedCv : null)
+            (lastUploadedCv?.id === selectedCvId ? lastUploadedCv : null) ??
+            queue.items.find((item) => item.cv?.id === selectedCvId)?.cv ??
+            null
           }
           targetJobId={targetJobId}
           refreshKey={refreshVersion}
