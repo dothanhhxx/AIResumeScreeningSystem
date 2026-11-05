@@ -147,6 +147,57 @@
   transform: scaleX(1);
 }
 
+/* Label keeps the width of its bold version (hidden ghost copy), so the
+   active link can turn bold without nudging its neighbours. */
+.navLabel {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.navLabel::after {
+  height: 0;
+  overflow: hidden;
+  font-weight: 700;
+  visibility: hidden;
+  content: attr(data-label);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Scroll-spy: the link for the section in view lifts and glows. */
+.navLinks a {
+  border-radius: 6px;
+  transition:
+    color 160ms var(--ease-out),
+    background-color 200ms var(--ease-out),
+    transform 200ms var(--ease-out),
+    text-shadow 200ms var(--ease-out);
+}
+
+.navLinks a.navLinkActive {
+  background: rgb(232 196 103 / 0.1);
+  color: var(--brass);
+  font-weight: 700;
+  text-shadow: 0 0 14px rgb(232 196 103 / 0.45);
+  transform: translateY(-1px);
+}
+
+.navLinks a.navLinkActive::after {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navLinks a,
+  .navLinks a::after {
+    transition: none;
+  }
+
+  .navLinks a.navLinkActive {
+    transform: none;
+  }
+}
+
 .navLinkBoxed {
   border: 1px solid rgb(232 196 103 / 0.45);
   border-radius: 6px;

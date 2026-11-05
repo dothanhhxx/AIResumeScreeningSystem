@@ -228,6 +228,57 @@ const INTERACTIVE_CANDIDATES: InteractiveCandidate[] = [
   },
 ];
 
+const NAV_SECTIONS: { id: string; label: TranslationKey }[] = [
+  { id: "how-it-works", label: "How it works" },
+  { id: "interactive-preview", label: "Interactive preview" },
+  { id: "principles", label: "Principles" },
+  { id: "vision", label: "About us" },
+  { id: "contact", label: "Contact & access" },
+];
+
+/**
+ * Scroll-spy: returns the id of the nav section the reader is currently in.
+ * A section counts as current once its top passes a line ~35% down the
+ * viewport; at the very bottom of the page the last section wins so short
+ * closing sections can still become active.
+ */
+function useActiveSection(): string | null {
+  const [active, setActive] = useState<string | null>(null);
+
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const line = window.innerHeight * 0.35;
+      const atBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 4;
+      let current: string | null = null;
+      for (const { id } of NAV_SECTIONS) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= line && rect.bottom > 0) current = id;
+      }
+      if (atBottom) current = NAV_SECTIONS[NAV_SECTIONS.length - 1].id;
+      setActive(current);
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  return active;
+}
+
 export function LandingPage({ displayFont = "" }: { displayFont?: string }) {
   const { t } = useI18n();
   const { session } = useAuthSession();
@@ -249,6 +300,7 @@ export function LandingPage({ displayFont = "" }: { displayFont?: string }) {
     return () => window.clearTimeout(timer);
   }, [runStage]);
 
+  const activeSection = useActiveSection();
   const running = runStage !== null;
 
   const activeCandidate =
@@ -285,21 +337,22 @@ export function LandingPage({ displayFont = "" }: { displayFont?: string }) {
             />
           </Link>
           <ul className={styles.navLinks}>
-            <li>
-              <a href="#how-it-works">{t("How it works")}</a>
-            </li>
-            <li>
-              <a href="#interactive-preview">{t("Interactive preview")}</a>
-            </li>
-            <li>
-              <a href="#principles">{t("Principles")}</a>
-            </li>
-            <li>
-              <a href="#vision">{t("About us")}</a>
-            </li>
-            <li>
-              <a href="#contact">{t("Contact & access")}</a>
-            </li>
+            {NAV_SECTIONS.map((item) => {
+              const active = activeSection === item.id;
+              return (
+                <li key={item.id}>
+                  <a
+                    href={`#${item.id}`}
+                    className={active ? styles.navLinkActive : undefined}
+                    aria-current={active ? "location" : undefined}
+                  >
+                    <span className={styles.navLabel} data-label={t(item.label)}>
+                      {t(item.label)}
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
             <li>
               <Link href="/demo" className={styles.navLinkBoxed}>
                 {t("Demo")}
