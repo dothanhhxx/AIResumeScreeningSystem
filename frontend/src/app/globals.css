@@ -109,17 +109,6 @@ input:focus-visible {
   background: #ffffff08;
 }
 
-.workspace-avatar {
-  display: grid;
-  width: 29px;
-  height: 29px;
-  place-items: center;
-  border-radius: 8px;
-  background: #efd9bd;
-  color: #765336;
-  font-size: 12px;
-  font-weight: 700;
-}
 
 .workspace-copy,
 .profile-copy {
@@ -3507,18 +3496,12 @@ td {
   }
 
   .app-frame--sidebar-collapsed .brand-name,
-  .app-frame--sidebar-collapsed .workspace-copy,
+  .app-frame--sidebar-collapsed .workspace-picker,
   .app-frame--sidebar-collapsed .nav-label,
   .app-frame--sidebar-collapsed .nav-link>span,
   .app-frame--sidebar-collapsed .demo-note,
   .app-frame--sidebar-collapsed .profile-copy {
     display: none;
-  }
-
-  .app-frame--sidebar-collapsed .workspace-picker {
-    justify-content: center;
-    padding-right: 0;
-    padding-left: 0;
   }
 
   .app-frame--sidebar-collapsed .nav-link {
@@ -4901,11 +4884,6 @@ input:focus-visible {
   background: rgb(255 253 248 / 0.09);
 }
 
-.workspace-avatar {
-  background: rgb(232 196 103 / 0.14);
-  border: 1px solid rgb(232 196 103 / 0.28);
-  color: #e8c467;
-}
 
 .nav-label {
   color: #9bb5a9;

@@ -211,9 +211,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
         </button>
         <div className="workspace-picker">
-          <span className="workspace-avatar">
-            <BrandMark size={20} variant="dark" />
-          </span>
           <span className="workspace-copy">
             <strong>{t("Team workspace")}</strong>
             <small>{t("Recruiting team")}</small>

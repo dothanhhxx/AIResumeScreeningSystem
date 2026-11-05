@@ -55,3 +55,7 @@ retrieving the current account.
 Dashboard metrics and `/demo` candidate examples are fictional and must not be used as hiring evidence. No CVs or personal data should be committed.
 
 Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_API_BASE_URL` to the backend API root (for example, `http://localhost:8000`). The frontend API clients append `/api/v1` and the relevant resource path. The backend must allow the frontend origin through CORS and accept the `Authorization` header. The jobs, CV, matching, decision, and account-creation screens use the shared API contracts documented in `../docs/integration.md`; API availability and permissions still depend on the backend being configured and running.
+
+ADMIN1 : admin1@gmail.com Admin12345    
+Recruit1 : recruit1@gmail.com 12345678
+ 

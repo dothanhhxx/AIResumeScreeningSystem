@@ -154,5 +154,5 @@ backend/app
 frontend/src        Next.js app router pages, components, API clients, i18n
 ```
 
-Team ownership and the original plan are in [System/team_distribution.md](System/team_distribution.md);
+Team ownership and the original plan are in [docs/team-distribution.md](docs/team-distribution.md);
 integration contracts in [docs/integration.md](docs/integration.md).
