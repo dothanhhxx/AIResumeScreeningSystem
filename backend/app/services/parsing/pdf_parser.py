@@ -60,22 +60,23 @@ class PDFParser(BaseParser):
 
         extracted_text = ""
 
-        # Strategy 1: pypdf
+        # Strategy 1: PyMuPDF (fitz). It keeps Vietnamese diacritics attached to their letters,
+        # whereas pypdf splits them ("Hà N ộ i", "Thanh H ả i"), which breaks name/skill detection.
         try:
-            extracted_text = self._parse_with_pypdf(raw_bytes)
-        except FileProcessingError:
-            raise
-        except Exception as pypdf_err:
-            logger.warning("[PDFParser] pypdf extraction encountered an issue: %s", pypdf_err)
+            extracted_text = self._parse_with_pymupdf(raw_bytes)
+        except Exception as fitz_err:
+            logger.debug("[PDFParser] PyMuPDF extraction failed or not installed: %s", fitz_err)
 
-        # Strategy 2: fitz (PyMuPDF) if pypdf yielded little or no text
+        # Strategy 2: pypdf if PyMuPDF yielded little or no text (also detects corrupt/encrypted files)
         if len(clean_text(extracted_text)) < self.min_text_threshold:
             try:
-                fitz_text = self._parse_with_pymupdf(raw_bytes)
-                if len(clean_text(fitz_text)) > len(clean_text(extracted_text)):
-                    extracted_text = fitz_text
-            except Exception as fitz_err:
-                logger.debug("[PDFParser] PyMuPDF fallback failed or not installed: %s", fitz_err)
+                pypdf_text = self._parse_with_pypdf(raw_bytes)
+                if len(clean_text(pypdf_text)) > len(clean_text(extracted_text)):
+                    extracted_text = pypdf_text
+            except FileProcessingError:
+                raise
+            except Exception as pypdf_err:
+                logger.warning("[PDFParser] pypdf extraction encountered an issue: %s", pypdf_err)
 
         # Strategy 3: pdfplumber if still empty
         if len(clean_text(extracted_text)) < self.min_text_threshold:

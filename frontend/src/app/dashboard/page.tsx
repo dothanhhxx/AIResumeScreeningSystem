@@ -188,9 +188,6 @@ export default function DashboardPage() {
               <h2>{t("Recent job descriptions")}</h2>
               <p>{t("Track roles and their candidate pipelines.")}</p>
             </div>
-            <Link className="text-link" href="/jobs">
-              {t("View all")} <Icon name="arrow" size={15} />
-            </Link>
           </div>
           {loading && !summary ? (
             <p className="cv-library-state dashboard-empty" role="status">

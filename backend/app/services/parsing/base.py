@@ -45,6 +45,10 @@ def clean_text(text: str) -> str:
     # Normalize line breaks
     text = text.replace("\r\n", "\n").replace("\r", "\n")
 
+    # Icon-font glyphs (phone/pin/calendar icons in CV templates) live in the Private Use Area
+    # and would otherwise leak into names/addresses as unreadable boxes.
+    text = re.sub(r"[\ue000-\uf8ff]", " ", text)
+
     # Remove non-printable control characters, preserving \n and \t
     text = "".join(ch for ch in text if ch in ("\n", "\t") or (ord(ch) >= 32 and ord(ch) != 127))
 

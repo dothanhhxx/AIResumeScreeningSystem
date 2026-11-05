@@ -247,9 +247,23 @@ _ROLE_KEYWORDS_RE = re.compile(
     r"\b(engineer|developer|analyst|designer|manager|architect|specialist|intern|consultant|"
     r"director|lead|officer|administrator|programmer|scientist|tester|qa|devops|fullstack|"
     r"frontend|backend|data|product|project|marketing|sales|hr|recruiter|kỹ sư|lập trình viên|"
-    r"chuyên viên|nhân viên| thực tập sinh|quản lý)\b",
+    r"chuyên viên|nhân viên| thực tập sinh|quản lý|analysist|senior|junior|fresher)\b",
     re.IGNORECASE,
 )
+# Lines that are postal addresses / locations (e.g. "Thanh Xuân, Hà Nội"), never a person's name.
+_ADDRESS_RE = re.compile(
+    r"(hà nội|ha noi|hanoi|hồ chí minh|ho chi minh|tp\.?\s*hcm|sài gòn|đà nẵng|da nang|hải phòng|cần thơ|"
+    r"việt nam|vietnam|quận|huyện|phường|thành phố|tỉnh|đường|\b(?:street|district|ward|city|province)\b)",
+    re.IGNORECASE,
+)
+
+
+def _strip_trailing_role(segment: str) -> str:
+    """'Đỗ Thanh Hải Data Analyst' → 'Đỗ Thanh Hải' (name and job title often share one header line)."""
+    match = _ROLE_KEYWORDS_RE.search(segment)
+    if match and match.start() > 0:
+        return segment[: match.start()].strip()
+    return segment
 
 
 def _normalize_person_name(raw: str) -> str:
@@ -266,6 +280,13 @@ def infer_name_from_filename(file_name: str | None) -> str:
     stem = re.sub(r"\.(pdf|docx)$", "", file_name.strip(), flags=re.IGNORECASE)
     stem = re.sub(r"^(?:cv|resume|ho[\s_-]*so|ung[\s_-]*vien)[\s_.\-0-9]*", "", stem, flags=re.IGNORECASE)
     stem = re.sub(r"[\s_.\-]+(?:cv|resume|senior|junior|mid|intern|final|v\d+)$", "", stem, flags=re.IGNORECASE)
+    # "CV Data Analyst - Đỗ Thanh Hải": keep the part that is not a job title
+    stem = stem.replace("_", " ")
+    parts = [p.strip() for p in re.split(r"\s+[-–|]\s+", stem) if p.strip()]
+    if len(parts) > 1:
+        names = [p for p in parts if not _ROLE_KEYWORDS_RE.search(p)]
+        if names:
+            stem = names[-1]
     stem = re.sub(r"[_\-.]+", " ", stem)
     stem = re.sub(r"\b\d+\b", " ", stem)
     stem = re.sub(r"\s+", " ", stem).strip()
@@ -304,13 +325,16 @@ def extract_candidate_identity(raw_text: str | None) -> tuple[str | None, str | 
             lower = first_segment.lower()
             if lower in _IGNORE_HEADER_WORDS:
                 continue
-            if any( pattern.match(lower) for pattern in _SECTION_PATTERNS.values() ):
+            if any(pattern.match(lower) for pattern in _SECTION_PATTERNS.values()):
                 continue
             if "@" in first_segment or "http" in lower or "www." in lower:
                 continue
             if any(ch.isdigit() for ch in first_segment):
                 continue
-            if _ROLE_KEYWORDS_RE.search(first_segment):
+            if "," in first_segment or _ADDRESS_RE.search(first_segment):
+                continue
+            first_segment = _strip_trailing_role(first_segment)
+            if not first_segment or _ROLE_KEYWORDS_RE.search(first_segment):
                 continue
             words = [w for w in first_segment.split() if w.isalpha() or "-" in w or "'" in w]
             if 2 <= len(words) <= 6 and 3 <= len(first_segment) <= 65:

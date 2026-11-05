@@ -246,17 +246,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             })}
         </nav>
 
-        {session && accountName && accountRole && (
-          <div className="sidebar-bottom">
-            <div className="profile-row">
-              <span className="profile-avatar">{accountInitials}</span>
-              <span className="profile-copy">
-                <strong>{accountName}</strong>
-                <small>{accountRole}</small>
-              </span>
-            </div>
-          </div>
-        )}
       </aside>
       {isMobileNavOpen && (
         <button

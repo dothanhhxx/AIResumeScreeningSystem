@@ -25,18 +25,24 @@
 .ranking-toolbar-live {
   grid-template-columns:
     minmax(180px, 1.2fr) minmax(150px, 0.8fr) minmax(160px, 1fr)
-    auto;
+    minmax(180px, 1fr);
   background: linear-gradient(180deg, #fffdf8 0%, #f5efe0 100%);
 }
 .ranking-toolbar-live .form-field {
   margin: 0;
 }
 .ranking-actions {
+  grid-column: 1 / -1;
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+}
+.ranking-actions > .button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .identity-toggle {
   display: inline-flex;
@@ -680,8 +686,8 @@ a.queue-item {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .ranking-actions {
-    grid-column: 1 / -1;
     justify-content: space-between;
+    flex-wrap: wrap;
   }
 }
 @media (max-width: 700px) {

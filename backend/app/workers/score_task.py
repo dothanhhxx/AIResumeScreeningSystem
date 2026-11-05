@@ -18,6 +18,7 @@ from app.core.database import async_session_factory, create_worker_session_facto
 from app.llm import get_llm_or_none
 from app.llm.factory import get_llm
 from app.models.cv import CV, CVStatus
+from app.models.decision import Decision
 from app.models.job import Job
 from app.models.match_result import MatchResult
 from app.services.extraction import strip_pii
@@ -104,6 +105,22 @@ async def process_scoring(
             result.details = score.details.model_dump_json()
             result.model_name = score.model_name
             result.model_version = score.model_version
+
+            # A recruiter's adjusted score belongs to the *previous* AI score. After re-scoring it would
+            # keep masking the fresh result everywhere (ranking, dashboard, history), so drop it and
+            # leave a trace in the decision note. Status / reason stay: the human decision still stands.
+            decision = (
+                await db.scalar(select(Decision).where(Decision.match_result_id == result.id))
+                if result.id is not None
+                else None
+            )
+            if decision is not None and decision.score_override is not None:
+                trace = (
+                    f"[Auto] Adjusted score {decision.score_override:g} was cleared after re-scoring "
+                    f"(new AI score {score.overall_score:.1f})."
+                )
+                decision.note = f"{decision.note}\n{trace}" if decision.note else trace
+                decision.score_override = None
 
             cv.status = CVStatus.SCORED
             await db.flush()

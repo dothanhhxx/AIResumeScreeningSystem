@@ -35,7 +35,7 @@ from app.schemas.cv import (
 )
 from app.services import audit_service, cv_service, matching_service
 from app.services.storage_service import ALLOWED_CONTENT_TYPES, storage_service
-from app.workers.dispatch import enqueue_parse, enqueue_score, register_target_job
+from app.workers.dispatch import enqueue_parse, register_target_job
 
 logger = logging.getLogger(__name__)
 
@@ -106,25 +106,28 @@ async def upload_cv(
             uploader_id=current_user.id,
         )
     except DuplicateError as dup_exc:
-        if job_id is None:
-            raise
-        existing_id = dup_exc.details.get("existing_id") if isinstance(dup_exc.details, dict) else None
+        # Same file already in the library: re-sync that record instead of failing the upload.
+        existing_id = dup_exc.value
         if not isinstance(existing_id, int):
             raise
         existing = await cv_service.get_cv(db, existing_id)
-        if existing.status in matching_service.READY_STATUSES and existing.structured_data:
-            existing.status = CVStatus.SCORING
-            await db.commit()
-            await db.refresh(existing)
-            await asyncio.to_thread(enqueue_score, job_id, existing.id)
-            return ApiResponse(
-                message="Existing CV queued for scoring against the selected job.",
-                data=CVResponse.model_validate(existing),
-            )
-        register_target_job(existing.id, job_id)
+        existing = await cv_service.reset_for_rescan(
+            db, existing, candidate_name=candidate_name, candidate_email=candidate_email
+        )
+        await audit_service.record(
+            db,
+            AuditAction.CV_UPLOAD,
+            user=current_user,
+            resource_type="cv",
+            resource_id=existing.id,
+            detail={"file_name": existing.file_name, "duplicate": True, "job_id": job_id},
+            request=request,
+        )
+        if job_id is not None:
+            register_target_job(existing.id, job_id)
         await asyncio.to_thread(_enqueue_parse_task, existing.id, job_id)
         return ApiResponse(
-            message="Existing CV queued for parsing and scoring against the selected job.",
+            message="This file was already uploaded. The existing CV was re-scanned and re-synced.",
             data=CVResponse.model_validate(existing),
         )
     except AppError:
@@ -356,9 +359,6 @@ async def reprocess_cv(
     current_user: User = Depends(_writer),
 ) -> ApiResponse[CVResponse]:
     cv = await cv_service.get_cv(db, cv_id)
-    cv.status = CVStatus.UPLOADED
-    cv.error_message = None
-    await db.commit()
-    await db.refresh(cv)
+    cv = await cv_service.reset_for_rescan(db, cv)
     await asyncio.to_thread(_enqueue_parse_task, cv.id)
     return ApiResponse(message="CV queued for reprocessing.", data=CVResponse.model_validate(cv))

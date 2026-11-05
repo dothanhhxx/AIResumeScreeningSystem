@@ -121,12 +121,12 @@ async def summary(
 
     queue_rows = (
         await db.execute(
-            select(MatchResult, Job.title, CV.candidate_name)
+            select(MatchResult, Job.title, CV.candidate_name, Decision.score_override)
             .join(Job, Job.id == MatchResult.job_id)
             .join(CV, CV.id == MatchResult.cv_id)
             .outerjoin(Decision, Decision.match_result_id == MatchResult.id)
             .where(match_scope, (Decision.id.is_(None)) | (Decision.status == DecisionStatus.PENDING))
-            .order_by(MatchResult.overall_score.desc())
+            .order_by(func.coalesce(Decision.score_override, MatchResult.overall_score).desc())
             .limit(5)
         )
     ).all()
@@ -161,10 +161,10 @@ async def summary(
                     job_title=title,
                     cv_id=result.cv_id,
                     candidate_name=name,
-                    score=result.overall_score,
+                    score=override if override is not None else result.overall_score,
                     matched_skills=_skills(result.matched_skills),
                 )
-                for result, title, name in queue_rows
+                for result, title, name, override in queue_rows
             ],
         )
     )

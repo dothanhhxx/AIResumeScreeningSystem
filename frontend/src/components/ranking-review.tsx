@@ -515,7 +515,7 @@ function ResultDetail({
       </div>
 
       <DecisionForm
-        key={`${result.id}-${result.decision?.updated_at ?? "new"}`}
+        key={`${result.id}-${result.overall_score}-${result.decision?.updated_at ?? "new"}`}
         result={result}
         canDecide={canDecide}
         onSaved={onSaved}
@@ -1030,7 +1030,10 @@ export function RankingReview() {
                   session && session.user.role !== "viewer",
                 )}
                 canDecide={canDecide}
-                onSaved={refresh}
+                onSaved={() => {
+                  refresh();
+                  setNotice({ kind: "info", text: t("Decision saved.") });
+                }}
               />
             ) : ranking && ranking.items.length === 0 ? (
               <div className="ranking-empty-state">

@@ -185,6 +185,29 @@ async def create_cv(
     return cv
 
 
+async def reset_for_rescan(
+    db: AsyncSession,
+    cv: CV,
+    *,
+    candidate_name: str | None = None,
+    candidate_email: str | None = None,
+) -> CV:
+    """
+    Prepare an existing CV to be parsed/extracted again.
+
+    The candidate name falls back to the filename guess (or the name the user typed) so the
+    parse step can replace a wrongly auto-detected name with a fresh scan of the document.
+    """
+    cv.candidate_name = (candidate_name or "").strip() or infer_name_from_filename(cv.file_name)
+    if (candidate_email or "").strip():
+        cv.candidate_email = candidate_email.strip()
+    cv.status = CVStatus.UPLOADED
+    cv.error_message = None
+    await db.commit()
+    await db.refresh(cv)
+    return cv
+
+
 async def create_cv_batch(
     db: AsyncSession,
     files: list[UploadFile],
