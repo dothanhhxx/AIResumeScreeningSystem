@@ -1162,8 +1162,9 @@ tbody tr:last-child td {
   white-space: nowrap;
 }
 
+/* Panel hugs its rows; loading/empty/error states keep their own min-height below. */
 .jobs-panel {
-  min-height: 290px;
+  overflow: hidden;
 }
 
 .jobs-state {
