@@ -131,7 +131,6 @@ export function DemoWorkspace() {
                 )}
               />
             </Link>
-            <span>{t("Synthetic data · read-only preview")}</span>
           </div>
           <div className={styles.footerActions}>
             <Link href="/">{t("Home page")}</Link>

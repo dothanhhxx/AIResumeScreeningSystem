@@ -873,6 +873,143 @@ html[lang="vi"] .principlesTitle {
   background: var(--brass);
 }
 
+/* Header controls: blind toggle + simulated run */
+.interactiveControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.runButton {
+  display: inline-flex;
+  min-height: 44px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--forest-900);
+  color: var(--cream);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 180ms ease;
+}
+
+.runButton:hover:not(:disabled) {
+  background: var(--forest-700);
+}
+
+.runButton:disabled {
+  cursor: progress;
+  opacity: 0.75;
+}
+
+.runButton:focus-visible {
+  outline: 2px solid var(--forest-800);
+  outline-offset: 3px;
+}
+
+.blindToggle {
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+/* Simulated pipeline shown while the sample analysis runs */
+.runPipeline {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.runStage {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgb(13 51 38 / 0.1);
+  border-radius: 11px;
+  background: var(--cream);
+  color: var(--muted-forest);
+  font-size: 14px;
+}
+
+.runStage small {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.runStageDot {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e6dfcc;
+  color: var(--forest-900);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.runStage_done {
+  color: var(--forest-900);
+}
+
+.runStage_done .runStageDot {
+  background: var(--forest-800);
+  color: var(--cream);
+}
+
+.runStage_done small {
+  color: var(--forest-700);
+}
+
+.runStage_active {
+  border-color: rgb(214 173 74 / 0.6);
+  background: #fffaf0;
+  color: var(--forest-900);
+  font-weight: 600;
+}
+
+.runStage_active .runStageDot {
+  background: var(--brass);
+  animation: runPulse 900ms ease-in-out infinite;
+}
+
+.runStage_active small {
+  color: #8a6a1f;
+}
+
+@keyframes runPulse {
+  50% {
+    box-shadow: 0 0 0 6px rgb(232 196 103 / 0.25);
+  }
+}
+
+/* Skill gap summary above the score breakdown */
+.gapSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: var(--cream);
+}
+
+.gapSummary strong {
+  margin-right: auto;
+  color: var(--forest-900);
+  font-size: 14px;
+}
+
 .interactiveGrid {
   display: grid;
   grid-template-columns: minmax(270px, 0.85fr) minmax(0, 1.55fr);
@@ -1947,7 +2084,8 @@ html[lang="vi"] .principlesTitle {
 
 @media (prefers-reduced-motion: reduce) {
   .heroCopy > *,
-  .collage {
+  .collage,
+  .runStage_active .runStageDot {
     animation: none;
   }
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BrandLogo, BrandMark } from "@/components/brand-logo";
 import { Icon, type IconName } from "@/components/icon";
+import { LandingProcess } from "@/components/landing-process";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/messages";
@@ -14,21 +15,6 @@ const HIGHLIGHTS: { icon: IconName; label: TranslationKey }[] = [
   { icon: "cvs", label: "Evidence quoted from the CV" },
   { icon: "rankings", label: "Ranked by fit to the job" },
   { icon: "scale", label: "People make the final call" },
-];
-
-const STEPS: { title: TranslationKey; body: TranslationKey }[] = [
-  {
-    title: "Describe the role",
-    body: "Write or paste the job description. Required skills, years of experience and education become the checklist every CV is read against.",
-  },
-  {
-    title: "Add the resumes",
-    body: "Upload PDF or DOCX files. TalentLens reads the text, structures skills, experience and education, and flags files it could not read.",
-  },
-  {
-    title: "Review the evidence",
-    body: "Candidates arrive ranked, each requirement marked found, unclear or missing with a quote from the CV. Your team shortlists, adjusts or rejects.",
-  },
 ];
 
 const PRINCIPLES: {
@@ -106,6 +92,15 @@ const PIPELINE_STAGES: {
     detail: "Shortlist, interview, or override with logged reasons",
   },
 ];
+
+const RUN_STAGES: TranslationKey[] = [
+  "Reading the CV",
+  "Structuring skills & experience",
+  "Checking each requirement",
+  "Scoring & ranking",
+];
+
+const RUN_STAGE_MS = 650;
 
 interface InteractiveCandidate {
   id: string;
@@ -241,10 +236,34 @@ export function LandingPage({ displayFont = "" }: { displayFont?: string }) {
     INTERACTIVE_CANDIDATES[0].id,
   );
   const [hideIdentity, setHideIdentity] = useState<boolean>(true);
+  // null = results visible; 0..n = index of the simulated pipeline stage running.
+  const [runStage, setRunStage] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (runStage === null) return;
+    const timer = window.setTimeout(() => {
+      setRunStage((stage) =>
+        stage === null || stage >= RUN_STAGES.length - 1 ? null : stage + 1,
+      );
+    }, RUN_STAGE_MS);
+    return () => window.clearTimeout(timer);
+  }, [runStage]);
+
+  const running = runStage !== null;
 
   const activeCandidate =
     INTERACTIVE_CANDIDATES.find((item) => item.id === selectedCandidateId) ??
     INTERACTIVE_CANDIDATES[0];
+  const evidenceCounts = {
+    found: activeCandidate.evidence.filter((e) => e.status === "Evidence found")
+      .length,
+    review: activeCandidate.evidence.filter(
+      (e) => e.status === "Needs human review",
+    ).length,
+    missing: activeCandidate.evidence.filter(
+      (e) => e.status === "Not found in sample",
+    ).length,
+  };
 
   return (
     <div className={`${styles.page} ${displayFont}`} id="top">
@@ -350,35 +369,8 @@ export function LandingPage({ displayFont = "" }: { displayFont?: string }) {
           </div>
         </section>
 
-        {/* ── 2. How It Works (Cream) ─────────────────────────────── */}
-        <section
-          className={styles.story}
-          id="how-it-works"
-          aria-labelledby="how-title"
-        >
-          <div className={styles.storyIntro}>
-            <p className={styles.eyebrowDark}>{t("How it works")}</p>
-            <h2 className={styles.storyTitle} id="how-title">
-              {t("From job description to shortlist")}
-            </h2>
-            <p className={styles.storyLede}>
-              {t(
-                "Three steps your recruiters already take, with the reading and cross-checking done for them.",
-              )}
-            </p>
-          </div>
-          <ol className={styles.steps}>
-            {STEPS.map((step, index) => (
-              <li key={step.title} className={styles.step}>
-                <span className={styles.stepNumber} aria-hidden="true">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <h3>{t(step.title)}</h3>
-                <p>{t(step.body)}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
+        {/* ── 2. How It Works: numbered process grid ───────────────── */}
+        <LandingProcess />
 
         {/* ── 3. Interactive Live Evidence Preview (Cream) ─────────── */}
         <section
@@ -401,15 +393,29 @@ export function LandingPage({ displayFont = "" }: { displayFont?: string }) {
                   )}
                 </p>
               </div>
-              <label className={styles.blindToggle}>
-                <input
-                  type="checkbox"
-                  checked={hideIdentity}
-                  onChange={(e) => setHideIdentity(e.target.checked)}
-                />
-                <span className={styles.blindToggleTrack} aria-hidden="true" />
-                <span>{t("Blind review (hide identity)")}</span>
-              </label>
+              <div className={styles.interactiveControls}>
+                <label className={styles.blindToggle}>
+                  <input
+                    type="checkbox"
+                    checked={hideIdentity}
+                    onChange={(e) => setHideIdentity(e.target.checked)}
+                  />
+                  <span
+                    className={styles.blindToggleTrack}
+                    aria-hidden="true"
+                  />
+                  <span>{t("Blind review (hide identity)")}</span>
+                </label>
+                <button
+                  className={styles.runButton}
+                  type="button"
+                  disabled={running}
+                  onClick={() => setRunStage(0)}
+                >
+                  <Icon name="sparkle" size={15} />
+                  {running ? t("Analyzing…") : t("Run sample analysis")}
+                </button>
+              </div>
             </div>
 
             <div className={styles.interactiveGrid}>
@@ -489,61 +495,124 @@ export function LandingPage({ displayFont = "" }: { displayFont?: string }) {
                   </div>
                 </header>
 
-                <div className={styles.interactiveBars}>
-                  <div>
-                    <div className={styles.interactiveBarLabel}>
-                      <span>{t("Skills")}</span>
-                      <strong>{activeCandidate.skillsScore}%</strong>
+                {running ? (
+                  <ol
+                    className={styles.runPipeline}
+                    aria-label={t("Analysis progress")}
+                    aria-live="polite"
+                  >
+                    {RUN_STAGES.map((stage, index) => {
+                      const state =
+                        index < (runStage ?? 0)
+                          ? "done"
+                          : index === runStage
+                            ? "active"
+                            : "waiting";
+                      return (
+                        <li
+                          key={stage}
+                          className={`${styles.runStage} ${styles[`runStage_${state}`]}`}
+                        >
+                          <span className={styles.runStageDot} aria-hidden="true">
+                            {state === "done" ? "✓" : index + 1}
+                          </span>
+                          <span>{t(stage)}</span>
+                          <small>
+                            {state === "done"
+                              ? t("Done")
+                              : state === "active"
+                                ? t("Running")
+                                : t("Waiting")}
+                          </small>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <>
+                    <div
+                      className={styles.gapSummary}
+                      aria-label={t("Skill gap summary")}
+                    >
+                      <strong>
+                        {t("{{found}} of {{total}} requirements met", {
+                          found: evidenceCounts.found,
+                          total: activeCandidate.evidence.length,
+                        })}
+                      </strong>
+                      <span className={styles.evBadgeFound}>
+                        {t("{{count}} with evidence", {
+                          count: evidenceCounts.found,
+                        })}
+                      </span>
+                      <span className={styles.evBadgeReview}>
+                        {t("{{count}} to verify", {
+                          count: evidenceCounts.review,
+                        })}
+                      </span>
+                      <span className={styles.evBadgeMissing}>
+                        {t("{{count}} missing", {
+                          count: evidenceCounts.missing,
+                        })}
+                      </span>
                     </div>
-                    <div className={styles.interactiveBarTrack}>
-                      <span
-                        style={{ width: `${activeCandidate.skillsScore}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div className={styles.interactiveBarLabel}>
-                      <span>{t("Experience")}</span>
-                      <strong>{activeCandidate.expScore}%</strong>
-                    </div>
-                    <div className={styles.interactiveBarTrack}>
-                      <span style={{ width: `${activeCandidate.expScore}%` }} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className={styles.interactiveBarLabel}>
-                      <span>{t("Education")}</span>
-                      <strong>{activeCandidate.eduScore}%</strong>
-                    </div>
-                    <div className={styles.interactiveBarTrack}>
-                      <span style={{ width: `${activeCandidate.eduScore}%` }} />
-                    </div>
-                  </div>
-                </div>
-
-                <ul className={styles.interactiveEvidenceList}>
-                  {activeCandidate.evidence.map((ev) => {
-                    const badgeClass =
-                      ev.status === "Evidence found"
-                        ? styles.evBadgeFound
-                        : ev.status === "Needs human review"
-                          ? styles.evBadgeReview
-                          : styles.evBadgeMissing;
-                    return (
-                      <li
-                        key={ev.requirement}
-                        className={styles.interactiveEvItem}
-                      >
-                        <div className={styles.interactiveEvTop}>
-                          <strong>{t(ev.requirement)}</strong>
-                          <span className={badgeClass}>{t(ev.status)}</span>
+                    <div className={styles.interactiveBars}>
+                      <div>
+                        <div className={styles.interactiveBarLabel}>
+                          <span>{t("Skills")}</span>
+                          <strong>{activeCandidate.skillsScore}%</strong>
                         </div>
-                        <blockquote>“{t(ev.excerpt)}”</blockquote>
-                        <small>{t(ev.source)}</small>
-                      </li>
-                    );
-                  })}
-                </ul>
+                        <div className={styles.interactiveBarTrack}>
+                          <span
+                            style={{ width: `${activeCandidate.skillsScore}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className={styles.interactiveBarLabel}>
+                          <span>{t("Experience")}</span>
+                          <strong>{activeCandidate.expScore}%</strong>
+                        </div>
+                        <div className={styles.interactiveBarTrack}>
+                          <span style={{ width: `${activeCandidate.expScore}%` }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className={styles.interactiveBarLabel}>
+                          <span>{t("Education")}</span>
+                          <strong>{activeCandidate.eduScore}%</strong>
+                        </div>
+                        <div className={styles.interactiveBarTrack}>
+                          <span style={{ width: `${activeCandidate.eduScore}%` }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <ul className={styles.interactiveEvidenceList}>
+                      {activeCandidate.evidence.map((ev) => {
+                        const badgeClass =
+                          ev.status === "Evidence found"
+                            ? styles.evBadgeFound
+                            : ev.status === "Needs human review"
+                              ? styles.evBadgeReview
+                              : styles.evBadgeMissing;
+                        return (
+                          <li
+                            key={ev.requirement}
+                            className={styles.interactiveEvItem}
+                          >
+                            <div className={styles.interactiveEvTop}>
+                              <strong>{t(ev.requirement)}</strong>
+                              <span className={badgeClass}>{t(ev.status)}</span>
+                            </div>
+                            <blockquote>“{t(ev.excerpt)}”</blockquote>
+                            <small>{t(ev.source)}</small>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
+                )}
               </article>
             </div>
           </div>
@@ -722,7 +791,7 @@ export function LandingPage({ displayFont = "" }: { displayFont?: string }) {
                     <strong>{t("Research & Development Location")}</strong>
                     <span>
                       {t(
-                        "FPT University Hanoi, Hoa Lac Hi-Tech Park, Thach That, Hanoi",
+                        "Hanoi University - Km9, Nguyen Trai, Dai Mo, Hanoi",
                       )}
                     </span>
                   </div>
@@ -733,7 +802,7 @@ export function LandingPage({ displayFont = "" }: { displayFont?: string }) {
                   </span>
                   <div>
                     <strong>{t("Consultation & Demo Support")}</strong>
-                    <span>{t("0839 865 104 · TalentLens Product Team")}</span>
+                    <span>{t("0913842888 · TalentLens Product ATI Team")}</span>
                   </div>
                 </li>
                 <li>
@@ -897,13 +966,13 @@ export function LandingPage({ displayFont = "" }: { displayFont?: string }) {
                 <Icon name="pin" size={15} />
                 <span>
                   {t(
-                    "FPT University Hanoi, Hoa Lac Hi-Tech Park, Thach That, Hanoi",
+                    "Hanoi University - Km9, Nguyen Trai, Dai Mo, Hanoi",
                   )}
                 </span>
               </li>
               <li>
                 <Icon name="phone" size={15} />
-                <span>{t("0839 865 104 · TalentLens Product Team")}</span>
+                <span>{t("0913842888 · TalentLens Product ATI Team")}</span>
               </li>
               <li>
                 <Icon name="mail" size={15} />

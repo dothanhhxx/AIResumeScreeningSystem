@@ -968,11 +968,11 @@ const vietnameseMessages = {
   "Shortlist, interview, or override with logged reasons":
     "Chọn phỏng vấn, điều chỉnh điểm kèm lý do vào nhật ký",
   "Research & Development Location": "Địa điểm nghiên cứu & phát triển",
-  "FPT University Hanoi, Hoa Lac Hi-Tech Park, Thach That, Hanoi":
-    "Đại học FPT Hà Nội, Khu Công nghệ cao Hòa Lạc, Thạch Thất, Hà Nội",
+  "Hanoi University - Km9, Nguyen Trai, Dai Mo, Hanoi":
+    "Đại học Hà Nội - Km9, Nguyễn Trãi, Đại Mỗ, Hà Nội",
   "Consultation & Demo Support": "Hotline tư vấn & hỗ trợ Demo",
-  "0839 865 104 · TalentLens Product Team":
-    "0839 865 104 · Đội ngũ phát triển TalentLens",
+  "0913842888 · TalentLens Product ATI Team":
+    "0913842888 · Đội ngũ ATI phát triển TalentLens",
   "Electronic Mail": "Thư điện tử",
   "OPEN INTERACTIVE DEMO": "MỞ KHÔNG GIAN DEMO TRỰC TIẾP",
   "ABOUT TALENTLENS": "VỀ TALENTLENS",
@@ -1015,6 +1015,59 @@ const vietnameseMessages = {
   "80+ (Strong fit)": "≥ 80 điểm (Rất phù hợp)",
   "Upload resumes": "Tải CV ứng viên",
   "Save job": "Lưu vị trí",
+  "Screening workflow": "Quy trình sàng lọc",
+  "From job description": "Từ mô tả công việc",
+  "to shortlist": "đến danh sách rút gọn",
+  "Six steps your recruiters already take. TalentLens does the reading and cross-checking; people keep the decision.":
+    "Sáu bước nhà tuyển dụng vẫn làm hằng ngày. TalentLens đảm nhận phần đọc và đối chiếu; quyết định vẫn thuộc về con người.",
+  "In the workspace: {{page}}": "Trong ứng dụng: {{page}}",
+  "Try the interactive demo": "Thử demo tương tác",
+  "Play walkthrough": "Tự động xem từng bước",
+  "Pause walkthrough": "Tạm dừng",
+  "Create the job": "Tạo vị trí tuyển dụng",
+  "Paste the JD; required skills and minimum experience become the checklist.":
+    "Dán JD; kỹ năng bắt buộc và kinh nghiệm tối thiểu trở thành danh sách tiêu chí.",
+  "Add the title, required and preferred skills, minimum years of experience and education. Every resume is later read against exactly this checklist.":
+    "Nhập chức danh, kỹ năng bắt buộc và ưu tiên, số năm kinh nghiệm tối thiểu và học vấn. Mọi CV sau đó đều được đọc đối chiếu đúng theo danh sách này.",
+  "Drop PDF or DOCX files, one by one or in a batch.":
+    "Kéo thả tệp PDF hoặc DOCX, từng tệp hoặc theo lô.",
+  "Upload straight into a job or into the shared CV library. Files that cannot be read are flagged instead of silently scored.":
+    "Tải thẳng vào một vị trí hoặc vào thư viện CV chung. Tệp không đọc được sẽ bị đánh dấu thay vì bị chấm điểm âm thầm.",
+  "Read & structure": "Đọc & cấu trúc hóa",
+  "Text is extracted and split into skills, experience and education.":
+    "Văn bản được trích xuất và tách thành kỹ năng, kinh nghiệm và học vấn.",
+  "TalentLens parses each resume into structured sections, so the same fields can be compared across every candidate.":
+    "TalentLens phân tích từng CV thành các mục có cấu trúc, để cùng một trường thông tin có thể so sánh giữa mọi ứng viên.",
+  "Match requirements": "Đối chiếu yêu cầu",
+  "Rules, semantic similarity and an LLM check each requirement.":
+    "Luật, độ tương đồng ngữ nghĩa và LLM cùng kiểm tra từng yêu cầu.",
+  "Each requirement is marked found, unclear or missing, and every “found” is backed by a quote from the CV.":
+    "Mỗi yêu cầu được đánh dấu có, chưa rõ hoặc thiếu, và mọi yêu cầu “có” đều kèm trích dẫn từ CV.",
+  "Rank with evidence": "Xếp hạng kèm bằng chứng",
+  "Candidates are ordered by a 0–100 fit score you can break down.":
+    "Ứng viên được xếp theo điểm phù hợp 0–100 có thể xem chi tiết từng phần.",
+  "The score splits into skills, experience and education. Gaps to verify and suggested interview questions sit next to it.":
+    "Điểm được tách theo kỹ năng, kinh nghiệm và học vấn, kèm các điểm cần xác minh và câu hỏi phỏng vấn gợi ý.",
+  "Decide & record": "Quyết định & ghi nhận",
+  "Your team shortlists, interviews or rejects; every action is logged.":
+    "Đội ngũ chọn vào danh sách, mời phỏng vấn hoặc loại; mọi thao tác đều được ghi lại.",
+  "AI never makes the call. Decisions and score overrides are saved with a reason in the audit log.":
+    "AI không bao giờ tự quyết. Quyết định và điều chỉnh điểm được lưu kèm lý do trong nhật ký kiểm toán.",
+  "Run sample analysis": "Chạy phân tích mẫu",
+  "Analyzing…": "Đang phân tích…",
+  "Analysis progress": "Tiến trình phân tích",
+  "Reading the CV": "Đọc nội dung CV",
+  "Structuring skills & experience": "Cấu trúc kỹ năng & kinh nghiệm",
+  "Checking each requirement": "Đối chiếu từng yêu cầu",
+  "Scoring & ranking": "Chấm điểm & xếp hạng",
+  Done: "Hoàn tất",
+  Running: "Đang chạy",
+  Waiting: "Đang chờ",
+  "Skill gap summary": "Tóm tắt khoảng cách kỹ năng",
+  "{{found}} of {{total}} requirements met": "Đáp ứng {{found}}/{{total}} yêu cầu",
+  "{{count}} with evidence": "{{count}} có bằng chứng",
+  "{{count}} to verify": "{{count}} cần xác minh",
+  "{{count}} missing": "{{count}} còn thiếu",
 } as const;
 
 export type TranslationKey = keyof typeof vietnameseMessages;
