@@ -58,7 +58,7 @@ function initials(name: string): string {
 }
 
 export function AdminUserManager() {
-  const { session } = useAuthSession();
+  const { session, updateSessionUser } = useAuthSession();
   const { t, language } = useI18n();
   const [users, setUsers] = useState<ManagedUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -484,9 +484,10 @@ export function AdminUserManager() {
           isSelf={editing.id === session.user.id}
           describeError={(error) => describeError(error, "update")}
           onClose={() => setEditing(null)}
-          onSaved={(name) => {
+          onSaved={(saved) => {
             setEditing(null);
-            finish(t("Changes to {{name}} saved.", { name }));
+            if (saved.id === session.user.id) updateSessionUser(saved);
+            finish(t("Changes to {{name}} saved.", { name: saved.full_name }));
           }}
         />
       )}
@@ -688,7 +689,7 @@ function EditUserDialog({
   isSelf: boolean;
   describeError: (error: unknown) => string;
   onClose: () => void;
-  onSaved: (name: string) => void;
+  onSaved: (saved: ManagedUser) => void;
 }) {
   const { t } = useI18n();
   const [fullName, setFullName] = useState(user.full_name);
@@ -713,8 +714,7 @@ function EditUserDialog({
     setSaving(true);
     setError(null);
     try {
-      await updateUser(user.id, changes);
-      onSaved(fullName.trim());
+      onSaved(await updateUser(user.id, changes));
     } catch (reason) {
       setError(describeError(reason));
     } finally {

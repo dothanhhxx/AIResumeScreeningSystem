@@ -98,6 +98,26 @@ export async function apiRequest<T>(
   return body.data as T;
 }
 
+/**
+ * Read the file name from a Content-Disposition header, preferring the
+ * RFC 5987 `filename*=UTF-8''…` form so non-ASCII names survive intact.
+ */
+export function fileNameFromDisposition(disposition: string): string | null {
+  const encoded = /filename\*\s*=\s*([^']*)'[^']*'([^;]+)/i.exec(disposition);
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded[2].trim());
+    } catch {
+      // Malformed encoding: fall through to the plain filename.
+    }
+  }
+  const plain = /filename\s*=\s*"([^"]*)"|filename\s*=\s*([^;]+)/i.exec(
+    disposition,
+  );
+  const name = (plain?.[1] ?? plain?.[2])?.trim();
+  return name || null;
+}
+
 /** Download a binary endpoint and hand it to the browser as a file. */
 export async function apiDownload(
   path: string,
@@ -110,11 +130,10 @@ export async function apiDownload(
   }
   const blob = await response.blob();
   const disposition = response.headers.get("Content-Disposition") ?? "";
-  const match = /filename="?([^"]+)"?/.exec(disposition);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = match?.[1] ?? fallbackName;
+  link.download = fileNameFromDisposition(disposition) ?? fallbackName;
   document.body.append(link);
   link.click();
   link.remove();

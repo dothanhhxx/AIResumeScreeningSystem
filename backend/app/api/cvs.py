@@ -17,6 +17,7 @@ Endpoints:
 
 import asyncio
 import logging
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import Response
@@ -337,12 +338,25 @@ async def download_cv_file(
     await audit_service.record(
         db, AuditAction.CV_VIEW, user=current_user, resource_type="cv", resource_id=cv.id, request=request
     )
-    safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in cv.file_name) or f"cv_{cv.id}"
     return Response(
         content=content,
         media_type=_MIME_BY_EXT.get(cv.file_type, "application/octet-stream"),
-        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
+        headers={"Content-Disposition": _content_disposition(cv.file_name, f"cv_{cv.id}.{cv.file_type}")},
     )
+
+
+def _content_disposition(file_name: str, fallback: str) -> str:
+    """Build an attachment header that keeps the original (possibly non-ASCII) file name.
+
+    ``filename*`` (RFC 5987) carries the exact UTF-8 name, e.g. ``CV_Nguyễn_Văn_A.pdf``;
+    ``filename`` is an ASCII-only fallback for clients that ignore ``filename*``.
+    """
+    original = (file_name or "").replace("\\", "/").rsplit("/", 1)[-1].strip() or fallback
+    original = "".join(c for c in original if c.isprintable()) or fallback
+    ascii_name = "".join(
+        c if c.isascii() and (c.isalnum() or c in "._- ") else "_" for c in original
+    ).strip() or fallback
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(original, safe='')}"
 
 
 # ── Reprocess ─────────────────────────────────────────────────────────────────

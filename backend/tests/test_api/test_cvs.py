@@ -114,6 +114,21 @@ async def test_download_reprocess_and_delete(client, admin_headers):
     assert (await client.get(f"/api/v1/cvs/{cv['id']}", headers=admin_headers)).status_code == 404
 
 
+async def test_download_returns_original_bytes_and_unicode_file_name(client, admin_headers):
+    original = make_docx(STRONG_CV)
+    files = {"file": ("CV_Nguyễn_Văn_A (2026).docx", original, DOCX_MIME)}
+    cv = (await client.post("/api/v1/cvs/upload", files=files, headers=admin_headers)).json()["data"]
+    await drain_pipeline()
+
+    response = await client.get(f"/api/v1/cvs/{cv['id']}/file", headers=admin_headers)
+    assert response.status_code == 200
+    assert response.content == original
+    assert response.headers["content-type"].startswith(DOCX_MIME)
+    disposition = response.headers["content-disposition"]
+    assert "filename*=UTF-8''CV_Nguy%E1%BB%85n_V%C4%83n_A%20%282026%29.docx" in disposition
+    assert disposition.encode("latin-1").isascii()
+
+
 async def test_corrupt_file_ends_in_error_status(client, admin_headers):
     response = await client.post(
         "/api/v1/cvs/upload",

@@ -9,7 +9,12 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import type { AuthToken, AuthUser } from "@/lib/auth-api";
+import {
+  AuthApiError,
+  getCurrentUser,
+  type AuthToken,
+  type AuthUser,
+} from "@/lib/auth-api";
 
 const SESSION_STORAGE_KEY = "talentlens-auth-session";
 const SESSION_CHANGE_EVENT = "talentlens-auth-session-change";
@@ -27,6 +32,8 @@ type AuthSessionContextValue = {
   session: AuthSession | null;
   signIn: (token: AuthToken) => void;
   signOut: () => void;
+  /** Replace the signed-in user's details (name, role) after they change. */
+  updateSessionUser: (user: SessionUser) => void;
 };
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
@@ -106,6 +113,21 @@ function subscribeToSession(callback: () => void) {
   };
 }
 
+function storeSession(next: AuthSession | null) {
+  cachedSession = next;
+  hasReadStoredSession = true;
+  try {
+    if (next) {
+      window.sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(next));
+    } else {
+      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  } catch {
+    // The session still lives in memory when browser storage is unavailable.
+  }
+  notifySessionChange();
+}
+
 function notifySessionChange() {
   window.dispatchEvent(new Event(SESSION_CHANGE_EVENT));
 }
@@ -143,19 +165,10 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     getServerSessionSnapshot,
   );
 
-  const signOut = useCallback(() => {
-    cachedSession = null;
-    hasReadStoredSession = true;
-    try {
-      window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
-    } catch {
-      // The session still clears in memory when browser storage is unavailable.
-    }
-    notifySessionChange();
-  }, []);
+  const signOut = useCallback(() => storeSession(null), []);
 
   const signIn = useCallback((token: AuthToken) => {
-    cachedSession = {
+    storeSession({
       accessToken: token.access_token,
       expiresAt: Date.now() + token.expires_in * 1000,
       user: {
@@ -163,18 +176,20 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         full_name: token.user.full_name,
         role: token.user.role,
       },
-    };
-    hasReadStoredSession = true;
+    });
+  }, []);
 
-    try {
-      window.sessionStorage.setItem(
-        SESSION_STORAGE_KEY,
-        JSON.stringify(cachedSession),
-      );
-    } catch {
-      // Keep the signed-in session in memory for this tab.
+  const updateSessionUser = useCallback((user: SessionUser) => {
+    const current = getSessionSnapshot();
+    if (!current || current.user.id !== user.id) return;
+    const next = { id: user.id, full_name: user.full_name, role: user.role };
+    if (
+      current.user.full_name === next.full_name &&
+      current.user.role === next.role
+    ) {
+      return;
     }
-    notifySessionChange();
+    storeSession({ ...current, user: next });
   }, []);
 
   useEffect(() => {
@@ -182,9 +197,36 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     return expireSessionAt(session.expiresAt, signOut);
   }, [session, signOut]);
 
+  // The stored user is a snapshot from sign-in. On every page load, pull the
+  // latest profile so name/role edits (e.g. by an administrator) show up.
+  const accessToken = session?.accessToken;
+  useEffect(() => {
+    if (!accessToken) return;
+    let cancelled = false;
+    getCurrentUser(accessToken)
+      .then((user) => {
+        if (!cancelled) updateSessionUser(user);
+      })
+      .catch((reason: unknown) => {
+        // A rejected token (account deleted or locked) ends the session;
+        // network errors keep the cached user.
+        if (
+          !cancelled &&
+          reason instanceof AuthApiError &&
+          reason.status === 401 &&
+          getSessionSnapshot()?.accessToken === accessToken
+        ) {
+          signOut();
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, signOut, updateSessionUser]);
+
   const value = useMemo(
-    () => ({ session, signIn, signOut }),
-    [session, signIn, signOut],
+    () => ({ session, signIn, signOut, updateSessionUser }),
+    [session, signIn, signOut, updateSessionUser],
   );
 
   return (

@@ -13,7 +13,7 @@ import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/messages";
 import { ApiError } from "@/lib/api";
 import { getCurrentUser, type AuthUser } from "@/lib/auth-api";
-import { getAuthAccessToken } from "@/lib/auth-session";
+import { getAuthAccessToken, useAuthSession } from "@/lib/auth-session";
 import {
   changePassword,
   getSystemInfo,
@@ -141,15 +141,19 @@ export default function SettingsPage() {
 
 function AccountTab() {
   const { t, language } = useI18n();
+  const { updateSessionUser } = useAuthSession();
   const [user, setUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
     const token = getAuthAccessToken();
     if (!token) return;
     getCurrentUser(token)
-      .then(setUser)
+      .then((latest) => {
+        setUser(latest);
+        updateSessionUser(latest);
+      })
       .catch(() => undefined);
-  }, []);
+  }, [updateSessionUser]);
 
   const since = user
     ? new Intl.DateTimeFormat(language === "vi" ? "vi-VN" : "en-US", {
