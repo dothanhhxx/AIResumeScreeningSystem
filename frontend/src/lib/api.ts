@@ -118,6 +118,19 @@ export function fileNameFromDisposition(disposition: string): string | null {
   return name || null;
 }
 
+/** Fetch a binary endpoint through the shared authenticated API client. */
+export async function apiBlob(
+  path: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const response = await send(path, { headers: { Accept: "*/*" } }, signal);
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    throw new ApiError(errorMessage(body, response.status), response.status);
+  }
+  return response.blob();
+}
+
 /** Download a binary endpoint and hand it to the browser as a file. */
 export async function apiDownload(
   path: string,
@@ -137,5 +150,5 @@ export async function apiDownload(
   document.body.append(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -115,6 +116,7 @@ export function CvUpload({
   const [targetJobId, setTargetJobId] = useState<number | null>(requestedJobId);
   const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
   const [jobsLoaded, setJobsLoaded] = useState(false);
+  const jobsLoadInProgressRef = useRef(false);
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -173,26 +175,31 @@ export function CvUpload({
     return () => controller.abort();
   }, [refreshVersion]);
 
-  function ensureJobsLoaded() {
-    if (jobsLoaded) return;
-    setJobsLoaded(true);
-    listJobs({ page: 1, pageSize: 100 })
-      .then((page) => {
-        setAvailableJobs(
-          page.items.filter((job) => job.status !== "archived"),
-        );
-      })
-      .catch(() => {
-        // Non-fatal: job selector remains optional if jobs cannot be loaded
-      });
-  }
+  const ensureJobsLoaded = useCallback(async () => {
+    if (jobsLoaded || jobsLoadInProgressRef.current) return;
+    jobsLoadInProgressRef.current = true;
+    try {
+      const page = await listJobs({ page: 1, pageSize: 100 });
+      setAvailableJobs(page.items.filter((job) => job.status !== "archived"));
+      setJobsLoaded(true);
+    } catch {
+      // Non-fatal: job selector remains optional if jobs cannot be loaded.
+    } finally {
+      jobsLoadInProgressRef.current = false;
+    }
+  }, [jobsLoaded]);
 
   useEffect(() => {
-    if (requestedJobId !== null && !jobsLoaded) {
-      ensureJobsLoaded();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestedJobId]);
+    if (requestedJobId === null || jobsLoaded) return;
+    let cancelled = false;
+    // Kick off this route-driven fetch after the synchronous effect phase.
+    void Promise.resolve().then(() => {
+      if (!cancelled) void ensureJobsLoaded();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ensureJobsLoaded, jobsLoaded, requestedJobId]);
 
   function addFiles(incoming: FileList | File[]) {
     const selected = Array.from(incoming);
@@ -597,6 +604,7 @@ export function CvUpload({
 
       {selectedCvId !== null ? (
         <CvDetailPanel
+          key={selectedCvId}
           cvId={selectedCvId}
           initialSummary={
             cvPage?.items.find((item) => item.id === selectedCvId) ??

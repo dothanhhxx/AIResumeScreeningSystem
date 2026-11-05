@@ -1,4 +1,4 @@
-import { apiDownload, apiRequest } from "@/lib/api";
+import { apiBlob, apiDownload, apiRequest } from "@/lib/api";
 import { getAuthAccessToken } from "@/lib/auth-session";
 
 export const CV_STATUSES = [
@@ -319,4 +319,11 @@ export async function deleteCv(cvId: number): Promise<void> {
 
 export function downloadCv(cvId: number, fileName: string): Promise<void> {
   return apiDownload(`/cvs/${cvId}/file`, fileName);
+}
+
+export async function getCvFileBlob(
+  cvId: number,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  return apiBlob(`/cvs/${cvId}/file`, signal);
 }

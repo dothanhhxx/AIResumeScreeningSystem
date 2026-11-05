@@ -573,6 +573,15 @@ const vietnameseMessages = {
   "Decision saved.": "Đã lưu quyết định.",
   Delete: "Xoá",
   "Download file": "Tải tệp",
+  "Preview original PDF": "Xem trước CV PDF gốc",
+  "Hide PDF preview": "Ẩn bản xem trước PDF",
+  "Loading PDF preview…": "Đang tải bản xem trước PDF…",
+  "CV Preview": "Xem trước CV",
+  Expand: "Mở rộng",
+  "Expand CV preview": "Mở rộng bản xem trước CV",
+  "Close CV preview": "Đóng bản xem trước CV",
+  "Could not preview the original PDF. Download the file instead.":
+    "Không thể xem trước CV PDF gốc. Hãy tải tệp xuống để xem.",
   Education: "Học vấn",
   "Every sign-in, upload, matching run and decision is recorded here.":
     "Mọi lần đăng nhập, tải CV, chạy so khớp và quyết định đều được ghi lại tại đây.",

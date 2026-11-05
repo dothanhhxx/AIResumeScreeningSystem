@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PipelineSteps } from "@/components/pipeline-steps";
 import { useI18n } from "@/i18n/provider";
 import { ApiError } from "@/lib/api";
@@ -11,6 +11,7 @@ import {
   deleteCv,
   downloadCv,
   getCv,
+  getCvFileBlob,
   parseExtraction,
   reprocessCv,
   type CvDetail,
@@ -39,6 +40,45 @@ export function CvDetailPanel({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [expandedPreview, setExpandedPreview] = useState(false);
+  const previewUrlRef = useRef<string | null>(null);
+  const previewAbortRef = useRef<AbortController | null>(null);
+  const previewCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(
+    () => () => {
+      const controller = previewAbortRef.current;
+      previewAbortRef.current = null;
+      controller?.abort();
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!expandedPreview) return;
+    const previousOverflow = document.body.style.overflow;
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    document.body.style.overflow = "hidden";
+    previewCloseButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setExpandedPreview(false);
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [expandedPreview]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -81,6 +121,43 @@ export function CvDetailPanel({
     }
   }
 
+  async function togglePdfPreview() {
+    if (previewUrl) {
+      previewAbortRef.current?.abort();
+      previewAbortRef.current = null;
+      URL.revokeObjectURL(previewUrl);
+      previewUrlRef.current = null;
+      setPreviewUrl(null);
+      setPreviewError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    previewAbortRef.current?.abort();
+    previewAbortRef.current = controller;
+    setPreviewLoading(true);
+    setPreviewError(null);
+    try {
+      const blob = await getCvFileBlob(cvId, controller.signal);
+      if (controller.signal.aborted) return;
+      const url = URL.createObjectURL(blob);
+      previewUrlRef.current = url;
+      setPreviewUrl(url);
+    } catch (reason) {
+      if (controller.signal.aborted) return;
+      setPreviewError(
+        reason instanceof ApiError
+          ? reason.message
+          : t("Could not preview the original PDF. Download the file instead."),
+      );
+    } finally {
+      if (previewAbortRef.current === controller) {
+        previewAbortRef.current = null;
+        setPreviewLoading(false);
+      }
+    }
+  }
+
   const current = detail ?? initialSummary;
   const extraction = detail ? parseExtraction(detail) : null;
   const effectiveJobId = extraction?.target_job_id ?? targetJobId ?? null;
@@ -112,6 +189,11 @@ export function CvDetailPanel({
       {error && (
         <p className="cv-upload-message cv-upload-message-error" role="alert">
           {error}
+        </p>
+      )}
+      {previewError && (
+        <p className="cv-upload-message cv-upload-message-error" role="alert">
+          {previewError}
         </p>
       )}
 
@@ -239,6 +321,22 @@ export function CvDetailPanel({
               {t("Score & review against jobs")}
             </Link>
           )}
+          {current.file_type.toLowerCase() === "pdf" && (
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={busy || previewLoading}
+              aria-expanded={Boolean(previewUrl)}
+              aria-controls={previewUrl ? "cv-original-pdf-preview" : undefined}
+              onClick={togglePdfPreview}
+            >
+              {previewLoading
+                ? t("Loading PDF preview…")
+                : previewUrl
+                  ? t("Hide PDF preview")
+                  : t("Preview original PDF")}
+            </button>
+          )}
           <button
             className="button button-secondary"
             type="button"
@@ -279,6 +377,97 @@ export function CvDetailPanel({
                 {t("Delete")}
               </button>
             ))}
+        </div>
+      )}
+
+      {previewLoading && (
+        <p className="ranking-progress" role="status">
+          <span className="ranking-spinner" aria-hidden="true" />
+          {t("Loading PDF preview…")}
+        </p>
+      )}
+      {previewUrl && (
+        <section
+          className="cv-original-preview"
+          id="cv-original-pdf-preview"
+          aria-label={t("CV Preview")}
+        >
+          <div className="cv-original-preview-heading">
+            <h3>{t("CV Preview")}</h3>
+            <span>{current?.file_name}</span>
+            <button
+              className="text-link cv-preview-expand-button"
+              type="button"
+              onClick={() => setExpandedPreview(true)}
+            >
+              {t("Expand")}
+            </button>
+          </div>
+          <div
+            className="cv-preview-expand-target"
+            role="button"
+            tabIndex={0}
+            aria-label={t("Expand CV preview")}
+            aria-haspopup="dialog"
+            onClick={(event) => {
+              event.currentTarget.focus();
+              setExpandedPreview(true);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setExpandedPreview(true);
+              }
+            }}
+          >
+            <iframe
+              title={t("CV Preview")}
+              src={`${previewUrl}#view=Fit&toolbar=0&navpanes=0&scrollbar=0`}
+              scrolling="no"
+              tabIndex={-1}
+              aria-hidden="true"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        </section>
+      )}
+      {expandedPreview && previewUrl && (
+        <div
+          className="cv-preview-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setExpandedPreview(false);
+            }
+          }}
+        >
+          <section
+            className="cv-preview-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cv-preview-dialog-title"
+          >
+            <div className="cv-preview-dialog-heading">
+              <div>
+                <h2 id="cv-preview-dialog-title">{t("CV Preview")}</h2>
+                <p>{current?.file_name}</p>
+              </div>
+              <button
+                ref={previewCloseButtonRef}
+                className="button button-secondary"
+                type="button"
+                aria-label={t("Close CV preview")}
+                onClick={() => setExpandedPreview(false)}
+              >
+                {t("Close")}
+              </button>
+            </div>
+            <iframe
+              className="cv-preview-dialog-document"
+              title={t("CV Preview")}
+              src={previewUrl}
+              referrerPolicy="no-referrer"
+            />
+          </section>
         </div>
       )}
     </aside>

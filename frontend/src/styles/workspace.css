@@ -637,6 +637,129 @@
 .cv-detail-actions .button {
   margin-top: 10px;
 }
+.cv-original-preview {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--cream-soft);
+}
+.cv-original-preview-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 12px;
+  min-width: 0;
+}
+.cv-original-preview-heading h3 {
+  grid-column: 1;
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 650;
+}
+.cv-original-preview-heading span {
+  grid-column: 1;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-preview-expand-button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  min-height: 36px;
+  padding: 0 10px;
+}
+.cv-preview-expand-target {
+  position: relative;
+  aspect-ratio: 0.707;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  cursor: zoom-in;
+}
+.cv-preview-expand-target:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.cv-original-preview iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  background: #fff;
+  pointer-events: none;
+}
+.cv-preview-overlay {
+  position: fixed;
+  z-index: 1500;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(8px, 2vw, 24px);
+  background: rgb(8 34 25 / 0.78);
+  backdrop-filter: blur(4px);
+}
+.cv-preview-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1440px, 100%);
+  height: min(100%, 1000px);
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 0.32);
+}
+.cv-preview-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.cv-preview-dialog-heading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+}
+.cv-preview-dialog-heading p {
+  overflow: hidden;
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-preview-dialog-document {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  background: #fff;
+}
+@media (max-width: 640px) {
+  .cv-preview-overlay {
+    padding: 0;
+  }
+  .cv-preview-dialog {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+  .cv-preview-dialog-heading {
+    padding: 12px;
+  }
+}
 
 /* ── Dashboard / audit ───────────────────────────────────── */
 .dashboard-empty {
