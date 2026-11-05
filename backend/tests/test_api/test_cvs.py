@@ -141,3 +141,60 @@ async def test_corrupt_file_ends_in_error_status(client, admin_headers):
     detail = (await client.get(f"/api/v1/cvs/{cv_id}", headers=admin_headers)).json()["data"]
     assert detail["status"] == "error"
     assert detail["error_message"]
+
+
+async def test_download_survives_wiped_storage_and_reupload_restores_lost_file(client, admin_headers):
+    """Container disks are wiped on redeploy: the database copy must still serve the file."""
+    from sqlalchemy import delete
+
+    from app.core.database import async_session_factory
+    from app.models.cv_file import CVFile
+    from app.services.storage_service import storage_service
+
+    original = make_docx(STRONG_CV)
+    files = {"file": ("CV Data Analyst - Đỗ Thanh Hải.docx", original, DOCX_MIME)}
+    cv = (await client.post("/api/v1/cvs/upload", files=files, headers=admin_headers)).json()["data"]
+    await drain_pipeline()
+
+    # 1. Storage wiped (redeploy): still downloadable, and reprocessing still works.
+    storage_service.delete_file(cv["file_url"])
+    response = await client.get(f"/api/v1/cvs/{cv['id']}/file", headers=admin_headers)
+    assert response.status_code == 200 and response.content == original
+    assert (await client.post(f"/api/v1/cvs/{cv['id']}/reprocess", headers=admin_headers)).status_code == 202
+    await drain_pipeline()
+    detail = (await client.get(f"/api/v1/cvs/{cv['id']}", headers=admin_headers)).json()["data"]
+    assert detail["status"] == "extracted", detail.get("error_message")
+
+    # 2. A CV uploaded before the database copy existed, whose disk file is gone:
+    #    a clear 404, then re-uploading the same file restores it.
+    async with async_session_factory() as db:
+        await db.execute(delete(CVFile).where(CVFile.cv_id == cv["id"]))
+        await db.commit()
+    missing = await client.get(f"/api/v1/cvs/{cv['id']}/file", headers=admin_headers)
+    assert missing.status_code == 404
+    assert "Upload the same file again" in missing.text
+
+    again = await client.post("/api/v1/cvs/upload", files=files, headers=admin_headers)
+    assert again.json()["data"]["id"] == cv["id"]
+    await drain_pipeline()
+    restored = await client.get(f"/api/v1/cvs/{cv['id']}/file", headers=admin_headers)
+    assert restored.status_code == 200 and restored.content == original
+
+
+async def test_download_backfills_database_copy_from_storage(client, admin_headers):
+    from sqlalchemy import delete, select
+
+    from app.core.database import async_session_factory
+    from app.models.cv_file import CVFile
+
+    cv = (await upload(client, admin_headers, "Legacy Upload", STRONG_CV)).json()["data"]
+    await drain_pipeline()
+    async with async_session_factory() as db:
+        await db.execute(delete(CVFile).where(CVFile.cv_id == cv["id"]))
+        await db.commit()
+
+    response = await client.get(f"/api/v1/cvs/{cv['id']}/file", headers=admin_headers)
+    assert response.status_code == 200
+    async with async_session_factory() as db:
+        stored = await db.scalar(select(CVFile.content).where(CVFile.cv_id == cv["id"]))
+    assert stored == response.content

@@ -16,8 +16,13 @@ Public API (used by app/api/cvs.py):
     list_cvs(db, *, page, page_size, status, uploaded_by) -> (list[CV], int)
     update_cv_status(db, cv_id, status, *, raw_text, structured_data) -> CV
     delete_cv(db, cv_id) -> None
+    read_cv_file(db, cv) -> bytes
+
+The original file bytes live in the ``cv_files`` table (durable, survives
+redeploys); object storage keeps a secondary copy.
 """
 
+import asyncio
 import hashlib
 import logging
 import mimetypes
@@ -27,8 +32,15 @@ from fastapi import UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import DuplicateError, NotFoundError, UnsupportedFileTypeError
+from app.core.exceptions import (
+    CVFileUnavailableError,
+    DuplicateError,
+    NotFoundError,
+    StorageServiceError,
+    UnsupportedFileTypeError,
+)
 from app.models.cv import CV, CVStatus
+from app.models.cv_file import CVFile
 from app.schemas.cv import CVBatchItemResult, CVStatusUpdate
 from app.services.extraction.heuristic import infer_name_from_filename
 from app.services.storage_service import ALLOWED_CONTENT_TYPES, storage_service
@@ -98,6 +110,51 @@ async def find_cv_by_hash(
     return result.scalar_one_or_none()
 
 
+# ── Original file bytes ───────────────────────────────────────────────────────
+
+def _mime_for(cv: CV) -> str:
+    return next((mime for mime, ext in ALLOWED_CONTENT_TYPES.items() if ext == cv.file_type), "application/octet-stream")
+
+
+async def _store_file_copy(db: AsyncSession, cv_id: int, file_bytes: bytes, content_type: str) -> None:
+    """Add (or replace) the database copy of a CV's original file. Caller commits."""
+    existing = await db.get(CVFile, cv_id)
+    if existing is None:
+        db.add(CVFile(cv_id=cv_id, content=file_bytes, content_type=content_type))
+    else:
+        existing.content = file_bytes
+        existing.content_type = content_type
+
+
+async def has_cv_file(db: AsyncSession, cv_id: int) -> bool:
+    return (await db.scalar(select(CVFile.cv_id).where(CVFile.cv_id == cv_id))) is not None
+
+
+async def read_cv_file(db: AsyncSession, cv: CV) -> bytes:
+    """
+    Return the original uploaded bytes of *cv*.
+
+    Reads the database copy first. CVs uploaded before files were kept in the
+    database fall back to object storage, and are copied into the database on
+    the way so they survive the next redeploy.
+
+    Raises:
+        CVFileUnavailableError: if neither copy exists any more.
+    """
+    content = await db.scalar(select(CVFile.content).where(CVFile.cv_id == cv.id))
+    if content is not None:
+        return content
+    try:
+        content = await asyncio.to_thread(storage_service.download_file, cv.file_url)
+    except StorageServiceError as exc:
+        logger.warning("Original file of CV %d is missing from storage ('%s'): %s", cv.id, cv.file_url, exc)
+        raise CVFileUnavailableError() from exc
+    await _store_file_copy(db, cv.id, content, _mime_for(cv))
+    await db.commit()
+    logger.info("Backfilled database copy of CV %d (%d bytes).", cv.id, len(content))
+    return content
+
+
 # ── Service functions ─────────────────────────────────────────────────────────
 
 async def create_cv(
@@ -148,18 +205,28 @@ async def create_cv(
         existing = await find_cv_by_hash(db, file_hash, file_size=len(file_bytes))
         if existing is not None:
             logger.info("Duplicate CV detected: id=%d matching hash=%s", existing.id, file_hash[:16])
+            if not await has_cv_file(db, existing.id):
+                # Same content re-uploaded for a CV whose stored file was lost: restore it.
+                await _store_file_copy(db, existing.id, file_bytes, content_type)
+                await db.commit()
+                logger.info("Restored the original file of CV %d from a re-upload.", existing.id)
             raise DuplicateError("CV file with identical content", existing.id)
 
     resolved_name = (candidate_name or "").strip() or infer_name_from_filename(file.filename)
     resolved_email = (candidate_email or "").strip() or None
     object_key = _build_object_key(content_type, resolved_name, file_hash=file_hash)
 
-    # Upload to MinIO (sync call — small files, acceptable in async context)
-    storage_service.upload_file(
-        file_bytes=file_bytes,
-        object_key=object_key,
-        content_type=content_type,
-    )
+    # Secondary copy in object storage. The database copy below is the durable
+    # one, so a storage failure must not lose the upload.
+    try:
+        await asyncio.to_thread(
+            storage_service.upload_file,
+            file_bytes=file_bytes,
+            object_key=object_key,
+            content_type=content_type,
+        )
+    except StorageServiceError as exc:
+        logger.warning("Storage copy failed for '%s' (database copy kept): %s", object_key, exc)
 
     # Persist CV record
     cv = CV(
@@ -173,6 +240,8 @@ async def create_cv(
         uploaded_by=uploader_id,
     )
     db.add(cv)
+    await db.flush()
+    await _store_file_copy(db, cv.id, file_bytes, content_type)
     await db.commit()
     await db.refresh(cv)
 

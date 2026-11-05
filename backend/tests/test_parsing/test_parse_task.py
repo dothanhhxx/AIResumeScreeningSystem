@@ -26,7 +26,7 @@ async def test_process_cv_parsing_success():
     mock_db.execute.return_value = mock_result
 
     with patch("app.workers.parse_task.async_session_factory") as mock_session_factory, \
-         patch("app.workers.parse_task.storage_service.download_file") as mock_download, \
+         patch("app.workers.parse_task.read_cv_file", new_callable=AsyncMock) as mock_download, \
          patch("app.workers.parse_task.parse_document") as mock_parse_doc, \
          patch("app.workers.parse_task._trigger_downstream_extract") as mock_trigger:
 

@@ -59,6 +59,14 @@ class PermissionDeniedError(AppError):
 
 
 # ── 404 Not Found ───────────────────────────────────────────
+class CVFileUnavailableError(AppError):
+    status_code = 404
+    detail = (
+        "The original file for this CV is no longer stored on the server. "
+        "Upload the same file again to restore it."
+    )
+
+
 class NotFoundError(AppError):
     status_code = 404
     detail = "Resource not found"

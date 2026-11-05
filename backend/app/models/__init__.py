@@ -7,6 +7,7 @@ Usage:
 
 from app.models.audit_log import AuditAction, AuditLog
 from app.models.cv import CV, CVStatus
+from app.models.cv_file import CVFile
 from app.models.decision import Decision, DecisionStatus
 from app.models.job import Job, JobStatus
 from app.models.match_result import MatchResult
@@ -17,6 +18,7 @@ __all__ = [
     "UserRole",
     "CV",
     "CVStatus",
+    "CVFile",
     "Job",
     "JobStatus",
     "MatchResult",

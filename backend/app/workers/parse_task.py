@@ -20,8 +20,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.database import async_session_factory, create_worker_session_factory
 from app.core.exceptions import StorageServiceError
 from app.models.cv import CV, CVStatus
+from app.services.cv_service import read_cv_file
 from app.services.parsing import parse_document
-from app.services.storage_service import storage_service
 from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
@@ -67,8 +67,8 @@ async def _process_cv_parsing(
         logger.info("[parse_cv_task] CV %d status set to PARSING.", cv_id)
 
         try:
-            # 3. Download raw file from MinIO
-            file_bytes = await asyncio.to_thread(storage_service.download_file, cv.file_url)
+            # 3. Load the original file (database copy first, then object storage)
+            file_bytes = await read_cv_file(db, cv)
             logger.info("[parse_cv_task] Downloaded %d bytes from '%s'.", len(file_bytes), cv.file_url)
 
             # 4. Extract text using the parsing factory

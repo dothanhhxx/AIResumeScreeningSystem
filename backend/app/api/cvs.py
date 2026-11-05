@@ -334,7 +334,7 @@ async def download_cv_file(
     current_user: User = Depends(get_current_user),
 ) -> Response:
     cv = await cv_service.get_cv(db, cv_id)
-    content = await asyncio.to_thread(storage_service.download_file, cv.file_url)
+    content = await cv_service.read_cv_file(db, cv)
     await audit_service.record(
         db, AuditAction.CV_VIEW, user=current_user, resource_type="cv", resource_id=cv.id, request=request
     )
