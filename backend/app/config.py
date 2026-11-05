@@ -7,6 +7,7 @@ Usage:
 """
 
 from functools import lru_cache
+from pathlib import Path
 from typing import List
 
 from pydantic import Field, field_validator
@@ -14,12 +15,15 @@ from pydantic import Field, field_validator
 # pyrefly: ignore [missing-import]
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_REPO_ROOT = _BACKEND_DIR.parent
+
 
 class Settings(BaseSettings):
     """Central configuration loaded from environment / .env file."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(str(_BACKEND_DIR / ".env"), str(_REPO_ROOT / ".env"), ".env"),
         env_file_encoding="utf-8-sig",
         case_sensitive=False,
         extra="ignore",
@@ -44,6 +48,8 @@ class Settings(BaseSettings):
     @property
     def DATABASE_URL(self) -> str:
         if self.DATABASE_URL_OVERRIDE:
+            if self.DATABASE_URL_OVERRIDE == "sqlite+aiosqlite:///./dev.db":
+                return f"sqlite+aiosqlite:///{(_BACKEND_DIR / 'dev.db').as_posix()}"
             return self.DATABASE_URL_OVERRIDE
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
@@ -54,7 +60,7 @@ class Settings(BaseSettings):
     def DATABASE_URL_SYNC(self) -> str:
         """Sync URL for Alembic migrations."""
         if self.DATABASE_URL_OVERRIDE:
-            return self.DATABASE_URL_OVERRIDE.replace("+asyncpg", "+psycopg").replace("+aiosqlite", "")
+            return self.DATABASE_URL.replace("+asyncpg", "+psycopg").replace("+aiosqlite", "")
         return (
             f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -84,7 +90,7 @@ class Settings(BaseSettings):
 
     # "minio" (S3 compatible, used in Docker) or "local" (files under LOCAL_STORAGE_DIR)
     STORAGE_BACKEND: str = "minio"
-    LOCAL_STORAGE_DIR: str = "./storage"
+    LOCAL_STORAGE_DIR: str = str(_BACKEND_DIR / "storage")
 
     # ── Pipeline ────────────────────────────────────────────
     # "celery" → parse / extract / score run on Celery workers (needs Redis).
@@ -121,18 +127,32 @@ class Settings(BaseSettings):
     SCORE_WEIGHT_LLM: float = 0.4
 
     # ── CORS ────────────────────────────────────────────────
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, v):
         if isinstance(v, str):
             import json
+
             try:
-                return json.loads(v)
+                origins = json.loads(v)
             except json.JSONDecodeError:
-                return [origin.strip() for origin in v.split(",")]
-        return v
+                origins = [origin.strip() for origin in v.split(",") if origin.strip()]
+        else:
+            origins = list(v)
+        for pair in (
+            ("http://localhost:3000", "http://127.0.0.1:3000"),
+            ("http://localhost:5173", "http://127.0.0.1:5173"),
+        ):
+            if pair[0] in origins and pair[1] not in origins:
+                origins.append(pair[1])
+        return origins
 
 
 @lru_cache

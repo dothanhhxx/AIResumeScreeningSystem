@@ -78,10 +78,12 @@ class ConflictError(AppError):
 
 class DuplicateError(ConflictError):
     def __init__(self, field: str = "resource", value: Any = None) -> None:
+        self.field = field
+        self.value = value
         detail = f"{field} already exists"
         if value is not None:
             detail = f"{field} '{value}' already exists"
-        super().__init__(detail=detail)
+        super().__init__(detail=detail, field=field, value=value)
 
 
 # ── 422 Unprocessable ──────────────────────────────────────

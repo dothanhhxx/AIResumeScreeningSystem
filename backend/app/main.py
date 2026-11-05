@@ -35,11 +35,11 @@ async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
     if settings.AUTO_CREATE_TABLES or settings.IS_SQLITE:
         await create_all_tables()
+    inline_runner.start()
     if settings.PIPELINE_MODE.lower() == "inline":
-        inline_runner.start()
         logger.info("Pipeline mode: inline (background asyncio consumer)")
     else:
-        logger.info("Pipeline mode: celery")
+        logger.info("Pipeline mode: celery (with inline fallback ready)")
     yield
     await inline_runner.stop()
     await engine.dispose()
@@ -68,6 +68,17 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     body = ApiErrorResponse(message=exc.detail, detail=exc.__class__.__name__)
     headers = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
     return JSONResponse(status_code=exc.status_code, content=body.model_dump(), headers=headers)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Ensure unexpected 500 errors still go through CORSMiddleware with a clear JSON message."""
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    body = ApiErrorResponse(
+        message=f"Server error: {exc}",
+        detail=exc.__class__.__name__,
+    )
+    return JSONResponse(status_code=500, content=body.model_dump())
 
 
 # ── Routers ─────────────────────────────────────────────────
