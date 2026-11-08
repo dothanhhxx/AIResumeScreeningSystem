@@ -1,5 +1,6 @@
 import { apiRequest } from "@/lib/api";
 import type { CvStatus } from "@/lib/cvs-api";
+import type { ScoringWeights } from "@/lib/jobs-api";
 
 export const DECISION_STATUSES = [
   "pending",
@@ -25,6 +26,8 @@ export type MatchDetails = {
   interview_questions: string[];
   evidence: Evidence[];
   weights: Record<string, number>;
+  category_weights?: Record<string, number>;
+  custom_weights?: ScoringWeights | null;
   sources: Record<string, string>;
 };
 
@@ -74,6 +77,7 @@ export type RankedMatch = {
 export type JobRanking = {
   job_id: number;
   job_title: string;
+  scoring_weights?: ScoringWeights;
   total: number;
   pending_cvs: number;
   items: RankedMatch[];
@@ -126,5 +130,29 @@ export function saveDecision(
   return apiRequest<Decision>(`/matching/results/${resultId}/decision`, {
     method: "PUT",
     body: JSON.stringify(input),
+  });
+}
+
+export function updateJobWeights(
+  jobId: number,
+  weights: ScoringWeights,
+  resetCvOverrides = true,
+): Promise<JobRanking> {
+  return apiRequest<JobRanking>(`/matching/jobs/${jobId}/weights`, {
+    method: "PUT",
+    body: JSON.stringify({
+      scoring_weights: weights,
+      reset_cv_overrides: resetCvOverrides,
+    }),
+  });
+}
+
+export function updateResultWeights(
+  resultId: number,
+  weights: ScoringWeights | null,
+): Promise<RankedMatch> {
+  return apiRequest<RankedMatch>(`/matching/results/${resultId}/weights`, {
+    method: "PUT",
+    body: JSON.stringify({ scoring_weights: weights }),
   });
 }

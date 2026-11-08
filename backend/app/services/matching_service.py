@@ -17,6 +17,7 @@ from app.models.job import Job
 from app.models.match_result import MatchResult
 from app.models.user import User, UserRole
 from app.schemas.common import PaginatedResponse
+from app.schemas.job import ScoringWeights, parse_scoring_weights
 from app.schemas.matching import (
     CandidateBrief,
     DecisionRead,
@@ -28,6 +29,7 @@ from app.schemas.matching import (
     MatchRunResponse,
     RankedMatch,
 )
+from app.services.matching.aggregator import recalculate_with_weights
 from app.services.matching.rule_scorer import JobProfile
 
 logger = logging.getLogger(__name__)
@@ -52,6 +54,7 @@ def job_profile(job: Job) -> JobProfile:
         required_skills=skills,
         experience_years=job.experience_years,
         education_level=job.education_level,
+        scoring_weights=parse_scoring_weights(job.scoring_weights),
     )
 
 
@@ -79,6 +82,13 @@ def to_ranked(result: MatchResult, cv: CV) -> RankedMatch:
             details = MatchDetails.model_validate_json(result.details)
         except ValueError:
             logger.warning("MatchResult %d has invalid details JSON", result.id)
+    if not details.category_weights:
+        cw = details.custom_weights or ScoringWeights()
+        details.category_weights = {
+            "skill": round(cw.skill / 100.0, 3),
+            "experience": round(cw.experience / 100.0, 3),
+            "education": round(cw.education / 100.0, 3),
+        }
     data = _structured(cv)
     return RankedMatch(
         **base,
@@ -163,7 +173,111 @@ async def get_ranking(
         ]
 
     pending = await db.scalar(select(func.count(CV.id)).where(CV.status == CVStatus.SCORING)) or 0
-    return JobRanking(job_id=job.id, job_title=job.title, total=len(ranked), pending_cvs=pending, items=ranked)
+    return JobRanking(
+        job_id=job.id,
+        job_title=job.title,
+        scoring_weights=parse_scoring_weights(job.scoring_weights),
+        total=len(ranked),
+        pending_cvs=pending,
+        items=ranked,
+    )
+
+
+def _apply_weights_to_result(
+    result: MatchResult,
+    weights: ScoringWeights,
+    *,
+    is_custom_cv: bool,
+) -> None:
+    details = MatchDetails()
+    if result.details:
+        try:
+            details = MatchDetails.model_validate_json(result.details)
+        except ValueError:
+            pass
+    new_rule, new_overall, eng_w, cat_w = recalculate_with_weights(
+        result.skill_score,
+        result.experience_score,
+        result.education_score,
+        result.semantic_score,
+        result.llm_score,
+        weights,
+    )
+    result.rule_score = new_rule
+    result.overall_score = new_overall
+    details.weights = eng_w
+    details.category_weights = cat_w
+    details.custom_weights = weights if is_custom_cv else None
+    result.details = details.model_dump_json()
+
+
+async def recalculate_job_scores(
+    db: AsyncSession,
+    job: Job,
+    *,
+    reset_cv_overrides: bool = False,
+) -> None:
+    """Recalculate all MatchResult rows for *job* using its current scoring_weights."""
+    weights = parse_scoring_weights(job.scoring_weights)
+    results = (
+        await db.scalars(
+            select(MatchResult).where(MatchResult.job_id == job.id).options(selectinload(MatchResult.decision))
+        )
+    ).all()
+    if not results:
+        return
+    for res in results:
+        if not reset_cv_overrides and res.details:
+            try:
+                parsed = MatchDetails.model_validate_json(res.details)
+                if parsed.custom_weights is not None:
+                    continue
+            except ValueError:
+                pass
+        _apply_weights_to_result(res, weights, is_custom_cv=False)
+    await db.flush()
+    await recompute_ranks(db, job.id)
+
+
+async def update_job_weights(
+    db: AsyncSession,
+    job: Job,
+    weights: ScoringWeights,
+    user: User,
+    *,
+    reset_cv_overrides: bool = True,
+) -> JobRanking:
+    """Update a JD's scoring weights, recalculate all scored CVs, and return updated ranking."""
+    if user.role == UserRole.VIEWER:
+        raise PermissionDeniedError("Viewers cannot modify scoring weights")
+    job.scoring_weights = weights.model_dump_json()
+    await recalculate_job_scores(db, job, reset_cv_overrides=reset_cv_overrides)
+    await db.commit()
+    await db.refresh(job)
+    return await get_ranking(db, job)
+
+
+async def update_result_weights(
+    db: AsyncSession,
+    result: MatchResult,
+    cv: CV,
+    weights: ScoringWeights | None,
+    user: User,
+) -> RankedMatch:
+    """Update or reset per-CV custom scoring weights and recompute ranks for the job."""
+    if user.role == UserRole.VIEWER:
+        raise PermissionDeniedError("Viewers cannot modify scoring weights")
+    job = await get_job_or_404(db, result.job_id)
+    if weights is None:
+        effective = parse_scoring_weights(job.scoring_weights)
+        _apply_weights_to_result(result, effective, is_custom_cv=False)
+    else:
+        _apply_weights_to_result(result, weights, is_custom_cv=True)
+    await db.flush()
+    await recompute_ranks(db, result.job_id)
+    await db.commit()
+    await db.refresh(result)
+    return to_ranked(result, cv)
 
 
 async def get_result(db: AsyncSession, result_id: int) -> tuple[MatchResult, CV]:

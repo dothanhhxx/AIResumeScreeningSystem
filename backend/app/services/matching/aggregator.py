@@ -15,10 +15,11 @@ from dataclasses import dataclass, field
 from app.config import settings
 from app.core.exceptions import AIServiceError
 from app.llm import BaseLLM
+from app.schemas.job import ScoringWeights
 from app.schemas.matching import EvidenceItem, LLMScoreOutput, MatchDetails
 from app.services.extraction.schemas import CVExtraction
 from app.services.matching.llm_scorer import score_with_llm
-from app.services.matching.rule_scorer import JobProfile, RuleScore, score_rules
+from app.services.matching.rule_scorer import JobProfile, RuleScore, combine_category_scores, score_rules
 from app.services.matching.semantic_scorer import semantic_score
 
 logger = logging.getLogger(__name__)
@@ -87,14 +88,82 @@ def _template_texts(job: JobProfile, rule: RuleScore) -> tuple[list[str], list[s
     return strengths, gaps, questions[:3], explanation
 
 
-def _weights(has_semantic: bool, has_llm: bool) -> dict[str, float]:
-    weights = {"rule": settings.SCORE_WEIGHT_RULE}
+def _is_custom_engine_weights(custom: ScoringWeights | None) -> bool:
+    if custom is None:
+        return False
+    return (
+        abs(custom.rule - 40.0) > 0.05
+        or abs(custom.semantic - 20.0) > 0.05
+        or abs(custom.llm - 40.0) > 0.05
+    )
+
+
+def _is_custom_category_weights(custom: ScoringWeights | None) -> bool:
+    if custom is None:
+        return False
+    return (
+        abs(custom.skill - 60.0) > 0.05
+        or abs(custom.experience - 25.0) > 0.05
+        or abs(custom.education - 15.0) > 0.05
+    )
+
+
+def _weights(has_semantic: bool, has_llm: bool, custom: ScoringWeights | None = None) -> dict[str, float]:
+    if custom is not None and _is_custom_engine_weights(custom):
+        r_w = custom.rule / 100.0
+        s_w = custom.semantic / 100.0
+        l_w = custom.llm / 100.0
+    else:
+        r_w = settings.SCORE_WEIGHT_RULE
+        s_w = settings.SCORE_WEIGHT_SEMANTIC
+        l_w = settings.SCORE_WEIGHT_LLM
+
+    weights = {"rule": r_w}
     if has_semantic:
-        weights["semantic"] = settings.SCORE_WEIGHT_SEMANTIC
+        weights["semantic"] = s_w
     if has_llm:
-        weights["llm"] = settings.SCORE_WEIGHT_LLM
-    total = sum(weights.values()) or 1.0
+        weights["llm"] = l_w
+    total = sum(weights.values())
+    if total <= 0:
+        weights = {"rule": 1.0}
+        total = 1.0
     return {k: round(v / total, 3) for k, v in weights.items()}
+
+
+def _category_weights_dict(custom: ScoringWeights | None = None) -> dict[str, float]:
+    w = custom or ScoringWeights()
+    return {
+        "skill": round(w.skill / 100.0, 3),
+        "experience": round(w.experience / 100.0, 3),
+        "education": round(w.education / 100.0, 3),
+    }
+
+
+def recalculate_with_weights(
+    skill_score: float | None,
+    experience_score: float | None,
+    education_score: float | None,
+    semantic_score_val: float | None,
+    llm_score_val: float | None,
+    weights: ScoringWeights,
+) -> tuple[float, float, dict[str, float], dict[str, float]]:
+    """Recompute (rule_score, overall_score, engine_weights, category_weights) from sub-scores."""
+    new_rule = combine_category_scores(skill_score, experience_score, education_score, weights)
+    eng_weights = _weights(semantic_score_val is not None, llm_score_val is not None, weights)
+    cat_weights = _category_weights_dict(weights)
+
+    overall = eng_weights["rule"] * new_rule
+    if semantic_score_val is not None:
+        overall += eng_weights["semantic"] * semantic_score_val
+    if llm_score_val is not None:
+        effective_llm = (
+            round(0.5 * llm_score_val + 0.5 * new_rule, 1)
+            if _is_custom_category_weights(weights)
+            else llm_score_val
+        )
+        overall += eng_weights["llm"] * effective_llm
+
+    return new_rule, round(overall, 1), eng_weights, cat_weights
 
 
 async def aggregate_scores(
@@ -125,11 +194,21 @@ async def aggregate_scores(
 
     llm_score: float | None = None
     if llm_out is not None:
-        llm_score = llm_out.overall_score
-        if llm_score is None:
-            llm_score = _avg(llm_out.skill_score, llm_out.experience_score, llm_out.education_score)
+        cat_llm = combine_category_scores(
+            llm_out.skill_score,
+            llm_out.experience_score,
+            llm_out.education_score,
+            job.scoring_weights,
+        )
+        if llm_out.overall_score is None:
+            llm_score = cat_llm
+        elif _is_custom_category_weights(job.scoring_weights):
+            llm_score = round(0.5 * llm_out.overall_score + 0.5 * cat_llm, 1)
+        else:
+            llm_score = llm_out.overall_score
 
-    weights = _weights(sem is not None, llm_score is not None)
+    weights = _weights(sem is not None, llm_score is not None, job.scoring_weights)
+    cat_weights = _category_weights_dict(job.scoring_weights)
     overall = weights["rule"] * rule.rule_score
     if sem is not None:
         overall += weights["semantic"] * sem
@@ -164,6 +243,7 @@ async def aggregate_scores(
         interview_questions=questions,
         evidence=evidence,
         weights=weights,
+        category_weights=cat_weights,
         sources={
             "rule": "rule_scorer",
             "semantic": embedding_model or "none",

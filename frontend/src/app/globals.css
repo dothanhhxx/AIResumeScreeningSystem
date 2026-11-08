@@ -5552,3 +5552,453 @@ tbody tr:hover .row-arrow,
     flex: 1 1 auto;
   }
 }
+
+/* 10. JD File Upload & Auto-Fill Box (Create / Edit Job Modal) */
+.jd-upload-box {
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  border: 1.5px dashed var(--green-border);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fffdf8 0%, #f5efe0 100%);
+  transition:
+    border-color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out),
+    box-shadow 160ms var(--ease-out);
+}
+
+.jd-upload-box:hover,
+.jd-upload-box:focus-within,
+.jd-upload-box-active {
+  border-color: var(--green);
+  background: var(--green-soft);
+  box-shadow: 0 6px 16px -6px rgb(13 51 38 / 0.12);
+}
+
+.jd-upload-box-filled {
+  border-style: solid;
+  border-color: #a7d9bf;
+  background: linear-gradient(180deg, #f6fcf8 0%, #eaf6ef 100%);
+}
+
+.jd-upload-main {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.jd-upload-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--green-soft);
+  color: var(--green);
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgb(19 66 50 / 0.14);
+}
+
+.jd-upload-box-filled .jd-upload-icon {
+  background: #d8f2e4;
+  color: #047857;
+  box-shadow: inset 0 0 0 1px #9ce0bc;
+}
+
+.jd-upload-spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+.jd-upload-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 3px;
+}
+
+.jd-upload-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.jd-upload-title-row strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.jd-upload-meta {
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.jd-upload-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.jd-upload-filled-note {
+  color: #0f5338 !important;
+  font-weight: 500;
+}
+
+.jd-upload-trigger {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding-inline: 13px;
+  white-space: nowrap;
+}
+
+.jd-upload-error {
+  margin: 10px 0 0;
+  padding: 8px 11px;
+  border: 1px solid #edc9c4;
+  border-left: 3px solid #873a33;
+  border-radius: 7px;
+  background: #fff7f5;
+  color: #873a33;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.form-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.jd-autofill-badge {
+  padding: 1px 7px;
+  border: 1px solid #b5dfc8;
+  border-radius: 999px;
+  background: #eaf7f0;
+  color: #0f5338;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+  .jd-upload-main {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .jd-upload-trigger {
+    width: 100%;
+  }
+}
+
+/* 11. Custom Scoring Weights Editor (JD Modal, Ranking Toolbar & Per-CV Breakdown) */
+.weights-editor {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fffdf8 0%, #f7f1e3 100%);
+}
+
+.weights-editor-compact {
+  padding: 12px 14px;
+  background: #fffdf8;
+}
+
+.weights-editor-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.weights-editor-header strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.weights-editor-header p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.weights-total-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weights-total-pill {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.weights-total-ok {
+  border: 1px solid #b5dfc8;
+  background: #eaf7f0;
+  color: #0f5338;
+}
+
+.weights-total-warn {
+  border: 1px solid #ebd29d;
+  background: #fdf6e4;
+  color: #8a5b13;
+}
+
+.weights-balance-btn {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
+.weights-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.weights-preset-chip {
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 140ms var(--ease-out),
+    background-color 140ms var(--ease-out),
+    color 140ms var(--ease-out);
+}
+
+.weights-preset-chip:hover:not(:disabled) {
+  border-color: var(--green-border);
+  color: var(--ink);
+}
+
+.weights-preset-chip-active {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.weights-stacked-bar {
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ebe4d4;
+}
+
+.weights-seg {
+  height: 100%;
+  transition: width 160ms var(--ease-out);
+}
+
+.weights-seg-skill {
+  background: #14533c;
+}
+
+.weights-seg-exp {
+  background: #c88d32;
+}
+
+.weights-seg-edu {
+  background: #3b7a9e;
+}
+
+.weights-sliders-grid {
+  display: grid;
+  gap: 9px;
+}
+
+.weights-slider-row {
+  display: grid;
+  grid-template-columns: 115px 1fr 68px;
+  align-items: center;
+  gap: 10px;
+}
+
+.weights-slider-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.weights-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+}
+
+.weights-dot-skill {
+  background: #14533c;
+}
+
+.weights-dot-exp {
+  background: #c88d32;
+}
+
+.weights-dot-edu {
+  background: #3b7a9e;
+}
+
+.weights-slider-row input[type="range"] {
+  width: 100%;
+  accent-color: #14533c;
+  cursor: pointer;
+}
+
+.weights-number-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.weights-number-wrap input[type="number"] {
+  width: 52px;
+  min-height: 30px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf8;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.weights-number-wrap span {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.weights-engine-toggle-wrap {
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+
+.weights-engine-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.weights-engine-toggle strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.weights-engine-grid {
+  margin-top: 8px;
+}
+
+.detail-section-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.detail-section-header-row h3 {
+  margin: 0 !important;
+}
+
+.detail-section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weights-inline-toggle {
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+}
+
+.cv-weights-drawer,
+.jd-weights-toolbar-drawer {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--green-border);
+  border-radius: 10px;
+  background: #f9f5eb;
+}
+
+.jd-weights-toolbar-drawer {
+  margin: 0 18px 14px;
+}
+
+.cv-weights-preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cv-weights-preview-pill {
+  padding: 5px 10px;
+  border: 1px solid #b5dfc8;
+  border-radius: 8px;
+  background: #eaf7f0;
+  color: #0f5338;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cv-weights-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .weights-slider-row {
+    grid-template-columns: 1fr 68px;
+  }
+
+  .weights-slider-row input[type="range"] {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+}

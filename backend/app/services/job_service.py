@@ -13,13 +13,20 @@ from app.core.exceptions import PermissionDeniedError
 from app.models.job import Job, JobStatus
 from app.models.user import User, UserRole
 from app.schemas.common import PaginatedResponse
-from app.schemas.job import JobCreate, JobRead, JobUpdate
+from app.schemas.job import JobCreate, JobRead, JobUpdate, ScoringWeights
+from app.services.matching_service import recalculate_job_scores
 
 
 def _encode_skills(skills: list[str] | None) -> str | None:
     if skills is None:
         return None
     return json.dumps(skills, ensure_ascii=False)
+
+
+def _encode_weights(weights: ScoringWeights | None) -> str | None:
+    if weights is None:
+        return None
+    return weights.model_dump_json()
 
 
 async def create_job(
@@ -30,6 +37,7 @@ async def create_job(
     """Create a draft owned by the authenticated recruiter."""
     values = payload.model_dump()
     values["required_skills"] = _encode_skills(payload.required_skills)
+    values["scoring_weights"] = _encode_weights(payload.scoring_weights)
     job = Job(**values, created_by=created_by, status=JobStatus.DRAFT)
     try:
         db.add(job)
@@ -93,10 +101,15 @@ async def update_job(
     values = payload.model_dump(exclude_unset=True)
     if "required_skills" in values:
         values["required_skills"] = _encode_skills(values["required_skills"])
+    weights_changed = "scoring_weights" in values
+    if weights_changed:
+        values["scoring_weights"] = _encode_weights(payload.scoring_weights)
     for field_name, value in values.items():
         setattr(job, field_name, value)
     if values.keys() & {"title", "description", "requirements", "required_skills"}:
         job.embedding = None  # recomputed by the next scoring run
+    if weights_changed:
+        await recalculate_job_scores(db, job, reset_cv_overrides=False)
 
     try:
         await db.commit()

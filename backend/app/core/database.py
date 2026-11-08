@@ -15,7 +15,7 @@ API's pooled engine (its connections are bound to another event loop). They use
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from sqlalchemy import event
+from sqlalchemy import event, inspect, text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -83,8 +83,16 @@ async def create_all_tables() -> None:
     """Create every table from the ORM metadata (SQLite dev mode / tests)."""
     import app.models  # noqa: F401  — registers all models on Base.metadata
 
+    def _sync_create_and_upgrade(sync_conn) -> None:
+        Base.metadata.create_all(sync_conn)
+        inspector = inspect(sync_conn)
+        if "jobs" in inspector.get_table_names():
+            cols = {c["name"] for c in inspector.get_columns("jobs")}
+            if "scoring_weights" not in cols:
+                sync_conn.execute(text("ALTER TABLE jobs ADD COLUMN scoring_weights TEXT"))
+
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_sync_create_and_upgrade)
 
 
 # ── Dependency ──────────────────────────────────────────────

@@ -1127,6 +1127,47 @@ const vietnameseMessages = {
   "{{count}} with evidence": "{{count}} có bằng chứng",
   "{{count}} to verify": "{{count}} cần xác minh",
   "{{count}} missing": "{{count}} còn thiếu",
+  "Auto-fill from JD file": "Tự động điền từ tệp JD",
+  "Drop a PDF or DOCX job description here, or choose a file to pre-fill the fields below. You can review and edit everything before saving.":
+    "Kéo thả tệp JD định dạng PDF hoặc DOCX vào đây, hoặc chọn tệp để tự động điền các trường bên dưới. Bạn có thể kiểm tra và chỉnh sửa trước khi lưu.",
+  "Choose JD file": "Chọn tệp JD",
+  "Choose another file": "Chọn tệp khác",
+  "Reading {{name}} and filling fields…":
+    "Đang đọc {{name}} và điền thông tin JD…",
+  "Filled from {{name}} — review and edit any field below before saving.":
+    "Đã điền thông tin từ {{name}} — hãy kiểm tra và chỉnh sửa các trường bên dưới trước khi lưu.",
+  "Choose a PDF or DOCX job description file.":
+    "Hãy chọn tệp mô tả công việc định dạng PDF hoặc DOCX.",
+  "Auto-filled": "Đã tự điền",
+  "PDF · DOCX · Max 10 MB": "PDF · DOCX · Tối đa 10 MB",
+  "Scoring weights (%)": "Tỷ trọng chấm điểm (%)",
+  "Customize how skills, experience, and education contribute to the match score.":
+    "Tùy chỉnh tỷ lệ % đóng góp của kỹ năng, kinh nghiệm và học vấn vào điểm phù hợp.",
+  "Balanced (60/25/15)": "Mặc định (60/25/15)",
+  "Skills first (75/15/10)": "Ưu tiên Kỹ năng (75/15/10)",
+  "Senior / Lead (50/40/10)": "Senior / Lead (50/40/10)",
+  "Fresher / Intern (50/10/40)": "Fresher / Thực tập (50/10/40)",
+  "Total: {{total}}%": "Tổng: {{total}}%",
+  "Auto-balance 100%": "Cân bằng 100%",
+  "Engine weights (Rule / Semantic / AI)": "Tỷ trọng Engine (Luật / Ngữ nghĩa / AI)",
+  "Customize weights %": "Tùy chỉnh % trọng số",
+  "Hide weights editor": "Thu gọn bộ chỉnh %",
+  "JD weights: {{skill}}/{{exp}}/{{edu}}%": "Trọng số JD: {{skill}}/{{exp}}/{{edu}}%",
+  "Custom CV weights": "Trọng số riêng CV",
+  "Live preview: {{score}} pts (Rule: {{rule}})":
+    "Điểm dự kiến: {{score}} điểm (Luật: {{rule}})",
+  "Save for this CV": "Lưu cho CV này",
+  "Apply to entire JD": "Áp dụng cho cả JD",
+  "Reset to JD weights": "Đặt lại theo JD",
+  "Updated scoring weights for this CV.":
+    "Đã cập nhật tỷ trọng chấm điểm riêng cho CV này.",
+  "Reset this CV to the job's default scoring weights.":
+    "Đã đặt lại trọng số của CV theo mặc định của JD.",
+  "Updated JD scoring weights and recalculated all candidates.":
+    "Đã cập nhật tỷ trọng chấm điểm của JD và tính lại điểm toàn bộ ứng viên.",
+  "Weightpresets": "Mẫu tỷ trọng nhanh",
+  "Category weights must add up to 100% (or click Auto-balance 100%).":
+    "Tổng tỷ trọng các hạng mục phải lớn hơn 0% (hoặc bấm Cân bằng 100%).",
 } as const;
 
 export type TranslationKey = keyof typeof vietnameseMessages;

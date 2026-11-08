@@ -2,6 +2,24 @@ import { getAuthAccessToken } from "@/lib/auth-session";
 
 export type JobStatus = "draft" | "active" | "closed" | "archived";
 
+export type ScoringWeights = {
+  skill: number;
+  experience: number;
+  education: number;
+  rule: number;
+  semantic: number;
+  llm: number;
+};
+
+export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
+  skill: 60,
+  experience: 25,
+  education: 15,
+  rule: 40,
+  semantic: 20,
+  llm: 40,
+};
+
 export type Job = {
   id: number;
   title: string;
@@ -12,6 +30,7 @@ export type Job = {
   required_skills: string[] | null;
   experience_years: number | null;
   education_level: string | null;
+  scoring_weights?: ScoringWeights;
   status: JobStatus;
   created_by: number | null;
   created_at: string;
@@ -27,6 +46,20 @@ export type JobInput = {
   required_skills: string[];
   experience_years: number | null;
   education_level: string | null;
+  scoring_weights?: ScoringWeights;
+};
+
+export type JobExtractedDraft = {
+  title: string | null;
+  department: string | null;
+  location: string | null;
+  description: string | null;
+  requirements: string | null;
+  required_skills: string[];
+  experience_years: number | null;
+  education_level: string | null;
+  file_name: string;
+  extraction_source: string;
 };
 
 export type JobPage = {
@@ -72,7 +105,11 @@ async function request<T>(
   try {
     const headers = new Headers(init?.headers);
     if (!headers.has("Accept")) headers.set("Accept", "application/json");
-    if (init?.body && !headers.has("Content-Type")) {
+    if (
+      init?.body &&
+      !(init.body instanceof FormData) &&
+      !headers.has("Content-Type")
+    ) {
       headers.set("Content-Type", "application/json");
     }
     const accessToken = getAuthAccessToken();
@@ -169,4 +206,17 @@ export function updateJob(
 
 export function archiveJob(jobId: number): Promise<Job> {
   return request<Job>(`/jobs/${jobId}`, { method: "DELETE" });
+}
+
+export function extractJobFromFile(
+  file: File,
+  signal?: AbortSignal,
+): Promise<JobExtractedDraft> {
+  const formData = new FormData();
+  formData.set("file", file);
+  return request<JobExtractedDraft>(
+    "/jobs/extract-file",
+    { method: "POST", body: formData },
+    signal,
+  );
 }

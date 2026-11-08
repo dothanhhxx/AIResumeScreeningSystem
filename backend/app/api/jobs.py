@@ -1,6 +1,6 @@
 """Job description endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db, require_roles
@@ -8,14 +8,28 @@ from app.models.audit_log import AuditAction
 from app.models.job import JobStatus
 from app.models.user import User, UserRole
 from app.schemas.common import ApiResponse, PaginatedResponse
-from app.schemas.job import JobCreate, JobRead, JobUpdate
-from app.services import audit_service, job_service
+from app.schemas.job import JobCreate, JobExtractionRead, JobRead, JobUpdate
+from app.services import audit_service, jd_extractor, job_service
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 JobListResponse = ApiResponse[PaginatedResponse[JobRead]]
 JobResponse = ApiResponse[JobRead]
+JobExtractionResponse = ApiResponse[JobExtractionRead]
 _writer = require_roles(UserRole.ADMIN, UserRole.RECRUITER)
+
+
+@router.post("/extract-file", response_model=JobExtractionResponse, status_code=status.HTTP_200_OK)
+async def extract_job_from_file(
+    file: UploadFile = File(..., description="Job description file (PDF or DOCX, max 10 MB)"),
+    current_user: User = Depends(_writer),
+) -> JobExtractionResponse:
+    """Parse an uploaded PDF/DOCX JD file and return extracted draft fields without saving."""
+    extracted = await jd_extractor.extract_job_from_file(file)
+    return JobExtractionResponse(
+        message="Job description extracted from file. Review and edit before saving.",
+        data=extracted,
+    )
 
 
 @router.post("", response_model=JobResponse, status_code=status.HTTP_201_CREATED)

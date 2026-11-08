@@ -33,6 +33,7 @@ class Job(Base):
     required_skills: Mapped[str | None] = mapped_column(Text, nullable=True)       # JSON list of skills
     experience_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
     education_level: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    scoring_weights: Mapped[str | None] = mapped_column(Text, nullable=True)       # JSON ScoringWeights
 
     embedding: Mapped[str | None] = mapped_column(Text, nullable=True)             # JSON list[float]
 

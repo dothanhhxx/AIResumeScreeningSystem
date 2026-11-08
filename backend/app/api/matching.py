@@ -24,9 +24,11 @@ from app.schemas.matching import (
     DecisionUpsert,
     HistoryItem,
     JobRanking,
+    JobWeightsUpdate,
     MatchRequest,
     MatchRunResponse,
     RankedMatch,
+    ResultWeightsUpdate,
 )
 from app.services import audit_service, matching_service
 from app.workers.dispatch import enqueue_score
@@ -67,6 +69,66 @@ async def get_job_ranking(
 ) -> ApiResponse[JobRanking]:
     job = await matching_service.get_job_or_404(db, job_id)
     return ApiResponse(data=await matching_service.get_ranking(db, job, decision_status))
+
+
+@router.put("/jobs/{job_id}/weights", response_model=ApiResponse[JobRanking])
+async def update_job_scoring_weights(
+    job_id: int,
+    payload: JobWeightsUpdate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.RECRUITER)),
+) -> ApiResponse[JobRanking]:
+    job = await matching_service.get_job_or_404(db, job_id)
+    ranking = await matching_service.update_job_weights(
+        db,
+        job,
+        payload.scoring_weights,
+        current_user,
+        reset_cv_overrides=payload.reset_cv_overrides,
+    )
+    await audit_service.record(
+        db,
+        AuditAction.JOB_UPDATE,
+        user=current_user,
+        resource_type="job",
+        resource_id=job.id,
+        detail={"scoring_weights": payload.scoring_weights.model_dump()},
+        request=request,
+    )
+    return ApiResponse(message="Scoring weights updated and scores recalculated.", data=ranking)
+
+
+@router.put("/results/{result_id}/weights", response_model=ApiResponse[RankedMatch])
+async def update_result_scoring_weights(
+    result_id: int,
+    payload: ResultWeightsUpdate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.RECRUITER)),
+) -> ApiResponse[RankedMatch]:
+    result, cv = await matching_service.get_result(db, result_id)
+    updated = await matching_service.update_result_weights(
+        db, result, cv, payload.scoring_weights, current_user
+    )
+    await audit_service.record(
+        db,
+        AuditAction.MATCH_RUN,
+        user=current_user,
+        resource_type="match_result",
+        resource_id=result.id,
+        detail={
+            "custom_weights": payload.scoring_weights.model_dump() if payload.scoring_weights else None,
+            "new_overall_score": updated.overall_score,
+        },
+        request=request,
+    )
+    message = (
+        "Custom CV scoring weights applied."
+        if payload.scoring_weights is not None
+        else "Reset to JD default scoring weights."
+    )
+    return ApiResponse(message=message, data=updated)
 
 
 @router.get("/results/{result_id}", response_model=ApiResponse[RankedMatch])

@@ -1,17 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type FormEvent,
+} from "react";
 import {
   archiveJob,
   createJob,
+  DEFAULT_SCORING_WEIGHTS,
+  extractJobFromFile,
   JobsApiError,
   listJobs,
   updateJob,
   type Job,
   type JobInput,
   type JobStatus,
+  type ScoringWeights,
 } from "@/lib/jobs-api";
+import {
+  normalizeScoringWeights,
+  ScoringWeightsEditor,
+} from "@/components/scoring-weights-editor";
 import { useI18n } from "@/i18n/provider";
 import { useAuthSession } from "@/lib/auth-session";
 import type { TranslationKey } from "@/i18n/messages";
@@ -71,6 +85,21 @@ function messageForError(
     : t("Something went wrong. Please try again.");
 }
 
+const MAX_JD_FILE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_JD_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/msword",
+]);
+
+function isSupportedJdFile(file: File): boolean {
+  if (ALLOWED_JD_MIME_TYPES.has(file.type)) return true;
+  const lower = file.name.toLowerCase();
+  return (
+    lower.endsWith(".pdf") || lower.endsWith(".docx") || lower.endsWith(".doc")
+  );
+}
+
 function JobForm({
   job,
   saving,
@@ -83,119 +112,395 @@ function JobForm({
   onSubmit: (input: JobInput, status?: JobStatus) => void;
 }) {
   const { t } = useI18n();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const skills = String(form.get("required_skills") ?? "")
-      .split(/[\n,]/)
-      .map((skill) => skill.trim())
-      .filter(Boolean);
-    const experience = String(form.get("experience_years") ?? "").trim();
-    const input: JobInput = {
-      title: String(form.get("title") ?? "").trim(),
-      department: String(form.get("department") ?? "").trim() || null,
-      location: String(form.get("location") ?? "").trim() || null,
-      description: String(form.get("description") ?? "").trim(),
-      requirements: String(form.get("requirements") ?? "").trim() || null,
-      required_skills: skills,
-      experience_years: experience ? Number(experience) : null,
-      education_level: String(form.get("education_level") ?? "").trim() || null,
-    };
-    const statusValue = form.get("status");
-    onSubmit(
-      input,
-      statusValue ? (String(statusValue) as JobStatus) : undefined,
+  const [title, setTitle] = useState(job?.title ?? "");
+  const [department, setDepartment] = useState(job?.department ?? "");
+  const [location, setLocation] = useState(job?.location ?? "");
+  const [description, setDescription] = useState(job?.description ?? "");
+  const [requirements, setRequirements] = useState(job?.requirements ?? "");
+  const [requiredSkills, setRequiredSkills] = useState(
+    job?.required_skills?.join(", ") ?? "",
+  );
+  const [experienceYears, setExperienceYears] = useState(
+    job?.experience_years !== null && job?.experience_years !== undefined
+      ? String(job.experience_years)
+      : "",
+  );
+  const [educationLevel, setEducationLevel] = useState(
+    job?.education_level ?? "",
+  );
+  const [scoringWeights, setScoringWeights] = useState<ScoringWeights>(
+    job?.scoring_weights ?? DEFAULT_SCORING_WEIGHTS,
+  );
+  const [status, setStatus] = useState<JobStatus>(job?.status ?? "active");
+
+  const [dragActive, setDragActive] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractingName, setExtractingName] = useState("");
+  const [filledFileName, setFilledFileName] = useState("");
+  const [fileError, setFileError] = useState("");
+  const [autoFilledFields, setAutoFilledFields] = useState<
+    Record<string, boolean>
+  >({});
+
+  function clearAutoFilled(field: string) {
+    setAutoFilledFields((prev) =>
+      prev[field] ? { ...prev, [field]: false } : prev,
     );
   }
 
+  async function processJdFile(file: File) {
+    setFileError("");
+    if (!isSupportedJdFile(file)) {
+      setFileError(t("Choose a PDF or DOCX job description file."));
+      return;
+    }
+    if (file.size > MAX_JD_FILE_BYTES) {
+      setFileError(t("The selected file exceeds the 10 MB limit."));
+      return;
+    }
+
+    setExtracting(true);
+    setExtractingName(file.name);
+    try {
+      const extracted = await extractJobFromFile(file);
+      const nextFilled: Record<string, boolean> = {};
+
+      if (extracted.title) {
+        setTitle(extracted.title);
+        nextFilled.title = true;
+      }
+      if (extracted.department) {
+        setDepartment(extracted.department);
+        nextFilled.department = true;
+      }
+      if (extracted.location) {
+        setLocation(extracted.location);
+        nextFilled.location = true;
+      }
+      if (extracted.description) {
+        setDescription(extracted.description);
+        nextFilled.description = true;
+      }
+      if (extracted.requirements) {
+        setRequirements(extracted.requirements);
+        nextFilled.requirements = true;
+      }
+      if (extracted.required_skills && extracted.required_skills.length > 0) {
+        setRequiredSkills(extracted.required_skills.join(", "));
+        nextFilled.required_skills = true;
+      }
+      if (
+        extracted.experience_years !== null &&
+        extracted.experience_years !== undefined
+      ) {
+        setExperienceYears(String(extracted.experience_years));
+        nextFilled.experience_years = true;
+      }
+      if (extracted.education_level) {
+        setEducationLevel(extracted.education_level);
+        nextFilled.education_level = true;
+      }
+
+      setAutoFilledFields(nextFilled);
+      setFilledFileName(extracted.file_name || file.name);
+    } catch (err) {
+      setFileError(messageForError(err, t));
+    } finally {
+      setExtracting(false);
+      setExtractingName("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) {
+      void processJdFile(file);
+    }
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    if (!saving && !extracting) {
+      setDragActive(true);
+    }
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragActive(false);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragActive(false);
+    if (saving || extracting) return;
+    const file = event.dataTransfer.files?.[0];
+    if (file) {
+      void processJdFile(file);
+    }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const skills = requiredSkills
+      .split(/[\n,]/)
+      .map((skill) => skill.trim())
+      .filter(Boolean);
+    const experience = experienceYears.trim();
+    const input: JobInput = {
+      title: title.trim(),
+      department: department.trim() || null,
+      location: location.trim() || null,
+      description: description.trim(),
+      requirements: requirements.trim() || null,
+      required_skills: skills,
+      experience_years: experience ? Number(experience) : null,
+      education_level: educationLevel.trim() || null,
+      scoring_weights: normalizeScoringWeights(scoringWeights),
+    };
+    onSubmit(input, status);
+  }
+
+  const busy = saving || extracting;
+
   return (
     <form className="job-form" onSubmit={handleSubmit}>
+      <div
+        className={`jd-upload-box${dragActive ? " jd-upload-box-active" : ""}${filledFileName ? " jd-upload-box-filled" : ""}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <input
+          ref={fileInputRef}
+          id="jd-file-input"
+          className="sr-only"
+          type="file"
+          accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+          aria-label={t("Choose JD file")}
+          disabled={busy}
+          onChange={handleFileChange}
+        />
+        <div className="jd-upload-main">
+          <span className="jd-upload-icon" aria-hidden="true">
+            {extracting ? (
+              <span className="loading-mark jd-upload-spinner" />
+            ) : filledFileName ? (
+              "✓"
+            ) : (
+              "↑"
+            )}
+          </span>
+          <div className="jd-upload-copy">
+            <div className="jd-upload-title-row">
+              <strong>{t("Auto-fill from JD file")}</strong>
+              <span className="jd-upload-meta">
+                {t("PDF · DOCX · Max 10 MB")}
+              </span>
+            </div>
+            {extracting ? (
+              <p role="status" aria-live="polite">
+                {t("Reading {{name}} and filling fields…", {
+                  name: extractingName,
+                })}
+              </p>
+            ) : filledFileName ? (
+              <p className="jd-upload-filled-note" role="status">
+                {t(
+                  "Filled from {{name}} — review and edit any field below before saving.",
+                  { name: filledFileName },
+                )}
+              </p>
+            ) : (
+              <p>
+                {t(
+                  "Drop a PDF or DOCX job description here, or choose a file to pre-fill the fields below. You can review and edit everything before saving.",
+                )}
+              </p>
+            )}
+          </div>
+          <button
+            className="button button-secondary jd-upload-trigger"
+            type="button"
+            disabled={busy}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {filledFileName ? t("Choose another file") : t("Choose JD file")}
+          </button>
+        </div>
+        {fileError && (
+          <p className="jd-upload-error" role="alert">
+            {fileError}
+          </p>
+        )}
+      </div>
+
       <div className="job-form-grid">
         <label className="form-field form-field-wide">
-          <span>
-            {t("Job title")} <b>*</b>
+          <span className="form-field-label-row">
+            <span>
+              {t("Job title")} <b>*</b>
+            </span>
+            {autoFilledFields.title && (
+              <em className="jd-autofill-badge">{t("Auto-filled")}</em>
+            )}
           </span>
           <input
             name="title"
             required
             maxLength={255}
-            defaultValue={job?.title ?? ""}
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value);
+              clearAutoFilled("title");
+            }}
             placeholder={t("e.g. Product Designer")}
           />
         </label>
         <label className="form-field">
-          <span>{t("Department")}</span>
+          <span className="form-field-label-row">
+            <span>{t("Department")}</span>
+            {autoFilledFields.department && (
+              <em className="jd-autofill-badge">{t("Auto-filled")}</em>
+            )}
+          </span>
           <input
             name="department"
             maxLength={255}
-            defaultValue={job?.department ?? ""}
+            value={department}
+            onChange={(event) => {
+              setDepartment(event.target.value);
+              clearAutoFilled("department");
+            }}
             placeholder={t("e.g. Product")}
           />
         </label>
         <label className="form-field">
-          <span>{t("Location")}</span>
+          <span className="form-field-label-row">
+            <span>{t("Location")}</span>
+            {autoFilledFields.location && (
+              <em className="jd-autofill-badge">{t("Auto-filled")}</em>
+            )}
+          </span>
           <input
             name="location"
             maxLength={255}
-            defaultValue={job?.location ?? ""}
+            value={location}
+            onChange={(event) => {
+              setLocation(event.target.value);
+              clearAutoFilled("location");
+            }}
             placeholder={t("e.g. Hanoi / Remote")}
           />
         </label>
         <label className="form-field form-field-wide">
-          <span>
-            {t("Description")} <b>*</b>
+          <span className="form-field-label-row">
+            <span>
+              {t("Description")} <b>*</b>
+            </span>
+            {autoFilledFields.description && (
+              <em className="jd-autofill-badge">{t("Auto-filled")}</em>
+            )}
           </span>
           <textarea
             name="description"
             required
-            defaultValue={job?.description ?? ""}
+            value={description}
+            onChange={(event) => {
+              setDescription(event.target.value);
+              clearAutoFilled("description");
+            }}
             rows={5}
             placeholder={t("Describe the role and its responsibilities.")}
           />
         </label>
         <label className="form-field form-field-wide">
-          <span>{t("Requirements")}</span>
+          <span className="form-field-label-row">
+            <span>{t("Requirements")}</span>
+            {autoFilledFields.requirements && (
+              <em className="jd-autofill-badge">{t("Auto-filled")}</em>
+            )}
+          </span>
           <textarea
             name="requirements"
-            defaultValue={job?.requirements ?? ""}
+            value={requirements}
+            onChange={(event) => {
+              setRequirements(event.target.value);
+              clearAutoFilled("requirements");
+            }}
             rows={3}
             placeholder={t("Add qualifications or additional requirements.")}
           />
         </label>
         <label className="form-field form-field-wide">
-          <span>{t("Required skills")}</span>
+          <span className="form-field-label-row">
+            <span>{t("Required skills")}</span>
+            {autoFilledFields.required_skills && (
+              <em className="jd-autofill-badge">{t("Auto-filled")}</em>
+            )}
+          </span>
           <textarea
             name="required_skills"
-            defaultValue={job?.required_skills?.join(", ") ?? ""}
+            value={requiredSkills}
+            onChange={(event) => {
+              setRequiredSkills(event.target.value);
+              clearAutoFilled("required_skills");
+            }}
             rows={2}
             placeholder={t("Python, SQL, Product design")}
           />
           <small>{t("Separate skills with commas or new lines.")}</small>
         </label>
         <label className="form-field">
-          <span>{t("Experience (years)")}</span>
+          <span className="form-field-label-row">
+            <span>{t("Experience (years)")}</span>
+            {autoFilledFields.experience_years && (
+              <em className="jd-autofill-badge">{t("Auto-filled")}</em>
+            )}
+          </span>
           <input
             name="experience_years"
             type="number"
             min={0}
             step={1}
-            defaultValue={job?.experience_years ?? ""}
+            value={experienceYears}
+            onChange={(event) => {
+              setExperienceYears(event.target.value);
+              clearAutoFilled("experience_years");
+            }}
             placeholder={t("e.g. 3")}
           />
         </label>
         <label className="form-field">
-          <span>{t("Education level")}</span>
+          <span className="form-field-label-row">
+            <span>{t("Education level")}</span>
+            {autoFilledFields.education_level && (
+              <em className="jd-autofill-badge">{t("Auto-filled")}</em>
+            )}
+          </span>
           <input
             name="education_level"
             maxLength={100}
-            defaultValue={job?.education_level ?? ""}
+            value={educationLevel}
+            onChange={(event) => {
+              setEducationLevel(event.target.value);
+              clearAutoFilled("education_level");
+            }}
             placeholder={t("e.g. Bachelor's degree")}
           />
         </label>
         <label className="form-field">
           <span>{t("Status")}</span>
-          <select name="status" defaultValue={job?.status ?? "active"}>
+          <select
+            name="status"
+            value={status}
+            onChange={(event) => setStatus(event.target.value as JobStatus)}
+          >
             {filters
               .filter((filter) => filter.value !== "all")
               .map((filter) => (
@@ -205,6 +510,13 @@ function JobForm({
               ))}
           </select>
         </label>
+        <div className="form-field form-field-wide">
+          <ScoringWeightsEditor
+            value={scoringWeights}
+            onChange={setScoringWeights}
+            disabled={busy}
+          />
+        </div>
       </div>
       <div className="job-form-footer">
         <span>
@@ -215,14 +527,14 @@ function JobForm({
             className="button button-secondary"
             type="button"
             onClick={onCancel}
-            disabled={saving}
+            disabled={busy}
           >
             {t("Cancel")}
           </button>
           <button
             className="button button-primary"
             type="submit"
-            disabled={saving}
+            disabled={busy}
           >
             {saving
               ? t("Saving…")

@@ -9,10 +9,11 @@ skill, the CV line that mentions it (or "not_found"), so recruiters can verify.
 import re
 from dataclasses import dataclass, field
 
+from app.schemas.job import ScoringWeights
 from app.services.extraction.schemas import CVExtraction
 from app.services.matching.skills import SKILL_ALIASES, dedupe_skills, find_skills_in_text, normalize_skill, skill_key
 
-# Sub-score weights inside the rule score
+# Default sub-score weights inside the rule score (60% skill, 25% experience, 15% education)
 W_SKILL, W_EXPERIENCE, W_EDUCATION = 0.6, 0.25, 0.15
 
 EDUCATION_LEVELS: list[tuple[int, re.Pattern[str]]] = [
@@ -34,6 +35,7 @@ class JobProfile:
     required_skills: list[str] = field(default_factory=list)
     experience_years: int | None = None
     education_level: str | None = None
+    scoring_weights: ScoringWeights = field(default_factory=ScoringWeights)
 
     @property
     def full_text(self) -> str:
@@ -156,6 +158,28 @@ def _education_part(required_text: str | None, cv: CVExtraction) -> tuple[float 
     return score, cv_level, Evidence(required_text or "", "education", status, quote)
 
 
+def combine_category_scores(
+    skill_score: float | None,
+    experience_score: float | None,
+    education_score: float | None,
+    weights: ScoringWeights | None = None,
+) -> float:
+    w = weights or ScoringWeights()
+    parts = [
+        (skill_score, w.skill / 100.0),
+        (experience_score, w.experience / 100.0),
+        (education_score, w.education / 100.0),
+    ]
+    available = [(s, weight) for s, weight in parts if s is not None and weight > 0]
+    if available:
+        total_weight = sum(weight for _, weight in available)
+        return round(sum(s * weight for s, weight in available) / total_weight, 1)
+    present = [s for s, _ in parts if s is not None]
+    if present:
+        return round(sum(present) / len(present), 1)
+    return 50.0  # nothing to compare against — neutral
+
+
 def score_rules(job: JobProfile, cv: CVExtraction, cv_text: str = "") -> RuleScore:
     cv_lines = [line for line in (cv_text or "").splitlines() if line.strip()]
     cv_lines += [s for s in cv.skills]
@@ -166,19 +190,13 @@ def score_rules(job: JobProfile, cv: CVExtraction, cv_text: str = "") -> RuleSco
     education_score, cv_level, edu_evidence = _education_part(job.education_level, cv)
     evidence += [e for e in (exp_evidence, edu_evidence) if e is not None]
 
-    parts = [(skill_score, W_SKILL), (experience_score, W_EXPERIENCE), (education_score, W_EDUCATION)]
-    available = [(s, w) for s, w in parts if s is not None]
-    if available:
-        total_weight = sum(w for _, w in available)
-        rule = sum(s * w for s, w in available) / total_weight
-    else:
-        rule = 50.0  # nothing to compare against — neutral
+    rule = combine_category_scores(skill_score, experience_score, education_score, job.scoring_weights)
 
     return RuleScore(
         skill_score=skill_score,
         experience_score=experience_score,
         education_score=education_score,
-        rule_score=round(rule, 1),
+        rule_score=rule,
         matched_skills=matched,
         missing_skills=missing,
         evidence=evidence,

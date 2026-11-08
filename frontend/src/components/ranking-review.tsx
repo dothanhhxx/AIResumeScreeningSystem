@@ -19,12 +19,24 @@ import { CvsApiError, uploadCv } from "@/lib/cvs-api";
 import { usePreferences } from "@/lib/preferences";
 import { useFlip } from "@/lib/use-flip";
 import { scoreTone } from "@/lib/score-tone";
-import { listJobs, type Job } from "@/lib/jobs-api";
+import {
+  DEFAULT_SCORING_WEIGHTS,
+  listJobs,
+  type Job,
+  type ScoringWeights,
+} from "@/lib/jobs-api";
+import {
+  normalizeScoringWeights,
+  previewWeightedScore,
+  ScoringWeightsEditor,
+} from "@/components/scoring-weights-editor";
 import {
   DECISION_STATUSES,
   getJobRanking,
   runMatching,
   saveDecision,
+  updateJobWeights,
+  updateResultWeights,
   type DecisionStatus,
   type EvidenceStatus,
   type JobRanking,
@@ -266,18 +278,42 @@ function DecisionForm({
   );
 }
 
+function extractEffectiveWeights(
+  result: RankedMatch,
+  jobWeights?: ScoringWeights,
+): ScoringWeights {
+  if (result.details.custom_weights) {
+    return result.details.custom_weights;
+  }
+  const base = jobWeights ?? DEFAULT_SCORING_WEIGHTS;
+  const cw = result.details.category_weights;
+  if (cw && typeof cw.skill === "number") {
+    return {
+      ...base,
+      skill: Math.round(cw.skill * 100),
+      experience: Math.round((cw.experience ?? 0.25) * 100),
+      education: Math.round((cw.education ?? 0.15) * 100),
+    };
+  }
+  return base;
+}
+
 function ResultDetail({
   result,
+  jobWeights,
   hideIdentity,
   canViewOriginalCv,
   canDecide,
   onSaved,
+  onWeightsChanged,
 }: {
   result: RankedMatch;
+  jobWeights?: ScoringWeights;
   hideIdentity: boolean;
   canViewOriginalCv: boolean;
   canDecide: boolean;
   onSaved: () => void;
+  onWeightsChanged: (message: string) => void;
 }) {
   const { t } = useI18n();
   const name = hideIdentity
@@ -287,6 +323,69 @@ function ResultDetail({
   const usedLlm = result.llm_score !== null;
   const sources = result.details.sources ?? {};
   const semanticSource = sources.semantic;
+
+  const activeWeights = extractEffectiveWeights(result, jobWeights);
+  const hasCustomCvWeights = Boolean(result.details.custom_weights);
+  const [editingWeights, setEditingWeights] = useState(false);
+  const [draftWeights, setDraftWeights] =
+    useState<ScoringWeights>(activeWeights);
+  const [savingWeights, setSavingWeights] = useState(false);
+  const [weightsError, setWeightsError] = useState("");
+
+  const preview = previewWeightedScore(result, draftWeights);
+
+  async function handleSaveCvWeights() {
+    setSavingWeights(true);
+    setWeightsError("");
+    try {
+      await updateResultWeights(
+        result.id,
+        normalizeScoringWeights(draftWeights),
+      );
+      setEditingWeights(false);
+      onWeightsChanged(t("Updated scoring weights for this CV."));
+    } catch (error) {
+      setWeightsError(errorText(error, t));
+    } finally {
+      setSavingWeights(false);
+    }
+  }
+
+  async function handleResetCvWeights() {
+    setSavingWeights(true);
+    setWeightsError("");
+    try {
+      await updateResultWeights(result.id, null);
+      setEditingWeights(false);
+      onWeightsChanged(
+        t("Reset this CV to the job's default scoring weights."),
+      );
+    } catch (error) {
+      setWeightsError(errorText(error, t));
+    } finally {
+      setSavingWeights(false);
+    }
+  }
+
+  async function handleApplyWeightsToJob() {
+    setSavingWeights(true);
+    setWeightsError("");
+    try {
+      await updateJobWeights(
+        result.job_id,
+        normalizeScoringWeights(draftWeights),
+        true,
+      );
+      setEditingWeights(false);
+      onWeightsChanged(
+        t("Updated JD scoring weights and recalculated all candidates."),
+      );
+    } catch (error) {
+      setWeightsError(errorText(error, t));
+    } finally {
+      setSavingWeights(false);
+    }
+  }
 
   return (
     <>
@@ -338,11 +437,49 @@ function ResultDetail({
         )}
 
         <section className="detail-section" aria-label={t("Score breakdown")}>
-          <h3>{t("Score breakdown")}</h3>
+          <div className="detail-section-header-row">
+            <div className="detail-section-title-group">
+              <h3>{t("Score breakdown")}</h3>
+              {hasCustomCvWeights && (
+                <span className="jd-autofill-badge">
+                  {t("Custom CV weights")}
+                </span>
+              )}
+            </div>
+            {canDecide && (
+              <button
+                type="button"
+                className="button button-secondary weights-inline-toggle"
+                onClick={() => {
+                  setEditingWeights((prev) => {
+                    if (!prev) {
+                      setDraftWeights(activeWeights);
+                      setWeightsError("");
+                    }
+                    return !prev;
+                  });
+                }}
+                aria-expanded={editingWeights}
+              >
+                {editingWeights
+                  ? t("Hide weights editor")
+                  : t("Customize weights %")}
+              </button>
+            )}
+          </div>
           <div className="score-bars">
-            <ScoreBar label={t("Skills")} value={result.skill_score} />
-            <ScoreBar label={t("Experience")} value={result.experience_score} />
-            <ScoreBar label={t("Education")} value={result.education_score} />
+            <ScoreBar
+              label={`${t("Skills")} (${Math.round(activeWeights.skill)}%)`}
+              value={result.skill_score}
+            />
+            <ScoreBar
+              label={`${t("Experience")} (${Math.round(activeWeights.experience)}%)`}
+              value={result.experience_score}
+            />
+            <ScoreBar
+              label={`${t("Education")} (${Math.round(activeWeights.education)}%)`}
+              value={result.education_score}
+            />
           </div>
           <dl className="engine-scores">
             <div>
@@ -358,6 +495,58 @@ function ResultDetail({
               <dd>{usedLlm ? formatScore(result.llm_score) : t("Off")}</dd>
             </div>
           </dl>
+
+          {editingWeights && canDecide && (
+            <div className="cv-weights-drawer">
+              <ScoringWeightsEditor
+                value={draftWeights}
+                onChange={setDraftWeights}
+                disabled={savingWeights}
+                compact
+              />
+              <div className="cv-weights-preview-bar">
+                <span className="cv-weights-preview-pill">
+                  {t("Live preview: {{score}} pts (Rule: {{rule}})", {
+                    score: Math.round(preview.overallScore),
+                    rule: Math.round(preview.ruleScore),
+                  })}
+                </span>
+                <div className="cv-weights-actions">
+                  {hasCustomCvWeights && (
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      disabled={savingWeights}
+                      onClick={handleResetCvWeights}
+                    >
+                      {t("Reset to JD weights")}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    disabled={savingWeights}
+                    onClick={handleApplyWeightsToJob}
+                  >
+                    {t("Apply to entire JD")}
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    disabled={savingWeights}
+                    onClick={handleSaveCvWeights}
+                  >
+                    {savingWeights ? t("Saving…") : t("Save for this CV")}
+                  </button>
+                </div>
+              </div>
+              {weightsError && (
+                <p className="jd-upload-error" role="alert">
+                  {weightsError}
+                </p>
+              )}
+            </div>
+          )}
         </section>
 
         {result.explanation && (
@@ -566,6 +755,11 @@ export function RankingReview() {
   const [running, setRunning] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [version, setVersion] = useState(0);
+  const [showJobWeights, setShowJobWeights] = useState(false);
+  const [jobWeightsDraft, setJobWeightsDraft] = useState<ScoringWeights>(
+    DEFAULT_SCORING_WEIGHTS,
+  );
+  const [savingJobWeights, setSavingJobWeights] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -601,6 +795,7 @@ export function RankingReview() {
     getJobRanking(jobId, decisionFilter, controller.signal)
       .then((data) => {
         setRanking(data);
+        setJobWeightsDraft(data.scoring_weights ?? DEFAULT_SCORING_WEIGHTS);
         setRankingError(null);
         setSelectedId((current) =>
           current && data.items.some((item) => item.id === current)
@@ -646,6 +841,31 @@ export function RankingReview() {
       setNotice({ kind: "error", text: errorText(error, t) });
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function handleSaveJobWeights() {
+    if (jobId === null) return;
+    setSavingJobWeights(true);
+    setNotice(null);
+    try {
+      const updated = await updateJobWeights(
+        jobId,
+        normalizeScoringWeights(jobWeightsDraft),
+        true,
+      );
+      setRanking(updated);
+      setShowJobWeights(false);
+      setNotice({
+        kind: "info",
+        text: t(
+          "Updated JD scoring weights and recalculated all candidates.",
+        ),
+      });
+    } catch (error) {
+      setNotice({ kind: "error", text: errorText(error, t) });
+    } finally {
+      setSavingJobWeights(false);
     }
   }
 
@@ -818,15 +1038,36 @@ export function RankingReview() {
               )}
             </span>
             {canDecide && (
-              <button
-                className="button button-secondary"
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={jobId === null || uploadingCv}
-              >
-                +{" "}
-                {uploadingCv ? t("Uploading…") : t("Upload CV to this job")}
-              </button>
+              <>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  disabled={jobId === null}
+                  aria-expanded={showJobWeights}
+                  onClick={() => setShowJobWeights((prev) => !prev)}
+                >
+                  {t("JD weights: {{skill}}/{{exp}}/{{edu}}%", {
+                    skill: Math.round(
+                      (ranking?.scoring_weights ?? jobWeightsDraft).skill,
+                    ),
+                    exp: Math.round(
+                      (ranking?.scoring_weights ?? jobWeightsDraft).experience,
+                    ),
+                    edu: Math.round(
+                      (ranking?.scoring_weights ?? jobWeightsDraft).education,
+                    ),
+                  })}
+                </button>
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={jobId === null || uploadingCv}
+                >
+                  +{" "}
+                  {uploadingCv ? t("Uploading…") : t("Upload CV to this job")}
+                </button>
+              </>
             )}
             <button
               className="button button-primary"
@@ -838,6 +1079,43 @@ export function RankingReview() {
             </button>
           </div>
         </div>
+
+        {showJobWeights && canDecide && jobId !== null && (
+          <div className="jd-weights-toolbar-drawer">
+            <ScoringWeightsEditor
+              value={jobWeightsDraft}
+              onChange={setJobWeightsDraft}
+              disabled={savingJobWeights}
+            />
+            <div className="cv-weights-preview-bar">
+              <span className="detail-hint">
+                {t(
+                  "Customize how skills, experience, and education contribute to the match score.",
+                )}
+              </span>
+              <div className="cv-weights-actions">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  disabled={savingJobWeights}
+                  onClick={() => setShowJobWeights(false)}
+                >
+                  {t("Cancel")}
+                </button>
+                <button
+                  type="button"
+                  className="button button-primary"
+                  disabled={savingJobWeights}
+                  onClick={handleSaveJobWeights}
+                >
+                  {savingJobWeights
+                    ? t("Saving…")
+                    : t("Apply to entire JD")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {notice && (
           <p
@@ -1024,7 +1302,9 @@ export function RankingReview() {
           >
             {selected ? (
               <ResultDetail
+                key={`${selected.id}-${selected.overall_score}`}
                 result={selected}
+                jobWeights={ranking?.scoring_weights}
                 hideIdentity={hideIdentity}
                 canViewOriginalCv={Boolean(
                   session && session.user.role !== "viewer",
@@ -1033,6 +1313,10 @@ export function RankingReview() {
                 onSaved={() => {
                   refresh();
                   setNotice({ kind: "info", text: t("Decision saved.") });
+                }}
+                onWeightsChanged={(message) => {
+                  refresh();
+                  setNotice({ kind: "info", text: message });
                 }}
               />
             ) : ranking && ranking.items.length === 0 ? (

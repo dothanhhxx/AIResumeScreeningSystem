@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field, field_validator
 from app.models.cv import CVStatus
 from app.models.decision import DecisionStatus
 from app.schemas.common import AppBaseModel
+from app.schemas.job import ScoringWeights
 
 EvidenceStatus = Literal["found", "unclear", "not_found"]
 
@@ -87,7 +88,22 @@ class MatchDetails(BaseModel):
     interview_questions: list[str] = Field(default_factory=list)
     evidence: list[EvidenceItem] = Field(default_factory=list)
     weights: dict[str, float] = Field(default_factory=dict)
+    category_weights: dict[str, float] = Field(default_factory=dict)
+    custom_weights: ScoringWeights | None = None
     sources: dict[str, str] = Field(default_factory=dict, description="Which engine produced each part")
+
+
+class JobWeightsUpdate(AppBaseModel):
+    """Body for PUT /matching/jobs/{job_id}/weights — update JD scoring weights & recalculate."""
+
+    scoring_weights: ScoringWeights
+    reset_cv_overrides: bool = True
+
+
+class ResultWeightsUpdate(AppBaseModel):
+    """Body for PUT /matching/results/{result_id}/weights — update or reset per-CV custom weights."""
+
+    scoring_weights: ScoringWeights | None = None
 
 
 class DecisionRead(AppBaseModel):
@@ -169,6 +185,7 @@ class RankedMatch(MatchResultRead):
 class JobRanking(BaseModel):
     job_id: int
     job_title: str
+    scoring_weights: ScoringWeights = Field(default_factory=ScoringWeights)
     total: int
     pending_cvs: int = Field(description="CVs still being scored for this job")
     items: list[RankedMatch]
