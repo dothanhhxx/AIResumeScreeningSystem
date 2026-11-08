@@ -7,9 +7,6 @@ from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-OUT = Path(sys.argv[1])
-OUT.mkdir(parents=True, exist_ok=True)
-
 FONT_REG = "C:/Windows/Fonts/arial.ttf"
 FONT_BOLD = "C:/Windows/Fonts/arialbd.ttf"
 
@@ -278,7 +275,10 @@ def make_docx(path, cv):
     d.save(path)
 
 
-for fname, cv in CANDIDATES.items():
-    make_pdf(OUT / fname, cv)
-make_docx(OUT / DOCX_CANDIDATE["file"], DOCX_CANDIDATE)
-print("written:", *sorted(p.name for p in OUT.iterdir()))
+if __name__ == "__main__":
+    OUT = Path(sys.argv[1])
+    OUT.mkdir(parents=True, exist_ok=True)
+    for fname, cv in CANDIDATES.items():
+        make_pdf(OUT / fname, cv)
+    make_docx(OUT / DOCX_CANDIDATE["file"], DOCX_CANDIDATE)
+    print("written:", *sorted(p.name for p in OUT.iterdir()))

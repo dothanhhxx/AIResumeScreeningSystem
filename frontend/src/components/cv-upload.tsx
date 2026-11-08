@@ -120,6 +120,8 @@ export function CvUpload({
   const [loadingCvs, setLoadingCvs] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
+  // How many pages the user has revealed with "Load more"; refreshes reload all of them.
+  const loadedPagesRef = useRef(1);
   const [selectedCvId, setSelectedCvId] = useState<number | null>(
     requestedCvId,
   );
@@ -208,14 +210,28 @@ export function CvUpload({
   useEffect(() => {
     const controller = new AbortController();
 
-    async function loadFirstPage() {
+    async function loadVisiblePages() {
       try {
-        const result = await listCvs({
-          page: 1,
-          pageSize: CV_PAGE_SIZE,
-          signal: controller.signal,
-        });
-        setCvPage(result);
+        const pageCount = loadedPagesRef.current;
+        const pages = await Promise.all(
+          Array.from({ length: pageCount }, (_, index) =>
+            listCvs({
+              page: index + 1,
+              pageSize: CV_PAGE_SIZE,
+              signal: controller.signal,
+            }),
+          ),
+        );
+        // Items can shift between pages while new CVs arrive; keep each id once.
+        const seen = new Set<number>();
+        const items = pages
+          .flatMap((page) => page.items)
+          .filter((cv) => !seen.has(cv.id) && seen.add(cv.id));
+        const last = pages[pages.length - 1];
+        setCvPage((current) =>
+          // A "Load more" finished while this refresh was in flight: keep the longer list.
+          current && current.page > pageCount ? current : { ...last, items },
+        );
         setListFeedback(null);
         if (pendingSelectCvIdRef.current !== null) {
           setSelectedCvId(pendingSelectCvIdRef.current);
@@ -229,7 +245,7 @@ export function CvUpload({
       }
     }
 
-    void loadFirstPage();
+    void loadVisiblePages();
     return () => controller.abort();
   }, [refreshVersion]);
 
@@ -295,6 +311,7 @@ export function CvUpload({
         page: cvPage.page + 1,
         pageSize: CV_PAGE_SIZE,
       });
+      loadedPagesRef.current = nextPage.page;
       setCvPage((current) =>
         current
           ? { ...nextPage, items: [...current.items, ...nextPage.items] }
