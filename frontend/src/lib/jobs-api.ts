@@ -1,4 +1,4 @@
-import { getAuthAccessToken } from "@/lib/auth-session";
+import { getAuthAccessToken } from "@/providers/auth-session";
 
 export type JobStatus = "draft" | "active" | "closed" | "archived";
 

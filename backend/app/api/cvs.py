@@ -369,10 +369,15 @@ def _content_disposition(file_name: str, fallback: str) -> str:
 )
 async def reprocess_cv(
     cv_id: int,
+    job_id: int | None = Query(default=None, description="Optional JD ID to auto-score after extraction"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(_writer),
 ) -> ApiResponse[CVResponse]:
+    if job_id is not None:
+        await matching_service.get_job_or_404(db, job_id)
     cv = await cv_service.get_cv(db, cv_id)
     cv = await cv_service.reset_for_rescan(db, cv)
-    await asyncio.to_thread(_enqueue_parse_task, cv.id)
+    if job_id is not None:
+        register_target_job(cv.id, job_id)
+    await asyncio.to_thread(_enqueue_parse_task, cv.id, job_id)
     return ApiResponse(message="CV queued for reprocessing.", data=CVResponse.model_validate(cv))

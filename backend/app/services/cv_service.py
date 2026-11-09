@@ -113,7 +113,10 @@ async def find_cv_by_hash(
 # ── Original file bytes ───────────────────────────────────────────────────────
 
 def _mime_for(cv: CV) -> str:
-    return next((mime for mime, ext in ALLOWED_CONTENT_TYPES.items() if ext == cv.file_type), "application/octet-stream")
+    return next(
+        (mime for mime, ext in ALLOWED_CONTENT_TYPES.items() if ext == cv.file_type),
+        "application/octet-stream",
+    )
 
 
 async def _store_file_copy(db: AsyncSession, cv_id: int, file_bytes: bytes, content_type: str) -> None:
@@ -310,6 +313,28 @@ async def create_cv_batch(
                     cv_id=cv.id,
                 )
             )
+        except DuplicateError as dup_exc:
+            existing_id = dup_exc.value
+            if isinstance(existing_id, int):
+                existing = await get_cv(db, existing_id)
+                existing = await reset_for_rescan(
+                    db, existing, candidate_name=candidate_name, candidate_email=candidate_email
+                )
+                results.append(
+                    CVBatchItemResult(
+                        file_name=file.filename or "unknown",
+                        success=True,
+                        cv_id=existing.id,
+                    )
+                )
+            else:
+                results.append(
+                    CVBatchItemResult(
+                        file_name=file.filename or "unknown",
+                        success=False,
+                        error=str(dup_exc),
+                    )
+                )
         except Exception as exc:  # noqa: BLE001
             logger.warning("Batch upload failed for '%s': %s", file.filename, exc)
             results.append(

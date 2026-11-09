@@ -9,7 +9,8 @@ from app.models.job import JobStatus
 from app.models.user import User, UserRole
 from app.schemas.common import ApiResponse, PaginatedResponse
 from app.schemas.job import JobCreate, JobExtractionRead, JobRead, JobUpdate
-from app.services import audit_service, jd_extractor, job_service
+from app.services import audit_service, job_service
+from app.services.extraction import jd_extractor
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 

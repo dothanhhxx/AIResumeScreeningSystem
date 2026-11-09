@@ -35,7 +35,7 @@ async function renderWithSession() {
   // Fresh module per test: the session cache lives at module scope.
   vi.resetModules();
   const { AuthSessionProvider, useAuthSession } =
-    await import("@/lib/auth-session");
+    await import("@/providers/auth-session");
   function Who() {
     const { session } = useAuthSession();
     return <p>{session ? session.user.full_name : "signed out"}</p>;

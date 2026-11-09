@@ -21,7 +21,15 @@ env/
 
 # ── Environment ─────────────────────────────────────────────
 .env
+.env.*
 !.env.example
+!frontend/.env.example
+
+# ── AI Agent / Local Tooling ────────────────────────────────
+.agents/
+AGENTS.md
+*.tsbuildinfo
+.pytest_tmp/
 
 # ── Docker ──────────────────────────────────────────────────
 docker-compose.override.yml

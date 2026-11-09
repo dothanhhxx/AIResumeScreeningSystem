@@ -6,11 +6,11 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CvUpload } from "@/components/cv-upload";
+import { CvUpload } from "@/features/cvs/cv-upload";
 import { I18nProvider } from "@/i18n/provider";
 import { CvsApiError, listCvs } from "@/lib/cvs-api";
 
-vi.mock("@/lib/auth-session", () => ({
+vi.mock("@/providers/auth-session", () => ({
   getAuthAccessToken: vi.fn(() => "test-access-token"),
   useAuthSession: () => ({
     session: {
@@ -156,7 +156,8 @@ describe("CV upload and library integration", () => {
       ...cvSummary,
       error_message: null,
       file_url: "resumes/88.docx",
-      raw_text: "Le Minh Khoi\nEmail: minh.khoi@talentlens.test\nSkills: Python, FastAPI",
+      raw_text:
+        "Le Minh Khoi\nEmail: minh.khoi@talentlens.test\nSkills: Python, FastAPI",
       structured_data: JSON.stringify({
         summary: "Senior Python backend engineer",
         skills: ["Python", "FastAPI", "PostgreSQL"],
@@ -174,7 +175,10 @@ describe("CV upload and library integration", () => {
       const url = String(input);
       if (url.endsWith("/cvs/upload") && init?.method === "POST") {
         return Promise.resolve(
-          mockResponse({ success: true, message: "Uploaded", data: cvSummary }, 201),
+          mockResponse(
+            { success: true, message: "Uploaded", data: cvSummary },
+            201,
+          ),
         );
       }
       if (url.endsWith("/cvs/88")) {
@@ -191,13 +195,9 @@ describe("CV upload and library integration", () => {
     renderCvUpload();
     await screen.findByText("No resumes have been uploaded yet.");
 
-    const file = new File(
-      ["synthetic docx"],
-      "CV_Le_Minh_Khoi_2026.docx",
-      {
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      },
-    );
+    const file = new File(["synthetic docx"], "CV_Le_Minh_Khoi_2026.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
     fireEvent.change(screen.getByLabelText("Choose resume file"), {
       target: { files: [file] },
     });

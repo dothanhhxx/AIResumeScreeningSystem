@@ -1,5 +1,5 @@
 import { apiBlob, apiDownload, apiRequest } from "@/lib/api";
-import { getAuthAccessToken } from "@/lib/auth-session";
+import { getAuthAccessToken } from "@/providers/auth-session";
 
 export const CV_STATUSES = [
   "uploaded",
@@ -345,8 +345,14 @@ export function getCv(cvId: number, signal?: AbortSignal): Promise<CvDetail> {
   return apiRequest<CvDetail>(`/cvs/${cvId}`, undefined, signal);
 }
 
-export function reprocessCv(cvId: number): Promise<CvDetail> {
-  return apiRequest<CvDetail>(`/cvs/${cvId}/reprocess`, { method: "POST" });
+export function reprocessCv(
+  cvId: number,
+  jobId?: number | null,
+): Promise<CvDetail> {
+  const query = jobId ? `?job_id=${jobId}` : "";
+  return apiRequest<CvDetail>(`/cvs/${cvId}/reprocess${query}`, {
+    method: "POST",
+  });
 }
 
 export async function deleteCv(cvId: number): Promise<void> {

@@ -109,7 +109,6 @@ input:focus-visible {
   background: #ffffff08;
 }
 
-
 .workspace-copy,
 .profile-copy {
   display: grid;
@@ -858,7 +857,7 @@ tbody tr:last-child td {
   font-size: 8px;
 }
 
-.status-pill>span {
+.status-pill > span {
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -1278,7 +1277,7 @@ tbody tr:last-child td {
   font-size: 9px;
 }
 
-.jobs-pagination>div {
+.jobs-pagination > div {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -1415,7 +1414,7 @@ tbody tr:last-child td {
 }
 
 .form-field b,
-.job-form-footer>span b {
+.job-form-footer > span b {
   color: #b26055;
 }
 
@@ -1459,12 +1458,12 @@ tbody tr:last-child td {
   border-top: 1px solid #edf0f1;
 }
 
-.job-form-footer>span {
+.job-form-footer > span {
   color: #9aa5aa;
   font-size: 9px;
 }
 
-.job-form-footer>div,
+.job-form-footer > div,
 .confirm-actions {
   display: flex;
   gap: 8px;
@@ -1576,7 +1575,7 @@ tbody tr:last-child td {
   color: #a6e5c7;
 }
 
-.login-visual-content>p {
+.login-visual-content > p {
   max-width: 365px;
   margin: 0;
   color: #a6b9bd;
@@ -1987,7 +1986,7 @@ tbody tr:last-child td {
     flex-direction: column;
   }
 
-  .jobs-pagination>div {
+  .jobs-pagination > div {
     width: 100%;
     justify-content: space-between;
   }
@@ -2015,7 +2014,7 @@ tbody tr:last-child td {
     flex-direction: column;
   }
 
-  .job-form-footer>div {
+  .job-form-footer > div {
     width: 100%;
     justify-content: flex-end;
   }
@@ -2112,7 +2111,7 @@ tbody tr:last-child td {
   font-size: 13px;
 }
 
-.cv-dropzone>span:not(.cv-upload-icon) {
+.cv-dropzone > span:not(.cv-upload-icon) {
   font-size: 10px;
 }
 
@@ -2260,7 +2259,6 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 560px) {
-
   .cv-upload-panel,
   .cv-privacy-panel {
     padding: 15px;
@@ -2299,7 +2297,8 @@ tbody tr:last-child td {
 .ranking-toolbar {
   display: grid;
   grid-template-columns:
-    minmax(150px, 0.8fr) minmax(150px, 0.8fr) minmax(200px, 1.2fr) auto;
+    minmax(150px, 0.8fr) minmax(150px, 0.8fr) minmax(200px, 1.2fr)
+    auto;
   align-items: end;
   gap: 12px;
   padding: 15px 17px;
@@ -2526,7 +2525,6 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 700px) {
-
   .ranking-toolbar,
   .ranking-content-grid {
     grid-template-columns: 1fr;
@@ -2547,7 +2545,6 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 420px) {
-
   .ranking-list-heading,
   .ranking-detail-header,
   .ranking-detail-body {
@@ -2618,7 +2615,7 @@ tbody tr:last-child td {
   font-size: 13px;
 }
 
-.ranking-provenance-heading>span {
+.ranking-provenance-heading > span {
   color: var(--muted);
   font-size: 11px;
 }
@@ -2630,7 +2627,7 @@ tbody tr:last-child td {
   margin: 0;
 }
 
-.ranking-source-grid>div {
+.ranking-source-grid > div {
   min-width: 0;
   padding: 9px 10px;
   border: 1px solid var(--line);
@@ -2708,10 +2705,12 @@ select:focus-visible {
   width: 264px;
   flex-basis: 264px;
   padding: 30px 18px 20px;
-  background: linear-gradient(155deg,
-      #1a3b32 0%,
-      var(--navy) 58%,
-      #142f29 100%);
+  background: linear-gradient(
+    155deg,
+    #1a3b32 0%,
+    var(--navy) 58%,
+    #142f29 100%
+  );
 }
 
 .brand {
@@ -3111,7 +3110,7 @@ td {
 }
 
 .form-field small,
-.job-form-footer>span {
+.job-form-footer > span {
   color: var(--muted);
   font-size: 11px;
 }
@@ -3175,7 +3174,7 @@ td {
   font-size: 15px;
 }
 
-.cv-dropzone>span:not(.cv-upload-icon),
+.cv-dropzone > span:not(.cv-upload-icon),
 .cv-upload-footer,
 .cv-privacy-panel p,
 .cv-privacy-panel li {
@@ -3441,7 +3440,7 @@ td {
     border-color 150ms ease;
 }
 
-.sidebar-toggle-desktop>svg {
+.sidebar-toggle-desktop > svg {
   position: relative;
   z-index: 1;
   transform: translateX(-5px);
@@ -3498,7 +3497,7 @@ td {
   .app-frame--sidebar-collapsed .brand-name,
   .app-frame--sidebar-collapsed .workspace-picker,
   .app-frame--sidebar-collapsed .nav-label,
-  .app-frame--sidebar-collapsed .nav-link>span,
+  .app-frame--sidebar-collapsed .nav-link > span,
   .app-frame--sidebar-collapsed .demo-note,
   .app-frame--sidebar-collapsed .profile-copy {
     display: none;
@@ -3657,7 +3656,6 @@ td {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .sidebar,
   .sidebar-backdrop,
   .nav-link,
@@ -3829,7 +3827,7 @@ td {
   color: #5e4880;
 }
 
-.status-pill>span {
+.status-pill > span {
   width: 7px;
   height: 7px;
   flex-basis: 7px;
@@ -4007,7 +4005,7 @@ td {
 }
 
 .form-field small,
-.job-form-footer>span,
+.job-form-footer > span,
 .confirm-copy,
 .login-help,
 .login-legal,
@@ -4075,7 +4073,7 @@ td {
   box-shadow: 0 0 0 3px rgb(40 107 73 / 22%);
 }
 
-.cv-dropzone>span:not(.cv-upload-icon),
+.cv-dropzone > span:not(.cv-upload-icon),
 .cv-upload-message,
 .cv-file-list-heading,
 .cv-file-name,
@@ -4343,7 +4341,6 @@ td {
 }
 
 @media (max-width: 760px) {
-
   .row-arrow,
   .icon-button,
   .jobs-pagination button,
@@ -4399,7 +4396,6 @@ td {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .button,
   .filter-tab,
   .sample-banner a,
@@ -4483,7 +4479,7 @@ html[lang="vi"] .login-quote p {
 
 .cv-candidate-fields .form-field input:focus-visible,
 .cv-dropzone button:focus-visible,
-.cv-upload-form>button:focus-visible,
+.cv-upload-form > button:focus-visible,
 .cv-library button:focus-visible {
   outline: 3px solid #8dc9a7;
   outline-offset: 2px;
@@ -4508,7 +4504,7 @@ html[lang="vi"] .login-quote p {
   font-size: 15px;
 }
 
-.cv-dropzone>span:not(.cv-upload-icon) {
+.cv-dropzone > span:not(.cv-upload-icon) {
   font-size: 13px;
 }
 
@@ -4628,7 +4624,7 @@ html[lang="vi"] .login-quote p {
   white-space: nowrap;
 }
 
-.cv-library-copy>span {
+.cv-library-copy > span {
   overflow: hidden;
   color: #617267;
   font-size: 12px;
@@ -4733,7 +4729,6 @@ html[lang="vi"] .login-quote p {
 }
 
 @media (max-width: 560px) {
-
   .dashboard-error-banner,
   .ranking-fetch-error {
     align-items: flex-start;
@@ -4804,7 +4799,7 @@ html[lang="vi"] .login-quote p {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .job-form-footer>div {
+  .job-form-footer > div {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
   }
@@ -4814,7 +4809,6 @@ html[lang="vi"] .login-quote p {
     min-height: 44px;
   }
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TALENTLENS UNIFIED DESIGN SYSTEM (DEEP FOREST, WARM BRASS & CREAM)
@@ -4883,7 +4877,6 @@ input:focus-visible {
   border-color: rgb(232 196 103 / 0.42);
   background: rgb(255 253 248 / 0.09);
 }
-
 
 .nav-label {
   color: #9bb5a9;
@@ -5489,7 +5482,6 @@ tbody tr:hover .row-arrow,
 }
 
 @keyframes status-pulse {
-
   0%,
   100% {
     box-shadow: 0 0 0 0 rgb(214 173 74 / 0.28);

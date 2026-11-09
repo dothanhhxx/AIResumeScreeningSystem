@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { RankingEvidenceDemo } from "@/components/ranking-evidence-demo";
+import { RankingEvidenceDemo } from "@/features/rankings/ranking-evidence-demo";
 
 afterEach(cleanup);
 

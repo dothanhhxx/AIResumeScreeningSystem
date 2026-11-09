@@ -126,13 +126,33 @@ async def recompute_ranks(db: AsyncSession, job_id: int) -> None:
         result.rank = index
 
 
+def _cv_target_job_id(cv: CV) -> int | None:
+    data = _structured(cv)
+    target = data.get("target_job_id")
+    return target if isinstance(target, int) else None
+
+
 # ── Run matching ────────────────────────────────────────────
 async def start_matching(db: AsyncSession, job: Job, cv_ids: list[int] | None) -> MatchRunResponse:
-    """Mark the selected CVs as SCORING. The caller enqueues one score task per returned id."""
-    query = select(CV)
+    """Mark the selected CVs (scoped to this JD) as SCORING. The caller enqueues one score task per returned id."""
     if cv_ids is not None:
-        query = query.where(CV.id.in_(cv_ids))
-    cvs = (await db.scalars(query)).all()
+        cvs = (await db.scalars(select(CV).where(CV.id.in_(cv_ids)))).all()
+    else:
+        all_cvs = (await db.scalars(select(CV))).all()
+        existing_for_job = set(
+            (await db.scalars(select(MatchResult.cv_id).where(MatchResult.job_id == job.id))).all()
+        )
+        cvs = [
+            cv
+            for cv in all_cvs
+            if _cv_target_job_id(cv) == job.id
+            or (cv.id in existing_for_job and _cv_target_job_id(cv) in (None, job.id))
+        ]
+        if not cvs:
+            any_targeted = any(_cv_target_job_id(cv) is not None for cv in all_cvs)
+            any_matches = (await db.scalar(select(func.count(MatchResult.id))) or 0) > 0
+            if not any_targeted and not any_matches:
+                cvs = all_cvs
 
     ready = [cv for cv in cvs if cv.status in READY_STATUSES and cv.structured_data]
     ready_ids = {cv.id for cv in ready}
@@ -172,7 +192,16 @@ async def get_ranking(
             if (r.decision.status if r.decision else DecisionStatus.PENDING) == decision_status
         ]
 
-    pending = await db.scalar(select(func.count(CV.id)).where(CV.status == CVStatus.SCORING)) or 0
+    in_flight_statuses = (
+        CVStatus.UPLOADED,
+        CVStatus.PARSING,
+        CVStatus.PARSED,
+        CVStatus.EXTRACTING,
+        CVStatus.SCORING,
+    )
+    pending = (
+        await db.scalar(select(func.count(CV.id)).where(CV.status.in_(in_flight_statuses))) or 0
+    )
     return JobRanking(
         job_id=job.id,
         job_title=job.title,

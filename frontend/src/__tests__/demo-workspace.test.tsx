@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DemoWorkspace } from "@/components/demo-workspace";
+import { DemoWorkspace } from "@/features/marketing/demo-workspace";
 import { I18nProvider } from "@/i18n/provider";
 
 afterEach(() => {

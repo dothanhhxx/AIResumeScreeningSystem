@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { extractJobFromFile, JobsApiError, listJobs } from "@/lib/jobs-api";
 
-vi.mock("@/lib/auth-session", () => ({
+vi.mock("@/providers/auth-session", () => ({
   getAuthAccessToken: vi.fn(() => "test-access-token"),
 }));
 
@@ -114,13 +114,9 @@ describe("jobs API client", () => {
       );
     vi.stubGlobal("fetch", fetchMock);
 
-    const file = new File(
-      ["synthetic docx"],
-      "JD_Backend.docx",
-      {
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      },
-    );
+    const file = new File(["synthetic docx"], "JD_Backend.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
     await expect(extractJobFromFile(file)).resolves.toEqual(extracted);
 
     expect(fetchMock).toHaveBeenCalledWith(

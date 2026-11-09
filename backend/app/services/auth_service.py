@@ -81,6 +81,47 @@ def issue_token(user: User) -> TokenResponse:
     )
 
 
+DEFAULT_ACCOUNTS: tuple[dict[str, str | UserRole], ...] = (
+    {
+        "email": "admin@talentlens.ai",
+        "password": "Admin@123",
+        "full_name": "System Administrator",
+        "role": UserRole.ADMIN,
+    },
+    {
+        "email": "recruiter@talentlens.ai",
+        "password": "Recruiter@123",
+        "full_name": "HR Recruiter",
+        "role": UserRole.RECRUITER,
+    },
+)
+
+
+async def seed_default_users(session: AsyncSession) -> list[User]:
+    """Idempotently ensure the default Admin and Recruiter accounts exist in the database."""
+    created_or_existing: list[User] = []
+    changed = False
+    for acc in DEFAULT_ACCOUNTS:
+        email = str(acc["email"]).strip().lower()
+        existing = await get_user_by_email(session, email)
+        if existing is None:
+            user = User(
+                email=email,
+                hashed_password=hash_password(str(acc["password"])),
+                full_name=str(acc["full_name"]),
+                role=acc["role"],  # type: ignore[arg-type]
+                is_active=True,
+            )
+            session.add(user)
+            created_or_existing.append(user)
+            changed = True
+        else:
+            created_or_existing.append(existing)
+    if changed:
+        await session.commit()
+    return created_or_existing
+
+
 async def change_password(session: AsyncSession, user: User, current_password: str, new_password: str) -> None:
     """
     Replace the signed-in user's password.

@@ -42,7 +42,7 @@ class User(Base):
     )
 
     # ── Relationships ───────────────────────────────────────
-    audit_logs = relationship("AuditLog", back_populates="user", lazy="selectin")
+    audit_logs = relationship("AuditLog", back_populates="user", lazy="select")
 
     def __repr__(self) -> str:
         return f"<User {self.email} role={self.role.value}>"

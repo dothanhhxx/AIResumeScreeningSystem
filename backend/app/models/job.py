@@ -55,7 +55,7 @@ class Job(Base):
 
     # ── Relationships ───────────────────────────────────────
     match_results = relationship(
-        "MatchResult", back_populates="job", lazy="selectin", cascade="all, delete-orphan", passive_deletes=True
+        "MatchResult", back_populates="job", lazy="select", cascade="all, delete-orphan", passive_deletes=True
     )
 
     def __repr__(self) -> str:

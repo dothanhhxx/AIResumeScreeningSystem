@@ -53,7 +53,10 @@ _FIELD_RE = re.compile(
     r"([A-Za-zÀ-ỹ&\s]{3,60})",
     re.IGNORECASE,
 )
-_GPA_RE = re.compile(r"\b(?:gpa|cpa|điểm trung bình)\s*:?\s*(\d(?:[.,]\d{1,2})?\s*(?:/\s*\d+(?:[.,]\d)?)?)", re.IGNORECASE)
+_GPA_RE = re.compile(
+    r"\b(?:gpa|cpa|điểm trung bình)\s*:?\s*(\d(?:[.,]\d{1,2})?\s*(?:/\s*\d+(?:[.,]\d)?)?)",
+    re.IGNORECASE,
+)
 
 _LANGUAGE_RE = re.compile(
     r"\b(english|tiếng anh|japanese|tiếng nhật|korean|tiếng hàn|chinese|tiếng trung|french|tiếng pháp|"

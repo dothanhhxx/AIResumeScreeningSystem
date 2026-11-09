@@ -1,0 +1,26 @@
+"use client";
+
+import { Suspense } from "react";
+import { RankingReview } from "@/features/rankings/ranking-review";
+import { useI18n } from "@/i18n/provider";
+
+export default function RankingsPage() {
+  const { t } = useI18n();
+
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <p className="eyebrow">{t("HUMAN REVIEW")}</p>
+          <h1>{t("Candidate rankings")}</h1>
+          <p className="page-subtitle">
+            {t("Compare match evidence and review candidates with your team.")}
+          </p>
+        </div>
+      </div>
+      <Suspense fallback={<p className="cv-library-state">{t("Loading…")}</p>}>
+        <RankingReview />
+      </Suspense>
+    </>
+  );
+}

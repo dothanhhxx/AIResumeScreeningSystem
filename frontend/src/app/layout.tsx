@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { AppShell } from "@/components/app-shell";
-import { MotionPreference } from "@/components/motion-preference";
-import { AuthSessionProvider } from "@/lib/auth-session";
+import { AppShell } from "@/components/layout/app-shell";
+import { MotionPreference } from "@/components/ui/motion-preference";
 import { I18nProvider } from "@/i18n/provider";
+import { AuthSessionProvider } from "@/providers/auth-session";
 import "./globals.css";
 import "@/styles/workspace.css";
 

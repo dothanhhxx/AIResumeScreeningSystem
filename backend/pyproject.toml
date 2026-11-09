@@ -74,6 +74,7 @@ select = ["E", "F", "I", "N", "W"]
 [tool.ruff.lint.per-file-ignores]
 # Settings properties mirror the UPPER_CASE env var names
 "app/config.py" = ["N802"]
+"app/core/config.py" = ["N802"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

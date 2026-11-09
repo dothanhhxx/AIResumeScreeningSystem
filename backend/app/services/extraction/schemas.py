@@ -18,7 +18,9 @@ class Education(BaseModel):
     institution: str | None = Field(default=None, description="School or university name")
     degree: str | None = Field(default=None, description="e.g. 'Bachelor', 'Master', 'College'")
     field_of_study: str | None = Field(default=None, description="Major, e.g. 'Computer Science'")
-    graduation_year: int | None = Field(default=None, description="Year of graduation (expected year if still studying)")
+    graduation_year: int | None = Field(
+        default=None, description="Year of graduation (expected year if still studying)"
+    )
     gpa: str | None = Field(default=None, description="GPA as written, e.g. '3.4/4'")
 
 

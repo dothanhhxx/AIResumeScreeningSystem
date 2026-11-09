@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { LandingPage } from "@/components/landing-page";
+import { LandingPage } from "@/features/marketing/landing-page";
 import { I18nProvider } from "@/i18n/provider";
-import { AuthSessionProvider } from "@/lib/auth-session";
+import { AuthSessionProvider } from "@/providers/auth-session";
 
 afterEach(() => {
   cleanup();

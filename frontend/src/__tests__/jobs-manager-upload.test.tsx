@@ -6,10 +6,10 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { JobsManager } from "@/components/jobs-manager";
+import { JobsManager } from "@/features/jobs/jobs-manager";
 import { I18nProvider } from "@/i18n/provider";
 
-vi.mock("@/lib/auth-session", () => ({
+vi.mock("@/providers/auth-session", () => ({
   getAuthAccessToken: vi.fn(() => "test-access-token"),
   useAuthSession: () => ({
     session: {
@@ -250,4 +250,3 @@ describe("JobsManager JD file upload and auto-fill", () => {
     ).toBe(false);
   });
 });
-

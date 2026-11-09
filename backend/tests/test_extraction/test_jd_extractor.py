@@ -10,7 +10,7 @@ from starlette.datastructures import Headers
 from app.core.exceptions import AIServiceError, BadRequestError, UnsupportedFileTypeError
 from app.llm import BaseLLM
 from app.schemas.job import JobExtractionLLM
-from app.services.jd_extractor import (
+from app.services.extraction.jd_extractor import (
     extract_jd_from_text,
     extract_job_from_file,
     heuristic_extract_jd,

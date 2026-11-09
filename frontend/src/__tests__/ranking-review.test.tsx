@@ -7,7 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RankingReview } from "@/components/ranking-review";
+import { RankingReview } from "@/features/rankings/ranking-review";
 import { I18nProvider } from "@/i18n/provider";
 
 vi.mock("next/navigation", () => ({
@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const sessionRole = { current: "recruiter" as "recruiter" | "viewer" };
-vi.mock("@/lib/auth-session", () => ({
+vi.mock("@/providers/auth-session", () => ({
   getAuthAccessToken: vi.fn(() => "test-access-token"),
   useAuthSession: () => ({
     session: {

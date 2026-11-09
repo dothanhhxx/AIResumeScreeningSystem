@@ -1010,8 +1010,7 @@ const vietnameseMessages = {
   "Every upload, run, and decision is logged":
     "Mọi thao tác tải lên, chấm điểm, quyết định đều lưu vết",
   "ARCHITECTURE & ACCESS": "KIẾN TRÚC & TRải NGHIỆM HỆ THỐNG",
-  "Explore the TalentLens ecosystem":
-    "Khám phá không gian làm việc TalentLens",
+  "Explore the TalentLens ecosystem": "Khám phá không gian làm việc TalentLens",
   "Four transparent stages from raw PDF/DOCX upload to an auditable team shortlist. Try the read-only demo or sign in to your workspace.":
     "Bốn bước minh bạch từ khi tải tệp PDF/DOCX đến danh sách rút gọn có kiểm toán. Khám phá ngay bản demo hoặc đăng nhập vào hệ thống.",
   "01. Ingest & Parse": "01. Tiếp nhận & Đọc CV",
@@ -1123,7 +1122,8 @@ const vietnameseMessages = {
   Running: "Đang chạy",
   Waiting: "Đang chờ",
   "Skill gap summary": "Tóm tắt khoảng cách kỹ năng",
-  "{{found}} of {{total}} requirements met": "Đáp ứng {{found}}/{{total}} yêu cầu",
+  "{{found}} of {{total}} requirements met":
+    "Đáp ứng {{found}}/{{total}} yêu cầu",
   "{{count}} with evidence": "{{count}} có bằng chứng",
   "{{count}} to verify": "{{count}} cần xác minh",
   "{{count}} missing": "{{count}} còn thiếu",
@@ -1149,10 +1149,12 @@ const vietnameseMessages = {
   "Fresher / Intern (50/10/40)": "Fresher / Thực tập (50/10/40)",
   "Total: {{total}}%": "Tổng: {{total}}%",
   "Auto-balance 100%": "Cân bằng 100%",
-  "Engine weights (Rule / Semantic / AI)": "Tỷ trọng Engine (Luật / Ngữ nghĩa / AI)",
+  "Engine weights (Rule / Semantic / AI)":
+    "Tỷ trọng Engine (Luật / Ngữ nghĩa / AI)",
   "Customize weights %": "Tùy chỉnh % trọng số",
   "Hide weights editor": "Thu gọn bộ chỉnh %",
-  "JD weights: {{skill}}/{{exp}}/{{edu}}%": "Trọng số JD: {{skill}}/{{exp}}/{{edu}}%",
+  "JD weights: {{skill}}/{{exp}}/{{edu}}%":
+    "Trọng số JD: {{skill}}/{{exp}}/{{edu}}%",
   "Custom CV weights": "Trọng số riêng CV",
   "Live preview: {{score}} pts (Rule: {{rule}})":
     "Điểm dự kiến: {{score}} điểm (Luật: {{rule}})",
@@ -1165,7 +1167,7 @@ const vietnameseMessages = {
     "Đã đặt lại trọng số của CV theo mặc định của JD.",
   "Updated JD scoring weights and recalculated all candidates.":
     "Đã cập nhật tỷ trọng chấm điểm của JD và tính lại điểm toàn bộ ứng viên.",
-  "Weightpresets": "Mẫu tỷ trọng nhanh",
+  Weightpresets: "Mẫu tỷ trọng nhanh",
   "Category weights must add up to 100% (or click Auto-balance 100%).":
     "Tổng tỷ trọng các hạng mục phải lớn hơn 0% (hoặc bấm Cân bằng 100%).",
 } as const;

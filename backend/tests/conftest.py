@@ -23,6 +23,7 @@ os.environ.update(
         "LLM_PROVIDER": "heuristic",
         "GEMINI_API_KEY": "",
         "DEBUG": "false",
+        "SEED_DEFAULT_USERS": "false",
     }
 )
 

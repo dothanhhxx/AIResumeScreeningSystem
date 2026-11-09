@@ -1,4 +1,4 @@
-import { getAuthAccessToken } from "@/lib/auth-session";
+import { getAuthAccessToken } from "@/providers/auth-session";
 
 /** Error raised for any failed call to the backend `/api/v1` routes. */
 export class ApiError extends Error {

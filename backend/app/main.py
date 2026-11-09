@@ -8,24 +8,25 @@ Only Person A registers routers here. Every API router is mounted under /api/v1.
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import audit, auth, cvs, dashboard, jobs, matching, system, users
-from app.config import settings
-from app.core.database import create_all_tables, engine
+from app.api.router import API_V1_PREFIX, api_router
+from app.core.config import settings
+from app.core.database import async_session_factory, create_all_tables, engine
 from app.core.exceptions import AppError
 from app.schemas.common import ApiErrorResponse, HealthResponse
+from app.services import auth_service
 from app.workers.dispatch import inline_runner
 
-API_PREFIX = "/api/v1"
+API_PREFIX = API_V1_PREFIX
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
     format="%(levelname)s %(name)s: %(message)s",
 )
-for noisy in ("sqlalchemy.engine", "httpx", "botocore", "urllib3", "multipart"):
+for noisy in ("sqlalchemy.engine", "httpx", "botocore", "urllib3", "multipart", "aiosqlite", "watchfiles"):
     logging.getLogger(noisy).setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,13 @@ async def lifespan(app: FastAPI):
     """Startup / shutdown lifecycle."""
     if settings.AUTO_CREATE_TABLES or settings.IS_SQLITE:
         await create_all_tables()
+    if settings.SEED_DEFAULT_USERS:
+        try:
+            async with async_session_factory() as session:
+                await auth_service.seed_default_users(session)
+            logger.info("Default accounts (admin@talentlens.ai, recruiter@talentlens.ai) verified.")
+        except Exception as exc:
+            logger.warning("Could not seed default users on startup: %s", exc)
     inline_runner.start()
     if settings.PIPELINE_MODE.lower() == "inline":
         logger.info("Pipeline mode: inline (background asyncio consumer)")
@@ -82,15 +90,6 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 
 # ── Routers ─────────────────────────────────────────────────
-api_router = APIRouter(prefix=API_PREFIX)
-api_router.include_router(auth.router)
-api_router.include_router(jobs.router)
-api_router.include_router(cvs.router)
-api_router.include_router(matching.router)
-api_router.include_router(dashboard.router)
-api_router.include_router(audit.router)
-api_router.include_router(system.router)
-api_router.include_router(users.router)
 app.include_router(api_router)
 
 
