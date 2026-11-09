@@ -52,3 +52,6 @@ backend/*.db
 backend/*.db-wal
 backend/*.db-shm
 .ruff_cache/
+
+# ── Local AI-agent skills (not part of the product) ────────
+.agents/
